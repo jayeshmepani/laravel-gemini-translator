@@ -458,7 +458,7 @@ Return ONLY a valid JSON object with the following exact structure. Do not add a
 }
 PROMPT;
 
-        $modelToUse = config('gemini.model', 'gemini-1.5-flash-latest');
+        $modelToUse = config('gemini.model', 'gemini-2.0-flash-lite');
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
