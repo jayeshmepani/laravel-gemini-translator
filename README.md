@@ -56,6 +56,12 @@ Once installed and configured, you can run the main command from your terminal:
 php artisan translations:extract-and-generate --driver=fork
 ```
 
+To get detailed information about all available options and their descriptions, use:
+
+```bash
+php artisan help translations:extract-and-generate
+```
+
 The command will guide you through the following steps:
 
 1.  **Scanning:** It will scan your project for all translation keys.
@@ -92,6 +98,17 @@ You can customize the command's behavior with the following options:
 -   `--retry-delay=3`: Base delay in seconds between retries with exponential backoff (default: 3).
 -   `--stop-key=q`: The key to press to gracefully stop the translation process (default: `q`).
 
+#### Output Control Options
+
+-   `-h, --help`: Display help for the given command. When no command is given display help for the `list` command.
+-   `--silent`: Do not output any message.
+-   `-q, --quiet`: Only errors are displayed. All other output is suppressed.
+-   `-V, --version`: Display this application version.
+-   `--ansi|--no-ansi`: Force (or disable --no-ansi) ANSI output.
+-   `--no-interaction`: Do not ask any interactive question.
+-   `--env[=ENV]`: The environment the command should run under.
+-   `-v|vv|vvv, --verbose`: Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug.
+
 #### Example Usage
 
 ```bash
@@ -106,6 +123,9 @@ php artisan translations:extract-and-generate --exclude=vendor,tests,docs --exte
 
 # Skip existing translations and use a different target directory
 php artisan translations:extract-and-generate --skip-existing --target-dir=resources/lang
+
+# Get help with all available options
+php artisan help translations:extract-and-generate
 ```
 
 For a full list of options, run:
@@ -213,6 +233,21 @@ t\(['"]([^'"]+)['"]\)|Custom t() function|1
 translate\(['"]([^'"]+)['"]\)|Custom translate() function|1
 ```
 
+## Getting Help
+
+For detailed information about all available command options and their usage, run:
+
+```bash
+php artisan help translations:extract-and-generate
+```
+
+This will display comprehensive help information including:
+- Command description
+- Usage syntax
+- All available options with descriptions
+- Default values for each option
+- Verbosity levels and output control options
+
 ## Troubleshooting
 
 ### Common Issues
@@ -229,6 +264,12 @@ translate\(['"]([^'"]+)['"]\)|Custom translate() function|1
 **Memory Issues:**
 -   For very large projects, consider processing files in smaller batches by selecting them one by one in the interactive prompt.
 -   Reduce the `--chunk-size` to send fewer keys per API request.
+
+**Command Help:**
+-   If you're unsure about any option or need to see all available parameters, use the help command:
+    ```bash
+    php artisan help translations:extract-and-generate
+    ```
 
 ## Security Vulnerabilities
 
