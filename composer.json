@@ -1,0 +1,37 @@
+{
+    "name": "jayesh/laravel-gemini-translator",
+    "description": "An interactive command to extract and generate Laravel translations using Gemini AI.",
+    "type": "laravel-package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jayesh Patel",
+            "email": "jayeshmepani777@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/contracts": "^10.0 || ^11.0",
+        "illuminate/support": "^10.0 || ^11.0",
+        "illuminate/console": "^10.0 || ^11.0",
+        "google-gemini-php/laravel": "^2.0",
+        "spatie/fork": "^1.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jayesh\\LaravelGeminiTranslator\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Jayesh\\LaravelGeminiTranslator\\TranslationServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "@php ./vendor/jayesh/laravel-gemini-translator/scripts/install.php"
+        ]
+    }
+}
