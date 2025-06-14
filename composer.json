@@ -28,8 +28,11 @@
         }
     },
     "scripts": {
-        "post-autoload-dump": [
-            "@php ./vendor/jayesh/laravel-gemini-translator/scripts/install.php"
+        "post-package-install": [
+            "@php artisan translations:install"
+        ],
+        "post-package-update": [
+            "@php artisan translations:install"
         ]
     }
 }
