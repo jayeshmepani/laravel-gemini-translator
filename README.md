@@ -45,7 +45,7 @@ Next, add your Google Gemini API key and a request timeout to your `.env` file. 
 
 ```env
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-GEMINI_REQUEST_TIMEOUT=60
+GEMINI_REQUEST_TIMEOUT=600
 ```
 
 ## Usage
