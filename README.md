@@ -48,6 +48,18 @@ GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 GEMINI_REQUEST_TIMEOUT=600
 ```
 
+### Gemini API Model & Limits
+
+This package uses the **Gemini 2.0 Flash-Lite** model, which provides excellent translation quality with the following free tier limitations:
+
+- **Rate Limit**: 30 requests per minute (RPM)
+- **Daily Limit**: 1,500 requests per day
+
+**Important Considerations:**
+- Large projects may exceed these limits. Consider using the `--chunk-size` option to control the number of keys sent per request.
+- The `--driver=fork` option processes multiple requests concurrently, which can help you reach rate limits faster but complete translations more efficiently.
+- If you hit rate limits, the command will automatically retry with exponential backoff (configurable with `--max-retries` and `--retry-delay` options).
+
 ## Usage
 
 Once installed and configured, you can run the main command from your terminal:
@@ -255,6 +267,12 @@ This will display comprehensive help information including:
 **API Key Issues:**
 -   Ensure your `GEMINI_API_KEY` is set correctly in your `.env` file.
 -   Verify your API key is active and has sufficient quota.
+
+**Rate Limiting Issues:**
+-   The free tier of Gemini 2.0 Flash-Lite has limits of 30 RPM and 1,500 requests per day.
+-   If you encounter rate limiting errors, try reducing the `--chunk-size` to send fewer keys per request.
+-   Increase `--retry-delay` to add more time between retries.
+-   For large projects, consider processing translations in multiple sessions to stay within daily limits.
 
 **Performance Issues:**
 -   Use the `--driver=fork` option for the fastest processing. This requires the `pcntl` PHP extension to be installed and enabled.
