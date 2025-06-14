@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 Jayesh Patel
+Copyright (c) 2025 Jayesh Patel
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
