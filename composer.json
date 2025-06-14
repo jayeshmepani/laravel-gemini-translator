@@ -26,13 +26,5 @@
                 "Jayesh\\LaravelGeminiTranslator\\TranslationServiceProvider"
             ]
         }
-    },
-    "scripts": {
-        "post-package-install": [
-            "@php artisan translations:install"
-        ],
-        "post-package-update": [
-            "@php artisan translations:install"
-        ]
     }
 }

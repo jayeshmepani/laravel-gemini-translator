@@ -513,8 +513,6 @@ PROMPT;
 
             foreach ($allPatterns as $pattern) {
                 if (preg_match_all($pattern, $content, $matches)) {
-                    // Combine results from all capturing groups (pattern can have multiple)
-                    // We slice(1) to skip the full match, then merge the capture groups.
                     $foundKeys = array_merge(...array_slice($matches, 1));
                     foreach ($foundKeys as $key) {
                         if (empty($key))
@@ -598,8 +596,6 @@ PROMPT;
         $patterns = [$mainPattern];
 
         if (!$this->option('no-advanced')) {
-            // This more restrictive advanced pattern specifically looks for keys that start with common translation file prefixes.
-            // This dramatically reduces false positives from route names or other array keys.
             $commonPrefixes = implode('|', ['messages', 'validation', 'auth', 'pagination', 'passwords', 'general', 'models', 'enums', 'attributes']);
 
             $advancedPattern = "/" .

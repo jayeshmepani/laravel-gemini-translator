@@ -10,18 +10,20 @@ This tool is designed to dramatically speed up the localization process for both
 
 ## Features
 
-- **Interactive Prompts:** Interactively select which translation files (`messages.php`, `validation.php`, etc.) and JSON key prefixes to process
-- **Powerful Key Extraction:** Scans Blade, PHP, Vue, and JS files for translation keys using precise regular expressions
-- **Intelligent Exclusions:** Automatically ignores `route()` and `config()` helpers to prevent false positives
-- **AI-Powered Translation:** Uses the Gemini AI API to provide high-quality translations for multiple languages at once
-- **Concurrency Support:** Uses `spatie/fork` for parallel processing, making API calls significantly faster
-- **Detailed Logging:** Creates a `translation_extraction_log.json` file detailing every key and where it was found
+- **Interactive Prompts:** Interactively select which translation files (`messages.php`, `validation.php`, etc.) and JSON key prefixes to process.
+- **Powerful Key Extraction:** Scans Blade, PHP, Vue, JS, and TypeScript files for translation keys using precise regular expressions.
+- **Intelligent Exclusions:** Automatically ignores `route()` and `config()` helpers to prevent false positives.
+- **AI-Powered Translation:** Uses the Gemini AI API to provide high-quality translations for multiple languages at once.
+- **Concurrency Support:** Uses `spatie/fork` for parallel processing, making API calls significantly faster.
+- **Graceful Stop:** Stop the translation process at any time by pressing a key (defaults to 'q').
+- **Detailed Logging:** Creates a `translation_extraction_log.json` file detailing every key and where it was found, plus a `failed_translation_keys.json` for any errors.
 
 ## Requirements
 
 - PHP 8.1 or higher
 - Laravel 10.0 or higher
 - Google Gemini API key
+- `pcntl` PHP extension is required for the high-performance `fork` driver.
 
 ## Installation
 
@@ -31,12 +33,10 @@ You can install the package via Composer:
 composer require jayesh/laravel-gemini-translator
 ```
 
-The package uses Laravel's auto-discovery to register its service provider. A post-install script will attempt to run `php artisan gemini:install` for you, which publishes the `config/gemini.php` file.
-
-If this fails for any reason, you can run it manually:
+After installation, you need to publish the configuration file:
 
 ```bash
-php artisan vendor:publish --provider="Gemini\Laravel\GeminiServiceProvider"
+php artisan gemini:install
 ```
 
 ## Configuration
@@ -45,7 +45,7 @@ Next, add your Google Gemini API key and a request timeout to your `.env` file. 
 
 ```env
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-GEMINI_REQUEST_TIMEOUT=600
+GEMINI_REQUEST_TIMEOUT=60
 ```
 
 ## Usage
@@ -58,18 +58,55 @@ php artisan translations:extract-and-generate
 
 The command will guide you through the following steps:
 
-1. **Scanning:** It will scan your project for all translation keys
-2. **File Selection:** It will ask you which translation files (e.g., `messages.php`, `auth.php`, Root JSON file) you want to process
-3. **Translation:** It will send the keys to the Gemini API and show a progress bar
-4. **File Generation:** It will write the translated keys to the correct language files in your `lang` directory, overwriting existing files
+1.  **Scanning:** It will scan your project for all translation keys.
+2.  **File Selection:** It will ask you which translation files (e.g., `messages.php`, `auth.php`, Root JSON file) you want to process.
+3.  **Translation:** It will send the keys to the Gemini API and show a progress bar.
+4.  **File Generation:** It will write the translated keys to the correct language files in your `lang` directory, overwriting existing files.
 
 ### Command Options
 
 You can customize the command's behavior with the following options:
 
-- `--langs=en,es,fr`: Specify the comma-separated language codes to translate to
-- `--driver=fork`: Use the high-performance fork driver for concurrency (requires the `pcntl` PHP extension)
-- `--skip-existing`: Prevent the command from re-translating keys that already exist in all target languages
+#### Basic Options
+
+-   `--source=.`: The root directory of the application to scan for keys (default: current directory).
+-   `--target-dir=lang`: Root directory for final Laravel translation files (default: `lang`).
+-   `--langs=en,ru,uz`: Comma-separated language codes to translate to (default: `en,ru,uz`).
+
+#### Scanning Options
+
+-   `--exclude=vendor,node_modules,...`: Comma-separated directories to exclude from scanning.
+-   `--extensions=php,blade.php,vue,js,jsx,ts,tsx`: File extensions to search for translation keys.
+-   `--custom-patterns=path/to/patterns.txt`: Path to a file with custom regex patterns.
+-   `--no-advanced`: Disable advanced, context-based pattern detection.
+
+#### Performance & Behavior Options
+
+-   `--chunk-size=100`: Number of keys to send to Gemini in a single request (default: 100).
+-   `--driver=default`: Concurrency driver. Options: `fork` (fastest, requires `pcntl`), `sync` (sequential, most stable), `async` (currently falls back to `sync`), `default` (currently falls back to `sync`).
+-   `--skip-existing`: Skip keys that already have translations in all target languages.
+
+#### Reliability Options
+
+-   `--max-retries=5`: Maximum number of retries for failed API calls (default: 5).
+-   `--retry-delay=3`: Base delay in seconds between retries with exponential backoff (default: 3).
+-   `--stop-key=q`: The key to press to gracefully stop the translation process (default: `q`).
+
+#### Example Usage
+
+```bash
+# Basic usage with custom languages
+php artisan translations:extract-and-generate --langs=en,es,fr,de
+
+# High-performance processing with fork driver and smaller chunks
+php artisan translations:extract-and-generate --driver=fork --chunk-size=50
+
+# Exclude additional directories and only scan Blade files
+php artisan translations:extract-and-generate --exclude=vendor,tests,docs --extensions=blade.php
+
+# Skip existing translations and use a different target directory
+php artisan translations:extract-and-generate --skip-existing --target-dir=resources/lang
+```
 
 For a full list of options, run:
 
@@ -80,32 +117,29 @@ php artisan help translations:extract-and-generate
 ## Example Output
 
 ```
-┌ Which translation files would you like to process? ┐
-│ ● messages.php                                     │
-│ ○ auth.php                                         │
-│ ○ validation.php                                   │
-│ ● Root JSON file                                   │
-└────────────────────────────────────────────────────┘
+┌ Which translation files would you like to process? ───────────────────────────┐
+│ ● messages.php                                                                │
+│ ○ auth.php                                                                    │
+│ ○ validation.php                                                              │
+│ ● Root JSON file                                                              │
+└───────────────────────────────────────────────────────────────────────────────┘
 
-Extracting translation keys...
-Found 156 unique translation keys
+Press the 'q' key at any time to gracefully stop the process.
+📊 Total keys to translate: 156
+📦 Total chunks to process: 2
+🚀 156/156 [============================] 100% -- ✅ Chunk 2/2 - SUCCESS (56 keys) ⏱️  18s
 
-Translating to: Spanish, French, German
- ████████████████████████████████████████ 100%
-
-Translation completed successfully!
-Generated files:
-- lang/es/messages.php (78 keys)
-- lang/fr/messages.php (78 keys)
-- lang/de/messages.php (78 keys)
-- lang/es.json (78 keys)
-- lang/fr.json (78 keys)
-- lang/de.json (78 keys)
+💾 Phase 3: Writing Language Files
+ ✅ Wrote: lang/es.json (78 keys)
+ ✅ Wrote: lang/es/messages.php (78 keys)
+ ✅ Wrote: lang/fr.json (78 keys)
+ ✅ Wrote: lang/fr/messages.php (78 keys)
+...
 ```
 
 ## File Structure
 
-After running the command, your language files will be organized as follows:
+The command intelligently separates keys. Keys with a group prefix (e.g., `messages.welcome`) are placed in the corresponding PHP file (`messages.php`). Keys without a group (e.g., `'Welcome'`) are placed in the root JSON file for that language (`es.json`).
 
 ```
 lang/
@@ -128,76 +162,86 @@ lang/
 
 ## Supported File Types
 
-The package scans the following file types for translation keys:
+The package scans the following file types for translation keys by default:
 
-- **Blade templates** (`.blade.php`)
-- **PHP files** (`.php`)
-- **Vue components** (`.vue`)
-- **JavaScript files** (`.js`)
+-   Blade templates (`.blade.php`)
+-   PHP files (`.php`)
+-   Vue components (`.vue`)
+-   JavaScript (`.js`, `.jsx`)
+-   TypeScript (`.ts`, `.tsx`)
 
 ## Translation Key Patterns
 
-The following translation key patterns are detected:
+The package uses sophisticated pattern matching to detect translation keys.
 
-- `__('key')`
-- `@lang('key')`
-- `trans('key')`
-- `$t('key')` (Vue.js)
-- `this.$t('key')` (Vue.js)
+### Standard Laravel Functions
+
+-   `__('key')`
+-   `trans('key')`
+-   `trans_choice('key', $count)`
+-   `@lang('key')`
+-   `@choice('key', $count)`
+-   `Lang::get('key')`
+-   `Lang::choice('key', $count)`
+-   `Lang::has('key')`
+
+### Vue.js/JavaScript Functions
+
+-   `$t('key')`
+-   `i18n.t('key')`
+
+### HTML Attributes
+
+-   `v-t="'key'"`
+-   `x-text="'key'"`
+
+### Advanced Context Detection
+
+When advanced pattern detection is enabled (default), the package also detects quoted strings that look like translation keys, such as `"messages.welcome_user"` or `"auth.failed"`.
+
+### Intelligent Exclusions
+
+The package automatically ignores strings inside `route()` and `config()` function calls to prevent false positives.
+
+### Custom Patterns
+
+You can define your own regular expression patterns by creating a text file and passing its path to the `--custom-patterns` option. The format for each line should be: `REGEX_PATTERN|DESCRIPTION|CAPTURE_GROUP_NUMBER`.
+
+Example `my-patterns.txt` file:
+```
+t\(['"]([^'"]+)['"]\)|Custom t() function|1
+translate\(['"]([^'"]+)['"]\)|Custom translate() function|1
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
 **API Key Issues:**
-- Ensure your `GEMINI_API_KEY` is set correctly in your `.env` file
-- Verify your API key is active and has sufficient quota
+-   Ensure your `GEMINI_API_KEY` is set correctly in your `.env` file.
+-   Verify your API key is active and has sufficient quota.
 
 **Performance Issues:**
-- Use the `--driver=fork` option for faster processing (requires `pcntl` extension)
-- Increase `GEMINI_REQUEST_TIMEOUT` for large translation batches
+-   Use the `--driver=fork` option for the fastest processing. This requires the `pcntl` PHP extension to be installed and enabled.
+-   If `fork` is unavailable, the command will run sequentially (`sync`), which is slower but more compatible.
+-   Increase `GEMINI_REQUEST_TIMEOUT` in your `.env` file if you are translating very large chunks of text.
 
 **Memory Issues:**
-- For very large projects, consider processing files in smaller batches
-- Increase PHP memory limit if needed
-
-## Testing
-
-```bash
-composer test
-```
-
-## Changelog
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or create an issue for any bugs or feature requests.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+-   For very large projects, consider processing files in smaller batches by selecting them one by one in the interactive prompt.
+-   Reduce the `--chunk-size` to send fewer keys per API request.
 
 ## Security Vulnerabilities
 
 If you discover a security vulnerability within this package, please send an e-mail to the maintainer. All security vulnerabilities will be promptly addressed.
 
-## Credits
-
-- [Jayesh Patel](https://github.com/jayesh)
-- [All Contributors](../../contributors)
-
 ## Acknowledgments
 
 This package would not be possible without the excellent work of the following open-source projects:
 
-- [google-gemini-php/laravel](https://github.com/google-gemini-php/laravel): For seamless integration with the Gemini AI API
-- [spatie/fork](https://github.com/spatie/fork): For enabling high-performance, parallel task processing
-- [Laravel Prompts](https://github.com/laravel/prompts): For the beautiful and user-friendly interactive prompts
-- [Symfony Finder](https://github.com/symfony/finder): For powerful and flexible file system scanning
+-   [google-gemini-php/laravel](https://github.com/google-gemini-php/laravel): For seamless integration with the Gemini AI API.
+-   [spatie/fork](https://github.com/spatie/fork): For enabling high-performance, parallel task processing.
+-   [Laravel Prompts](https://github.com/laravel/prompts): For the beautiful and user-friendly interactive prompts.
+-   [Symfony Finder](https://github.com/symfony/finder): For powerful and flexible file system scanning.
 
 ## License
 
