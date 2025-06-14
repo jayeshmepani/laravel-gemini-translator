@@ -53,7 +53,7 @@ GEMINI_REQUEST_TIMEOUT=600
 Once installed and configured, you can run the main command from your terminal:
 
 ```bash
-php artisan translations:extract-and-generate
+php artisan translations:extract-and-generate --driver=fork
 ```
 
 The command will guide you through the following steps:
