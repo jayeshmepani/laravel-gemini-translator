@@ -13,17 +13,10 @@ use function Laravel\Prompts\multiselect;
 
 class ExtractAndGenerateTranslationsCommand extends Command
 {
-    /**
-     * A special internal key to represent the root JSON translation file (e.g., en.json).
-     */
     private const JSON_FILE_KEY = '__JSON__';
     private const ALL_FILES_KEY = '__ALL_FILES__';
     private const ALL_PREFIXES_KEY = '__ALL_PREFIXES__';
 
-
-    /**
-     * The name and signature of the console command.
-     */
     protected $signature = 'translations:extract-and-generate
                             {--source=. : The root directory of the application to scan for keys}
                             {--target-dir=lang : Root directory for final Laravel translation files}
@@ -34,16 +27,16 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--no-advanced : Disable advanced, context-based pattern detection}
                             {--chunk-size=100 : Number of keys to send to Gemini in a single request}
                             {--driver=default : Concurrency driver (default, fork, async, sync)}
-                            {--skip-existing : Skip keys that already exist and append new translations to existing files.}
+                            {--skip-existing : Only translate keys that are missing from one or more language files, then append them.}
                             {--max-retries=5 : Maximum number of retries for failed API calls}
                             {--retry-delay=3 : Base delay in seconds between retries (exponential backoff)}
                             {--stop-key=q : The key to press to gracefully stop the translation process}';
 
-    protected $description = ' 🌐 Interactively extracts, translates (flat PHP & JSON), and generates language files via Gemini AI.';
+    protected $description = ' 🌐 Interactively extracts, analyzes, translates, and generates language files via Gemini AI.';
 
     // --- State Properties ---
     private array $translations = [];
-    private array $existingTranslations = []; // ** NEW: To store translations from existing files. **
+    private array $existingTranslations = [];
     private array $failedKeys = [];
     private float $startTime;
     private bool $shouldExit = false;
@@ -62,12 +55,11 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->startTime = microtime(true);
         $this->showWelcome();
 
+        // --- PHASE 1: SCAN ---
         $this->phaseTitle(' 🔍 Phase 1: Scanning Project & Extracting All Keys', 'cyan');
         [$rawKeys, $keysWithSources] = $this->extractRawKeys();
-
         $this->saveExtractionLog($keysWithSources);
         $this->info("Detailed extraction log saved to <fg=bright-cyan>translation_extraction_log.json</>");
-
         if (empty($rawKeys)) {
             $this->alert('No translation keys were found in the project. Exiting.');
             return Command::SUCCESS;
@@ -75,9 +67,9 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->success("Scan complete! Found " . count($rawKeys) . " unique raw keys.");
         $this->line('');
 
+        // --- INTERACTIVE SELECTION ---
         $availableFiles = $this->determineAvailableFiles($rawKeys);
         $selectedFiles = $this->promptForFileSelection($availableFiles);
-
         $selectedJsonKeyPrefixes = [];
         if (in_array(self::JSON_FILE_KEY, $selectedFiles)) {
             $selectedJsonKeyPrefixes = $this->promptForJsonKeyPrefixes($rawKeys);
@@ -85,73 +77,242 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 $selectedFiles = array_diff($selectedFiles, [self::JSON_FILE_KEY]);
             }
         }
-
         if (empty($selectedFiles)) {
             $this->warn('No files or prefixes were selected for translation. Exiting.');
             return Command::SUCCESS;
         }
+        $keysForProcessing = $this->mapKeysToSelectedFiles($rawKeys, $selectedFiles, $selectedJsonKeyPrefixes);
+        $this->uniqueKeysForProcessing = array_sum(array_map('count', $keysForProcessing));
+        $this->info(" ✅ Selected " . count($keysForProcessing) . " file groups containing {$this->uniqueKeysForProcessing} unique keys for processing.");
 
-        $structuredKeys = $this->mapKeysToSelectedFiles($rawKeys, $selectedFiles, $selectedJsonKeyPrefixes);
-        $this->uniqueKeysForProcessing = array_sum(array_map('count', $structuredKeys));
+        // --- PHASE 1.5: ANALYZE & REPORT ---
+        $this->phaseTitle('📊 Phase 1.5: Analyzing Translation Status', 'blue');
+        $this->performCrossCheckAndReport($keysForProcessing);
 
-        if ($this->uniqueKeysForProcessing === 0) {
-            $this->warn('After filtering based on your selection, there are no keys to process. Exiting.');
-            return Command::SUCCESS;
-        }
-        $this->info(" ✅ Processing {$this->uniqueKeysForProcessing} keys for the selected files and prefixes.");
-
-        $this->phaseTitle(' 🤖 Phase 2: Translating Selected Keys with Gemini AI', 'magenta');
-
+        // --- DETERMINE KEYS TO TRANSLATE ---
         if ($this->option('skip-existing')) {
-            // ** MODIFIED: This method now also populates $this->existingTranslations **
-            $structuredKeys = $this->filterOutExistingKeys($structuredKeys);
-            $newKeyCount = array_sum(array_map('count', $structuredKeys));
-            $this->info(" 🎯 After checking existing files, <fg=bright-yellow>{$newKeyCount}</> new keys need to be translated.");
+            $this->info("`--skip-existing` is enabled. Only missing keys will be translated.");
+            $keysToTranslate = $this->filterOutExistingKeys($keysForProcessing);
+        } else {
+            $this->warn("`--skip-existing` is disabled. All selected keys will be sent for translation.");
+            $keysToTranslate = $keysForProcessing;
         }
 
-        $this->totalKeysToTranslate = array_sum(array_map('count', $structuredKeys));
+        $this->totalKeysToTranslate = array_sum(array_map('count', $keysToTranslate));
 
         if ($this->totalKeysToTranslate === 0) {
-            $this->success(' 🎉 All selected keys already have translations. Nothing to do!');
+            $this->success(' 🎉 All selected keys already have translations in all target languages. Nothing to do!');
             $this->displayFinalSummary();
             return Command::SUCCESS;
         }
 
-        $tasks = $this->buildTranslationTasks($structuredKeys);
+        // --- PHASE 2: TRANSLATE ---
+        $this->phaseTitle(' 🤖 Phase 2: Translating with Gemini AI', 'magenta');
+        $tasks = $this->buildTranslationTasks($keysToTranslate);
         $this->totalChunks = count($tasks);
-
         if ($this->totalChunks === 0) {
             $this->warn('No tasks to run for translation.');
             $this->displayFinalSummary();
             return Command::SUCCESS;
         }
-
         $this->line("Press the '<fg=bright-red;options=bold>{$this->option('stop-key')}</>' key at any time to gracefully stop the process.");
         $this->info(" 📊 Total keys to translate: <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
         $this->info(" 📦 Total chunks to process: <fg=bright-yellow;options=bold>{$this->totalChunks}</>");
-
         $progressBar = $this->output->createProgressBar($this->totalKeysToTranslate);
         $progressBar->setFormatDefinition('custom', '🚀 %current%/%max% [%bar%] %percent:3s%% -- %message% ⏱️  %elapsed:6s%');
         $progressBar->setFormat('custom');
         $progressBar->setMessage('Initializing translation process...');
         $progressBar->start();
-
         $results = $this->runTasksInParallel($tasks, $this->option('driver'));
         $this->processTranslationResults($results, $progressBar);
         $progressBar->finish();
         $this->line('');
 
+        // --- PHASE 3: WRITE FILES ---
         $this->phaseTitle(' 💾 Phase 3: Writing Language Files', 'green');
         $this->writeTranslationFiles();
-
         if (!empty($this->failedKeys)) {
             $this->saveFailedKeysLog();
             $this->warn("Some translations failed. Failed keys have been saved to: <fg=bright-red>failed_translation_keys.json</>");
         }
-
         $this->displayFinalSummary();
         return Command::SUCCESS;
     }
+
+    /**
+     * Loads all existing translation files from the lang directory into memory.
+     */
+    private function loadExistingTranslations(): void
+    {
+        if (!empty($this->existingTranslations)) {
+            return; // Already loaded
+        }
+
+        $this->info("Reading existing language files for comparison...");
+        $targetBaseDir = rtrim($this->option('target-dir'), '/');
+        $languages = explode(',', $this->option('langs'));
+        $loadedTranslations = [];
+
+        foreach ($languages as $lang) {
+            // Load JSON file
+            $jsonPath = $targetBaseDir . '/' . $lang . '.json';
+            if (File::exists($jsonPath)) {
+                $jsonContent = json_decode(File::get($jsonPath), true);
+                if (is_array($jsonContent)) {
+                    $loadedTranslations[$lang][self::JSON_FILE_KEY] = $jsonContent;
+                }
+            }
+            // Load PHP files
+            $langDir = $targetBaseDir . '/' . $lang;
+            if (File::isDirectory($langDir)) {
+                foreach (File::files($langDir, '*.php') as $file) {
+                    $filename = $file->getFilenameWithoutExtension();
+                    $includedData = @include $file->getPathname();
+                    if (is_array($includedData)) {
+                        $loadedTranslations[$lang][$filename] = $includedData;
+                    }
+                }
+            }
+        }
+        $this->existingTranslations = $loadedTranslations;
+    }
+
+    /**
+     * **NEW**: Performs a cross-check and reports the status of translations.
+     */
+    private function performCrossCheckAndReport(array $structuredKeys): void
+    {
+        $this->loadExistingTranslations();
+        $languages = explode(',', $this->option('langs'));
+
+        // Flatten existing translations for reliable, high-performance lookups
+        $flatExistingTranslations = [];
+        foreach ($this->existingTranslations as $lang => $files) {
+            $flatExistingTranslations[$lang] = Arr::dot($files);
+        }
+
+        $missingStats = [];
+        $totalMissingCount = 0;
+
+        foreach ($structuredKeys as $filename => $keys) {
+            foreach ($keys as $key) {
+                foreach ($languages as $lang) {
+                    $fullDotKey = ($filename === self::JSON_FILE_KEY) ? $key : "{$filename}.{$key}";
+                    if (!isset($flatExistingTranslations[$lang][$fullDotKey])) {
+                        $missingStats[$filename][$lang][] = $key;
+                    }
+                }
+            }
+        }
+
+        if (empty($missingStats)) {
+            $this->success("All selected keys are fully translated in all target languages!");
+            return;
+        }
+
+        $this->warn("Found missing translations:");
+        foreach ($missingStats as $file => $langData) {
+            $fileNameDisplay = ($file === self::JSON_FILE_KEY) ? "JSON File" : "{$file}.php";
+            $this->line("  <fg=bright-yellow;options=bold>File: {$fileNameDisplay}</>");
+            foreach ($langData as $lang => $keys) {
+                $count = count($keys);
+                $totalMissingCount += $count;
+                $this->line("    <fg=bright-white>-> Language '<fg=bright-cyan>{$lang}</>' is missing <fg=bright-red;options=bold>{$count}</> keys.</>");
+            }
+        }
+    }
+
+    /**
+     * **REWRITTEN**: Filters keys based on missing translations using robust flattened lookups.
+     */
+    private function filterOutExistingKeys(array $structuredKeys): array
+    {
+        $this->loadExistingTranslations(); // Ensures translations are loaded
+        if (empty($this->existingTranslations)) {
+            return $structuredKeys; // No existing files, so all keys need translation
+        }
+
+        $languages = explode(',', $this->option('langs'));
+        $flatExistingTranslations = [];
+        foreach ($this->existingTranslations as $lang => $files) {
+            $flatExistingTranslations[$lang] = Arr::dot($files);
+        }
+
+        $keysThatNeedTranslation = [];
+        foreach ($structuredKeys as $filename => $keys) {
+            foreach ($keys as $key) {
+                $isMissingInAtLeastOneLang = false;
+                foreach ($languages as $lang) {
+                    $fullDotKey = ($filename === self::JSON_FILE_KEY) ? $key : "{$filename}.{$key}";
+                    if (!isset($flatExistingTranslations[$lang][$fullDotKey])) {
+                        $isMissingInAtLeastOneLang = true;
+                        break;
+                    }
+                }
+
+                if ($isMissingInAtLeastOneLang) {
+                    $keysThatNeedTranslation[$filename][] = $key;
+                }
+            }
+        }
+
+        // Return unique keys per file
+        return array_map('array_unique', $keysThatNeedTranslation);
+    }
+
+    /**
+     * Writes the final translation files to disk, merging with existing ones.
+     */
+    private function writeTranslationFiles()
+    {
+        $targetBaseDir = rtrim($this->option('target-dir'), '/');
+        $languages = explode(',', $this->option('langs'));
+        $actionVerb = $this->option('skip-existing') ? 'Updated' : 'Wrote';
+        $message = " 💾 {$actionVerb} translation files on disk:";
+        $this->info($message);
+
+        foreach ($languages as $lang) {
+            $langDir = $targetBaseDir . '/' . $lang;
+            File::ensureDirectoryExists($langDir);
+
+            $allFilenames = array_unique(array_merge(
+                array_keys($this->existingTranslations[$lang] ?? []),
+                array_keys($this->translations[$lang] ?? [])
+            ));
+
+            if (empty($allFilenames)) {
+                $this->warn("No translations were processed or found for language '<fg=bright-red>{$lang}</>'.");
+                continue;
+            }
+
+            foreach ($allFilenames as $filename) {
+                $existingData = $this->existingTranslations[$lang][$filename] ?? [];
+                $newData = $this->translations[$lang][$filename] ?? [];
+                $finalData = array_replace_recursive($existingData, $newData);
+                if (empty($finalData))
+                    continue;
+                ksort($finalData);
+
+                if ($filename === self::JSON_FILE_KEY) {
+                    $filePath = $targetBaseDir . '/' . $lang . '.json';
+                    File::put($filePath, json_encode($finalData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count(Arr::dot($finalData)) . " total keys)</>");
+                } else {
+                    $filePath = $langDir . '/' . $filename . '.php';
+                    $content = "<?php\n\nreturn " . var_export($finalData, true) . ";\n";
+                    File::put($filePath, $content);
+                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count(Arr::dot($finalData)) . " total keys)</>");
+                }
+            }
+        }
+    }
+
+    // --- All other methods remain the same as the previous correct version ---
+    // ... (determineAvailableFiles, promptForFileSelection, promptForJsonKeyPrefixes, etc.)
+    // ... (mapKeysToSelectedFiles, staticStructureTranslationsFromGemini, etc.)
+    // ... (processTranslationResults, checkForExitSignal, staticTranslateKeysWithGemini, etc.)
+    // ... (extractRawKeys, configureFinder, getExtractionPatterns, buildTranslationTasks, etc.)
+    // ... (runTasksInParallel, runSynchronously, mergeTranslations, save logs, display UI)
 
     private function determineAvailableFiles(array $rawKeys): array
     {
@@ -265,143 +426,11 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $keyTranslations = $geminiData[$originalKey] ?? null;
             foreach ($languages as $lang) {
                 $translationText = $keyTranslations[$lang] ?? "NEEDS TRANSLATION (KEY: {$originalKey})";
-
-                // Use Arr::set to handle dot notation for nested arrays correctly
                 Arr::set($chunkTranslations, "{$lang}.{$filename}.{$originalKey}", $translationText);
             }
         }
         return $chunkTranslations;
     }
-
-    /**
-     * ** REWRITTEN to support appending to existing files **
-     * Writes the final translation files to disk.
-     * If --skip-existing is used, it merges new translations with existing ones.
-     * Otherwise, it writes new files from scratch.
-     */
-    private function writeTranslationFiles()
-    {
-        $targetBaseDir = rtrim($this->option('target-dir'), '/');
-        $languages = explode(',', $this->option('langs'));
-        $shouldAppend = $this->option('skip-existing');
-        $actionVerb = $shouldAppend ? 'Updated' : 'Wrote';
-        $message = $shouldAppend ? " 💾 Merging new translations and updating files on disk:" : " 💾 Writing translation files to disk (overwriting existing files):";
-        $this->info($message);
-
-        foreach ($languages as $lang) {
-            $langDir = $targetBaseDir . '/' . $lang;
-            File::ensureDirectoryExists($langDir);
-
-            // Get a unique list of all filenames for this language, from both existing and new translations.
-            $allFilenames = array_unique(array_merge(
-                array_keys($this->existingTranslations[$lang] ?? []),
-                array_keys($this->translations[$lang] ?? [])
-            ));
-
-            if (empty($allFilenames)) {
-                $this->warn("No translations were processed or found for language '<fg=bright-red>{$lang}</>'.");
-                continue;
-            }
-
-            foreach ($allFilenames as $filename) {
-                $existingData = $this->existingTranslations[$lang][$filename] ?? [];
-                $newData = $this->translations[$lang][$filename] ?? [];
-
-                // Deeply merge the new translations over the existing ones.
-                // array_replace_recursive is perfect for this, as it overwrites existing keys and adds new ones.
-                $finalData = array_replace_recursive($existingData, $newData);
-
-                if (empty($finalData))
-                    continue;
-
-                // Sort keys alphabetically for consistency.
-                ksort($finalData);
-
-                if ($filename === self::JSON_FILE_KEY) {
-                    $filePath = $targetBaseDir . '/' . $lang . '.json';
-                    File::put($filePath, json_encode($finalData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count(Arr::dot($finalData)) . " total keys)</>");
-                } else {
-                    $filePath = $langDir . '/' . $filename . '.php';
-                    $content = "<?php\n\nreturn " . var_export($finalData, true) . ";\n";
-                    File::put($filePath, $content);
-                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count(Arr::dot($finalData)) . " total keys)</>");
-                }
-            }
-        }
-    }
-
-
-    /**
-     * ** MODIFIED to populate the $this->existingTranslations property. **
-     * Loads existing translations and filters the list of keys to only those
-     * that are missing a translation in at least one target language.
-     */
-    private function filterOutExistingKeys(array $structuredKeys): array
-    {
-        $this->info("🔍 Loading existing translations to filter out completed keys...");
-        $targetBaseDir = rtrim($this->option('target-dir'), '/');
-        $languages = explode(',', $this->option('langs'));
-        $this->existingTranslations = []; // Reset before loading
-
-        // --- Step 1: Load all existing translations into memory (No changes here) ---
-        foreach ($languages as $lang) {
-            $jsonPath = $targetBaseDir . '/' . $lang . '.json';
-            if (File::exists($jsonPath)) {
-                $jsonContent = json_decode(File::get($jsonPath), true);
-                if (is_array($jsonContent)) {
-                    $this->existingTranslations[$lang][self::JSON_FILE_KEY] = $jsonContent;
-                }
-            }
-
-            $langDir = $targetBaseDir . '/' . $lang;
-            if (File::isDirectory($langDir)) {
-                foreach (File::files($langDir, '*.php') as $file) {
-                    $filename = $file->getFilenameWithoutExtension();
-                    $includedData = @include $file->getPathname();
-                    if (is_array($includedData)) {
-                        $this->existingTranslations[$lang][$filename] = $includedData;
-                    }
-                }
-            }
-        }
-
-        if (empty($this->existingTranslations)) {
-            $this->warn('No existing translation files found. Translating all keys.');
-            return $structuredKeys;
-        }
-
-        // --- Step 2: THE FIX - Flatten the loaded translations for reliable checking ---
-        $flatTranslationsByLang = [];
-        foreach ($this->existingTranslations as $lang => $files) {
-            // Arr::dot converts ['messages' => ['user' => '...']] to ['messages.user' => '...']
-            $flatTranslationsByLang[$lang] = Arr::dot($files);
-        }
-
-        // --- Step 3: Check for missing keys against the flattened array ---
-        $keysToTranslate = [];
-        foreach ($structuredKeys as $filename => $keys) {
-            foreach ($keys as $key) {
-                $isMissing = false;
-                foreach ($languages as $lang) {
-                    // The full key path, e.g., "messages.user.name" or "validation.required"
-                    $fullDotKey = "{$filename}.{$key}";
-
-                    // Check existence in the simple, flat array. This is much more reliable.
-                    if (!isset($flatTranslationsByLang[$lang][$fullDotKey])) {
-                        $isMissing = true;
-                        break; // Found a missing language, no need to check others for this key
-                    }
-                }
-                if ($isMissing) {
-                    $keysToTranslate[$filename][] = $key;
-                }
-            }
-        }
-
-        return $keysToTranslate;
-    }
-
 
     private function processTranslationResults(array $results, $progressBar): void
     {
@@ -666,7 +695,6 @@ PROMPT;
         return $patterns;
     }
 
-
     private function buildTranslationTasks(array $structuredKeys): array
     {
         $languages = explode(',', $this->option('langs'));
@@ -733,7 +761,6 @@ PROMPT;
     {
         foreach ($chunkTranslations as $lang => $files) {
             foreach ($files as $filename => $data) {
-                // Use array_replace_recursive to correctly merge nested data structures
                 $this->translations[$lang][$filename] = array_replace_recursive(
                     $this->translations[$lang][$filename] ?? [],
                     $data
