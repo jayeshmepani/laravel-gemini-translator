@@ -344,6 +344,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $languages = explode(',', $this->option('langs'));
         $this->existingTranslations = []; // Reset before loading
 
+        // --- Step 1: Load all existing translations into memory (No changes here) ---
         foreach ($languages as $lang) {
             $jsonPath = $targetBaseDir . '/' . $lang . '.json';
             if (File::exists($jsonPath)) {
@@ -370,15 +371,26 @@ class ExtractAndGenerateTranslationsCommand extends Command
             return $structuredKeys;
         }
 
+        // --- Step 2: THE FIX - Flatten the loaded translations for reliable checking ---
+        $flatTranslationsByLang = [];
+        foreach ($this->existingTranslations as $lang => $files) {
+            // Arr::dot converts ['messages' => ['user' => '...']] to ['messages.user' => '...']
+            $flatTranslationsByLang[$lang] = Arr::dot($files);
+        }
+
+        // --- Step 3: Check for missing keys against the flattened array ---
         $keysToTranslate = [];
         foreach ($structuredKeys as $filename => $keys) {
             foreach ($keys as $key) {
                 $isMissing = false;
                 foreach ($languages as $lang) {
-                    // Use Arr::has to check for nested keys using dot notation.
-                    if (!Arr::has($this->existingTranslations, "{$lang}.{$filename}.{$key}")) {
+                    // The full key path, e.g., "messages.user.name" or "validation.required"
+                    $fullDotKey = "{$filename}.{$key}";
+
+                    // Check existence in the simple, flat array. This is much more reliable.
+                    if (!isset($flatTranslationsByLang[$lang][$fullDotKey])) {
                         $isMissing = true;
-                        break;
+                        break; // Found a missing language, no need to check others for this key
                     }
                 }
                 if ($isMissing) {
