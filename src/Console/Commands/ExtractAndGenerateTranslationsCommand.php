@@ -258,36 +258,37 @@ class ExtractAndGenerateTranslationsCommand extends Command
      * and standard nested PHP array structures. It correctly appends new data
      * when --skip-existing is used.
      */
+    /**
+     * **CORRECTED**: Writes only the translation files that were actually processed in this run.
+     * It iterates over the generated `$this->translations` array as the source of truth,
+     * ensuring that non-selected files are never touched or rewritten.
+     */
     private function writeTranslationFiles()
     {
         $targetBaseDir = rtrim($this->option('target-dir'), '/');
-        $languages = explode(',', $this->option('langs'));
         $actionVerb = $this->option('skip-existing') ? 'Updated' : 'Wrote';
         $message = " 💾 {$actionVerb} translation files on disk:";
+
+        if (empty($this->translations)) {
+            $this->info("No new translations were generated, so no files were written.");
+            return;
+        }
+
         $this->info($message);
 
-        foreach ($languages as $lang) {
+        // The key change: Iterate directly over the newly generated translations.
+        // This is the definitive list of what needs to be written.
+        foreach ($this->translations as $lang => $files) {
             $langDir = $targetBaseDir . '/' . $lang;
             File::ensureDirectoryExists($langDir);
 
-            $allFilenames = array_unique(array_merge(
-                array_keys($this->existingTranslations[$lang] ?? []),
-                array_keys($this->translations[$lang] ?? [])
-            ));
-
-            if (empty($allFilenames)) {
-                $this->warn("No translations were processed or found for language '<fg=bright-red>{$lang}</>'.");
-                continue;
-            }
-
-            foreach ($allFilenames as $filename) {
-                // Both arrays are now guaranteed to be flat and use dot notation.
+            // $files is an array like ['messages' => [...], 'validation' => [...]]
+            foreach ($files as $filename => $newData) {
+                // Get the corresponding existing data for this specific file to merge with.
                 $existingData = $this->existingTranslations[$lang][$filename] ?? [];
-                $newData = $this->translations[$lang][$filename] ?? [];
 
-                // array_merge correctly combines them. If --skip-existing was used,
-                // $newData only contains new keys, effectively appending them.
-                // If --skip-existing was NOT used, $newData contains all keys and overwrites the old ones.
+                // This merge logic remains correct. It combines the original file's content
+                // with the new translations, correctly handling both overwrite and append modes.
                 $finalFlatData = array_merge($existingData, $newData);
 
                 if (empty($finalFlatData)) {
@@ -296,19 +297,14 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 ksort($finalFlatData);
 
                 if ($filename === self::JSON_FILE_KEY) {
-                    // For JSON, we keep the flat structure as requested.
                     $filePath = $targetBaseDir . '/' . $lang . '.json';
                     File::put($filePath, json_encode($finalFlatData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                     $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 } else {
-                    // For PHP files, we "un-dot" the flat array back into a standard nested
-                    // Laravel array structure for clean, conventional output.
                     $finalNestedData = Arr::undot($finalFlatData);
-
                     $filePath = $langDir . '/' . $filename . '.php';
                     $content = "<?php\n\nreturn " . var_export($finalNestedData, true) . ";\n";
                     File::put($filePath, $content);
-                    // We count the flat array to report the true number of translation strings.
                     $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 }
             }
