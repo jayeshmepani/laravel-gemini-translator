@@ -267,28 +267,28 @@ class ExtractAndGenerateTranslationsCommand extends Command
     {
         $targetBaseDir = rtrim($this->option('target-dir'), '/');
         $actionVerb = $this->option('skip-existing') ? 'Updated' : 'Wrote';
-        $message = " 💾 {$actionVerb} translation files on disk:";
 
         if (empty($this->translations)) {
             $this->info("No new translations were generated, so no files were written.");
             return;
         }
 
-        $this->info($message);
+        $this->info(" 💾 {$actionVerb} translation files on disk:");
 
-        // The key change: Iterate directly over the newly generated translations.
-        // This is the definitive list of what needs to be written.
-        foreach ($this->translations as $lang => $files) {
+        // The key to the fix is this loop structure.
+        // It iterates through the languages and files that exist ONLY in `$this->translations`.
+        // `$this->translations` only contains the files we just processed (e.g., 'messages').
+        foreach ($this->translations as $lang => $processedFiles) {
             $langDir = $targetBaseDir . '/' . $lang;
             File::ensureDirectoryExists($langDir);
 
-            // $files is an array like ['messages' => [...], 'validation' => [...]]
-            foreach ($files as $filename => $newData) {
-                // Get the corresponding existing data for this specific file to merge with.
+            // $processedFiles is an array like ['messages' => [...]]
+            foreach ($processedFiles as $filename => $newData) {
+                // For the specific file we are about to write, load its corresponding original content.
                 $existingData = $this->existingTranslations[$lang][$filename] ?? [];
 
-                // This merge logic remains correct. It combines the original file's content
-                // with the new translations, correctly handling both overwrite and append modes.
+                // Now, merge the original content with the new data. This correctly
+                // handles both appending new keys (--skip-existing) and overwriting all keys.
                 $finalFlatData = array_merge($existingData, $newData);
 
                 if (empty($finalFlatData)) {
