@@ -142,34 +142,44 @@ class ExtractAndGenerateTranslationsCommand extends Command
     /**
      * Loads all existing translation files from the lang directory into memory.
      */
+    /**
+     * Loads all existing translation files and FLATTENS them into a dot-notation array.
+     * This standardizes the data structure for all subsequent operations.
+     */
     private function loadExistingTranslations(): void
     {
         if (!empty($this->existingTranslations)) {
             return; // Already loaded
         }
 
-        $this->info("Reading existing language files for comparison...");
+        $this->info("Reading and normalizing existing language files...");
         $targetBaseDir = rtrim($this->option('target-dir'), '/');
         $languages = explode(',', $this->option('langs'));
         $loadedTranslations = [];
 
         foreach ($languages as $lang) {
-            // Load JSON file
+            // Load and flatten JSON file
             $jsonPath = $targetBaseDir . '/' . $lang . '.json';
             if (File::exists($jsonPath)) {
                 $jsonContent = json_decode(File::get($jsonPath), true);
                 if (is_array($jsonContent)) {
-                    $loadedTranslations[$lang][self::JSON_FILE_KEY] = $jsonContent;
+                    // Flatten the nested JSON into dot notation
+                    $loadedTranslations[$lang][self::JSON_FILE_KEY] = Arr::dot($jsonContent);
                 }
             }
-            // Load PHP files
+
+            // Load and flatten PHP files
             $langDir = $targetBaseDir . '/' . $lang;
             if (File::isDirectory($langDir)) {
                 foreach (File::files($langDir, '*.php') as $file) {
                     $filename = $file->getFilenameWithoutExtension();
                     $includedData = @include $file->getPathname();
                     if (is_array($includedData)) {
-                        $loadedTranslations[$lang][$filename] = $includedData;
+                        // Flatten the nested PHP array into dot notation
+                        // This handles files like auth.php which might have ['passwords' => [...]]
+                        // The result for the key 'auth.passwords.user' will be stored in the 'auth' file group.
+                        $flatData = Arr::dot($includedData);
+                        $loadedTranslations[$lang][$filename] = $flatData;
                     }
                 }
             }
@@ -177,28 +187,18 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->existingTranslations = $loadedTranslations;
     }
 
-    /**
-     * **NEW**: Performs a cross-check and reports the status of translations.
-     */
     private function performCrossCheckAndReport(array $structuredKeys): void
     {
         $this->loadExistingTranslations();
         $languages = explode(',', $this->option('langs'));
-
-        // Flatten existing translations for reliable, high-performance lookups
-        $flatExistingTranslations = [];
-        foreach ($this->existingTranslations as $lang => $files) {
-            $flatExistingTranslations[$lang] = Arr::dot($files);
-        }
-
         $missingStats = [];
-        $totalMissingCount = 0;
 
         foreach ($structuredKeys as $filename => $keys) {
             foreach ($keys as $key) {
                 foreach ($languages as $lang) {
-                    $fullDotKey = ($filename === self::JSON_FILE_KEY) ? $key : "{$filename}.{$key}";
-                    if (!isset($flatExistingTranslations[$lang][$fullDotKey])) {
+                    // The lookup key is now simple, as everything is flat.
+                    // The filename is the group, and the key is the... key.
+                    if (!isset($this->existingTranslations[$lang][$filename][$key])) {
                         $missingStats[$filename][$lang][] = $key;
                     }
                 }
@@ -216,35 +216,30 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->line("  <fg=bright-yellow;options=bold>File: {$fileNameDisplay}</>");
             foreach ($langData as $lang => $keys) {
                 $count = count($keys);
-                $totalMissingCount += $count;
                 $this->line("    <fg=bright-white>-> Language '<fg=bright-cyan>{$lang}</>' is missing <fg=bright-red;options=bold>{$count}</> keys.</>");
             }
         }
     }
 
     /**
-     * **REWRITTEN**: Filters keys based on missing translations using robust flattened lookups.
+     * **SIMPLIFIED**: Filters keys based on missing translations using the pre-flattened data.
      */
     private function filterOutExistingKeys(array $structuredKeys): array
     {
-        $this->loadExistingTranslations(); // Ensures translations are loaded
+        $this->loadExistingTranslations();
         if (empty($this->existingTranslations)) {
-            return $structuredKeys; // No existing files, so all keys need translation
+            return $structuredKeys;
         }
 
         $languages = explode(',', $this->option('langs'));
-        $flatExistingTranslations = [];
-        foreach ($this->existingTranslations as $lang => $files) {
-            $flatExistingTranslations[$lang] = Arr::dot($files);
-        }
-
         $keysThatNeedTranslation = [];
+
         foreach ($structuredKeys as $filename => $keys) {
             foreach ($keys as $key) {
                 $isMissingInAtLeastOneLang = false;
                 foreach ($languages as $lang) {
-                    $fullDotKey = ($filename === self::JSON_FILE_KEY) ? $key : "{$filename}.{$key}";
-                    if (!isset($flatExistingTranslations[$lang][$fullDotKey])) {
+                    // Direct, simple lookup on the pre-flattened data.
+                    if (!isset($this->existingTranslations[$lang][$filename][$key])) {
                         $isMissingInAtLeastOneLang = true;
                         break;
                     }
@@ -255,13 +250,13 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 }
             }
         }
-
-        // Return unique keys per file
         return array_map('array_unique', $keysThatNeedTranslation);
     }
 
     /**
-     * Writes the final translation files to disk, merging with existing ones.
+     * **REVISED**: Writes translation files, correctly handling both flat JSON
+     * and standard nested PHP array structures. It correctly appends new data
+     * when --skip-existing is used.
      */
     private function writeTranslationFiles()
     {
@@ -286,33 +281,39 @@ class ExtractAndGenerateTranslationsCommand extends Command
             }
 
             foreach ($allFilenames as $filename) {
+                // Both arrays are now guaranteed to be flat and use dot notation.
                 $existingData = $this->existingTranslations[$lang][$filename] ?? [];
                 $newData = $this->translations[$lang][$filename] ?? [];
-                $finalData = array_replace_recursive($existingData, $newData);
-                if (empty($finalData))
+
+                // array_merge correctly combines them. If --skip-existing was used,
+                // $newData only contains new keys, effectively appending them.
+                // If --skip-existing was NOT used, $newData contains all keys and overwrites the old ones.
+                $finalFlatData = array_merge($existingData, $newData);
+
+                if (empty($finalFlatData)) {
                     continue;
-                ksort($finalData);
+                }
+                ksort($finalFlatData);
 
                 if ($filename === self::JSON_FILE_KEY) {
+                    // For JSON, we keep the flat structure as requested.
                     $filePath = $targetBaseDir . '/' . $lang . '.json';
-                    File::put($filePath, json_encode($finalData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count(Arr::dot($finalData)) . " total keys)</>");
+                    File::put($filePath, json_encode($finalFlatData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 } else {
+                    // For PHP files, we "un-dot" the flat array back into a standard nested
+                    // Laravel array structure for clean, conventional output.
+                    $finalNestedData = Arr::undot($finalFlatData);
+
                     $filePath = $langDir . '/' . $filename . '.php';
-                    $content = "<?php\n\nreturn " . var_export($finalData, true) . ";\n";
+                    $content = "<?php\n\nreturn " . var_export($finalNestedData, true) . ";\n";
                     File::put($filePath, $content);
-                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count(Arr::dot($finalData)) . " total keys)</>");
+                    // We count the flat array to report the true number of translation strings.
+                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 }
             }
         }
     }
-
-    // --- All other methods remain the same as the previous correct version ---
-    // ... (determineAvailableFiles, promptForFileSelection, promptForJsonKeyPrefixes, etc.)
-    // ... (mapKeysToSelectedFiles, staticStructureTranslationsFromGemini, etc.)
-    // ... (processTranslationResults, checkForExitSignal, staticTranslateKeysWithGemini, etc.)
-    // ... (extractRawKeys, configureFinder, getExtractionPatterns, buildTranslationTasks, etc.)
-    // ... (runTasksInParallel, runSynchronously, mergeTranslations, save logs, display UI)
 
     private function determineAvailableFiles(array $rawKeys): array
     {
@@ -426,7 +427,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $keyTranslations = $geminiData[$originalKey] ?? null;
             foreach ($languages as $lang) {
                 $translationText = $keyTranslations[$lang] ?? "NEEDS TRANSLATION (KEY: {$originalKey})";
-                Arr::set($chunkTranslations, "{$lang}.{$filename}.{$originalKey}", $translationText);
+
+                $chunkTranslations[$lang][$filename][$originalKey] = $translationText;
             }
         }
         return $chunkTranslations;
@@ -761,7 +763,7 @@ PROMPT;
     {
         foreach ($chunkTranslations as $lang => $files) {
             foreach ($files as $filename => $data) {
-                $this->translations[$lang][$filename] = array_replace_recursive(
+                $this->translations[$lang][$filename] = array_merge(
                     $this->translations[$lang][$filename] ?? [],
                     $data
                 );
