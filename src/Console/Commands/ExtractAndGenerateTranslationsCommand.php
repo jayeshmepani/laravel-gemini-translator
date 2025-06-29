@@ -5,9 +5,10 @@ namespace Jayesh\LaravelGeminiTranslator\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
-use Symfony\Component\Finder\Finder;
+use Illuminate\Support\Facades\Log;
 use Gemini\Laravel\Facades\Gemini;
 use Spatie\Fork\Fork;
+use Symfony\Component\Finder\Finder;
 use Throwable;
 use function Laravel\Prompts\multiselect;
 
@@ -26,7 +27,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--custom-patterns= : Path to a file with custom regex patterns (one per line: PATTERN|DESCRIPTION|GROUP)}
                             {--no-advanced : Disable advanced, context-based pattern detection}
                             {--chunk-size=100 : Number of keys to send to Gemini in a single request}
-                            {--driver=default : Concurrency driver (default, fork, async, sync)}
+                            {--driver=default : Concurrency driver (default, fork, sync)}
                             {--skip-existing : Only translate keys that are missing from one or more language files, then append them.}
                             {--max-retries=5 : Maximum number of retries for failed API calls}
                             {--retry-delay=3 : Base delay in seconds between retries (exponential backoff)}
@@ -108,8 +109,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         // --- PHASE 2: TRANSLATE ---
         $this->phaseTitle(' 🤖 Phase 2: Translating with Gemini AI', 'magenta');
-        $tasks = $this->buildTranslationTasks($keysToTranslate);
-        $this->totalChunks = count($tasks);
+        $this->totalChunks = $this->calculateTotalChunks($keysToTranslate);
         if ($this->totalChunks === 0) {
             $this->warn('No tasks to run for translation.');
             $this->displayFinalSummary();
@@ -118,15 +118,11 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->line("Press the '<fg=bright-red;options=bold>{$this->option('stop-key')}</>' key at any time to gracefully stop the process.");
         $this->info(" 📊 Total keys to translate: <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
         $this->info(" 📦 Total chunks to process: <fg=bright-yellow;options=bold>{$this->totalChunks}</>");
-        $progressBar = $this->output->createProgressBar($this->totalKeysToTranslate);
-        $progressBar->setFormatDefinition('custom', '🚀 %current%/%max% [%bar%] %percent:3s%% -- %message% ⏱️  %elapsed:6s%');
-        $progressBar->setFormat('custom');
-        $progressBar->setMessage('Initializing translation process...');
-        $progressBar->start();
-        $results = $this->runTasksInParallel($tasks, $this->option('driver'));
-        $this->processTranslationResults($results, $progressBar);
-        $progressBar->finish();
+
+        // --- Run translation based on driver ---
+        $this->runTranslationProcess($keysToTranslate);
         $this->line('');
+
 
         // --- PHASE 3: WRITE FILES ---
         $this->phaseTitle(' 💾 Phase 3: Writing Language Files', 'green');
@@ -139,9 +135,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * Loads all existing translation files from the lang directory into memory.
-     */
     /**
      * Loads all existing translation files and FLATTENS them into a dot-notation array.
      * This standardizes the data structure for all subsequent operations.
@@ -175,9 +168,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
                     $filename = $file->getFilenameWithoutExtension();
                     $includedData = @include $file->getPathname();
                     if (is_array($includedData)) {
-                        // Flatten the nested PHP array into dot notation
-                        // This handles files like auth.php which might have ['passwords' => [...]]
-                        // The result for the key 'auth.passwords.user' will be stored in the 'auth' file group.
                         $flatData = Arr::dot($includedData);
                         $loadedTranslations[$lang][$filename] = $flatData;
                     }
@@ -196,8 +186,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
         foreach ($structuredKeys as $filename => $keys) {
             foreach ($keys as $key) {
                 foreach ($languages as $lang) {
-                    // The lookup key is now simple, as everything is flat.
-                    // The filename is the group, and the key is the... key.
                     if (!isset($this->existingTranslations[$lang][$filename][$key])) {
                         $missingStats[$filename][$lang][] = $key;
                     }
@@ -238,7 +226,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
             foreach ($keys as $key) {
                 $isMissingInAtLeastOneLang = false;
                 foreach ($languages as $lang) {
-                    // Direct, simple lookup on the pre-flattened data.
                     if (!isset($this->existingTranslations[$lang][$filename][$key])) {
                         $isMissingInAtLeastOneLang = true;
                         break;
@@ -254,14 +241,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
     }
 
     /**
-     * **REVISED**: Writes translation files, correctly handling both flat JSON
-     * and standard nested PHP array structures. It correctly appends new data
-     * when --skip-existing is used.
-     */
-    /**
      * **CORRECTED**: Writes only the translation files that were actually processed in this run.
      * It iterates over the generated `$this->translations` array as the source of truth,
      * ensuring that non-selected files are never touched or rewritten.
+     */
+    /**
+     * REWRITTEN: Now correctly handles flat JSON files vs. nested PHP array files.
      */
     private function writeTranslationFiles()
     {
@@ -275,20 +260,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         $this->info(" 💾 {$actionVerb} translation files on disk:");
 
-        // The key to the fix is this loop structure.
-        // It iterates through the languages and files that exist ONLY in `$this->translations`.
-        // `$this->translations` only contains the files we just processed (e.g., 'messages').
         foreach ($this->translations as $lang => $processedFiles) {
             $langDir = $targetBaseDir . '/' . $lang;
             File::ensureDirectoryExists($langDir);
 
-            // $processedFiles is an array like ['messages' => [...]]
             foreach ($processedFiles as $filename => $newData) {
-                // For the specific file we are about to write, load its corresponding original content.
                 $existingData = $this->existingTranslations[$lang][$filename] ?? [];
-
-                // Now, merge the original content with the new data. This correctly
-                // handles both appending new keys (--skip-existing) and overwriting all keys.
                 $finalFlatData = array_merge($existingData, $newData);
 
                 if (empty($finalFlatData)) {
@@ -296,11 +273,14 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 }
                 ksort($finalFlatData);
 
+                // !!! --- FIX: DIFFERENT LOGIC FOR JSON VS PHP FILES --- !!!
                 if ($filename === self::JSON_FILE_KEY) {
                     $filePath = $targetBaseDir . '/' . $lang . '.json';
+                    // For JSON, we DO NOT undot. We want the flat key structure.
                     File::put($filePath, json_encode($finalFlatData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                     $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 } else {
+                    // For PHP files, we DO undot to create the nested array structure.
                     $finalNestedData = Arr::undot($finalFlatData);
                     $filePath = $langDir . '/' . $filename . '.php';
                     $content = "<?php\n\nreturn " . var_export($finalNestedData, true) . ";\n";
@@ -310,6 +290,48 @@ class ExtractAndGenerateTranslationsCommand extends Command
             }
         }
     }
+
+    /**
+     * Provides a multi-select prompt with a fallback for Windows/non-interactive environments.
+     */
+    private function promptForMultiChoice(string $label, array $options, string $hint = '', ?array $default = null): array
+    {
+        // Fallback for non-interactive or Windows environments
+        if (PHP_OS_FAMILY === 'Windows' || !stream_isatty(STDIN)) {
+            $this->line("<fg=yellow;options=bold>{$label}</>");
+            if ($hint) {
+                $this->comment($hint);
+            }
+
+            // The 'choice' method from Symfony's QuestionHelper is robust.
+            $selection = $this->choice(
+                $label,
+                array_values($options), // choice needs a simple array of strings
+                $default ? implode(',', $default) : null,
+                null,
+                true // This enables multi-select mode
+            );
+
+            // Map the selected display strings back to their original keys
+            $selectedKeys = [];
+            $flippedOptions = array_flip($options);
+            foreach ($selection as $selectedDisplay) {
+                if (isset($flippedOptions[$selectedDisplay])) {
+                    $selectedKeys[] = $flippedOptions[$selectedDisplay];
+                }
+            }
+            return $selectedKeys;
+        }
+
+        // Use Laravel Prompts for interactive Unix-like terminals
+        return multiselect(
+            label: $label,
+            options: $options,
+            hint: $hint,
+            default: $default ?? []
+        );
+    }
+
 
     private function determineAvailableFiles(array $rawKeys): array
     {
@@ -340,10 +362,10 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $displayChoices = [self::ALL_FILES_KEY => '-- ALL FILES --'] +
             collect($availableFiles)->mapWithKeys(fn($fileKey) => [$fileKey => $fileKey === self::JSON_FILE_KEY ? 'Root JSON File' : "{$fileKey}.php"])->all();
 
-        $selected = multiselect(
+        $selected = $this->promptForMultiChoice(
             label: 'Which translation files would you like to process?',
             options: $displayChoices,
-            hint: 'Press <space> to select, <enter> to confirm. Selecting "ALL" will select everything.'
+            hint: 'Use comma-separated numbers (e.g., "1,3") on Windows/simple terminals. Use <space> to select, <enter> to confirm on other systems. Selecting "ALL" will select everything.'
         );
 
         if (in_array(self::ALL_FILES_KEY, $selected)) {
@@ -370,11 +392,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         $displayChoices = [self::ALL_PREFIXES_KEY => '-- ALL PREFIXES --'] + array_combine($uniquePrefixes, $uniquePrefixes);
 
-        $selected = multiselect(
+        $selected = $this->promptForMultiChoice(
             label: 'For the JSON file, which key prefixes should be processed?',
             options: $displayChoices,
             hint: 'Keys starting with these prefixes (e.g., "messages.foo") will be added to the JSON file.'
         );
+
 
         if (in_array(self::ALL_PREFIXES_KEY, $selected)) {
             return $uniquePrefixes;
@@ -542,33 +565,59 @@ Return ONLY a valid JSON object with the following exact structure. Do not add a
 }
 PROMPT;
 
+        // --- DEEP DEBUG LOGGING ---
+        // Log::channel('daily')->debug('GEMINI_PROMPT: Preparing to send prompt.', [
+        //     'file_context' => $contextFilename,
+        //     'key_count' => count($keys),
+        //     'prompt' => $prompt
+        // ]);
+        // --- END DEEP DEBUG LOGGING ---
+
         $modelToUse = config('gemini.model', 'gemini-2.0-flash-lite');
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
+                // Log::channel('daily')->debug("GEMINI_API: Attempt {$attempt}/{$maxRetries} to generate content...");
                 $response = Gemini::generativeModel(model: $modelToUse)->generateContent($prompt);
                 $responseText = $response->text();
+
+                // Log::channel('daily')->debug('GEMINI_API: Raw response text received.', ['text' => $responseText]);
+
                 $cleanedResponseText = preg_replace('/^```json\s*([\s\S]*?)\s*```$/m', '$1', $responseText);
                 $decoded = json_decode(trim($cleanedResponseText), true, 512, JSON_THROW_ON_ERROR);
+
                 if (is_array($decoded)) {
+                    // Log::channel('daily')->info('GEMINI_API: Successfully decoded JSON response.', ['decoded_keys' => array_keys($decoded)]);
                     return $decoded;
                 }
             } catch (Throwable $e) {
+                // --- DEEP DEBUG LOGGING FOR ERRORS ---
+                // Log::channel('daily')->warning("GEMINI_API: API call failed on attempt {$attempt}.", [
+                //     'error_class' => get_class($e),
+                //     'error_message' => $e->getMessage(),
+                // ]);
+                // --- END DEEP DEBUG LOGGING ---
+
                 if (str_contains($e->getMessage(), 'quota') || str_contains($e->getMessage(), 'rate limit') || str_contains($e->getMessage(), 'exceeded')) {
                     if ($attempt < $maxRetries) {
-                        usleep(($baseRetryDelay * pow(3, $attempt) + mt_rand(500, 1500) / 1000) * 1000000);
+                        $delay = ($baseRetryDelay * pow(3, $attempt) + mt_rand(500, 1500) / 1000);
+                        // Log::channel('daily')->warning("GEMINI_API: Rate limit error. Retrying in {$delay} seconds...");
+                        usleep($delay * 1000000);
                     } else {
                         throw $e;
                     }
                 } else {
                     if ($attempt < $maxRetries) {
-                        usleep(($baseRetryDelay * $attempt + mt_rand(1000, 3000) / 1000) * 1000000);
+                        $delay = ($baseRetryDelay * $attempt + mt_rand(1000, 3000) / 1000);
+                        // Log::channel('daily')->warning("GEMINI_API: General error. Retrying in {$delay} seconds...");
+                        usleep($delay * 1000000);
                     } else {
                         throw $e;
                     }
                 }
             }
         }
+        // Log::channel('daily')->error("GEMINI_API: Failed to get valid JSON response after {$maxRetries} attempts.", ['file' => $contextFilename]);
         throw new \Exception("Failed to get valid JSON response from Gemini after {$maxRetries} attempts for keys in {$contextFilename}.");
     }
 
@@ -729,31 +778,103 @@ PROMPT;
         return $tasks;
     }
 
-    private function runTasksInParallel(array $tasks, ?string $driver): array
+    /**
+     * Dispatches the translation job to the appropriate driver (fork or sync).
+     */
+    private function runTranslationProcess(array $keysToTranslate): void
     {
-        $driver = $driver === 'default' ? null : $driver;
+        $driver = $this->option('driver');
+
         if ($driver === 'fork' && function_exists('pcntl_fork') && class_exists(Fork::class)) {
             $this->info("⚡ Using 'fork' driver for high-performance concurrency.");
-            return Fork::new()->concurrent(15)->run(...$tasks);
+
+            $progressBar = $this->output->createProgressBar($this->totalKeysToTranslate);
+            $progressBar->setFormatDefinition('custom', '🚀 %current%/%max% [%bar%] %percent:3s%% -- %message% ⏱️  %elapsed:6s%');
+            $progressBar->setFormat('custom');
+            $progressBar->setMessage('Initializing parallel translation process...');
+            $progressBar->start();
+
+            $tasks = $this->buildTranslationTasks($keysToTranslate);
+            $results = Fork::new()->concurrent(15)->run(...$tasks);
+            $this->processTranslationResults($results, $progressBar);
+
+            $progressBar->finish();
+            return;
         }
-        if ($driver === 'async' || $driver === null) {
-            $this->warn("The 'async' (Process Pool) driver is not fully implemented. Falling back to 'sync'.");
-            return $this->runSynchronously($tasks);
-        }
+
         $this->warn(" 🐌 Running in synchronous mode - this will be slower but more stable!");
-        return $this->runSynchronously($tasks);
+        $this->line('');
+        $this->runSeriallyAndTranslate($keysToTranslate);
     }
 
-    private function runSynchronously(array $tasks): array
+    /**
+     * REWRITTEN: This now provides detailed console output, sanitizes keys to prevent hangs,
+     * and includes deep logging for serial processing.
+     */
+    private function runSeriallyAndTranslate(array $keysToTranslate): void
     {
-        $results = [];
-        foreach ($tasks as $task) {
-            if ($this->checkForExitSignal())
-                break;
-            $results[] = $task();
+        $languages = explode(',', $this->option('langs'));
+        $chunkSize = (int) $this->option('chunk-size');
+        $maxRetries = (int) $this->option('max-retries');
+        $retryDelay = (int) $this->option('retry-delay');
+
+        // Log::channel('daily')->debug('SYNC_DRIVER: Starting serial translation process.');
+
+        foreach ($keysToTranslate as $filename => $keys) {
+            if (empty($keys)) {
+                continue;
+            }
+
+            $this->line('');
+            $this->info("Processing file: <fg=bright-cyan>{$filename}</>");
+            // Log::channel('daily')->debug("SYNC_DRIVER: Processing file '{$filename}'. Total keys: " . count($keys));
+
+            $keyChunks = array_chunk($keys, $chunkSize);
+            $totalKeysInFile = count($keys);
+            $processedKeysInFile = 0;
+
+            foreach ($keyChunks as $i => $chunk) {
+                // !!! --- FIX: REMOVED EXIT SIGNAL CHECK --- !!!
+                // The interactive check was causing the "press enter" issue. Removing it for stability.
+                // if ($this->checkForExitSignal()) { ... }
+
+                $this->processedChunks++;
+                $chunkKeyCount = count($chunk);
+                $startKeyNum = $processedKeysInFile + 1;
+                $endKeyNum = $processedKeysInFile + $chunkKeyCount;
+
+                $this->output->write("  <fg=bright-yellow>-></> Processing keys {$startKeyNum}-{$endKeyNum} of {$totalKeysInFile}... ");
+
+                try {
+                    $sanitizedChunk = array_map(function ($key) {
+                        return preg_replace('/[^\pL\p{N}._-]+/u', '', $key);
+                    }, $chunk);
+
+                    // Log::channel('daily')->debug("SYNC_DRIVER: Chunk " . ($i + 1) . " prepared. Sanitized keys count: " . count($sanitizedChunk));
+
+                    $geminiResponse = self::staticTranslateKeysWithGemini($sanitizedChunk, $languages, $filename, $maxRetries, $retryDelay);
+                    $structuredTranslations = self::staticStructureTranslationsFromGemini($geminiResponse, $chunk, $filename, $languages);
+
+                    $this->mergeTranslations($structuredTranslations);
+                    $this->totalKeysSuccessfullyProcessed += $chunkKeyCount;
+
+                    $this->output->writeln("<fg=green;options=bold>✓ Done</>");
+                    // Log::channel('daily')->info("SYNC_DRIVER: Chunk " . ($i + 1) . " processed successfully.");
+
+                } catch (Throwable $e) {
+                    $this->output->writeln("<fg=red;options=bold>✗ Failed</>");
+                    $this->error("     Error: " . $e->getMessage());
+
+                    $this->totalKeysFailed += $chunkKeyCount;
+                    $this->failedKeys[$filename] = array_merge($this->failedKeys[$filename] ?? [], $chunk);
+                    // Log::channel('daily')->error("SYNC_DRIVER: Exception caught for chunk " . ($i + 1), ['file' => $filename, 'error' => $e->getMessage()]);
+                }
+
+                $processedKeysInFile += $chunkKeyCount;
+            }
         }
-        return $results;
     }
+
 
     private function mergeTranslations(array $chunkTranslations)
     {
@@ -786,6 +907,18 @@ PROMPT;
             'keys' => $keysWithSources
         ];
         File::put('translation_extraction_log.json', json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function calculateTotalChunks(array $structuredKeys): int
+    {
+        $chunkSize = (int) $this->option('chunk-size');
+        $total = 0;
+        foreach ($structuredKeys as $keys) {
+            if (!empty($keys)) {
+                $total += count(array_chunk($keys, $chunkSize));
+            }
+        }
+        return $total;
     }
 
     private function showWelcome()
@@ -833,7 +966,7 @@ PROMPT;
         $this->line("    <fg=bright-white>Keys Failed or Missing:</>       <fg=bright-red;options=bold>{$this->totalKeysFailed}</>");
 
         if ($this->totalKeysToTranslate > 0) {
-            $successRate = round(($this->totalKeysSuccessfullyProcessed / $this->totalKeysToTranslate) * 100, 2);
+            $successRate = $this->totalKeysSuccessfullyProcessed > 0 ? round(($this->totalKeysSuccessfullyProcessed / $this->totalKeysToTranslate) * 100, 2) : 0;
             $rateColor = $successRate >= 95 ? 'bright-green' : ($successRate >= 75 ? 'bright-yellow' : 'bright-red');
             $this->line("    <fg=bright-white>Success Rate:</>                 <fg={$rateColor};options=bold>{$successRate}%</>");
         }
