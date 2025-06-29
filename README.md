@@ -164,11 +164,11 @@ php artisan help translations:extract-and-generate
 The `fork` driver uses a real-time progress bar for an aggregated view of all parallel tasks.
 
 ```
-┌ Which translation files would you like to process? ───────────────────────────┐
-│ ● messages.php                                                                │
-│ ○ auth.php                                                                    │
-│ ● Root JSON file                                                              │
-└───────────────────────────────────────────────────────────────────────────────┘
+┌ Which translation files would you like to process? ────────────────┐
+ ● messages.php                                                                
+ ○ auth.php                                                                    
+ ● Root JSON file                                                              
+└────────────────────────────────────────────────────────────┘
 
 Press the 'q' key at any time to gracefully stop the process.
 ⚡ Using 'fork' driver for high-performance concurrency.
@@ -176,7 +176,7 @@ Press the 'q' key at any time to gracefully stop the process.
 📦 Total chunks to process: 2
 🚀 156/156 [============================] 100% -- ✅ Chunk 2/2 - SUCCESS (156 keys) ⏱️  18s
 
-╔═ 💾 Phase 3: Writing Language Files ═══════════════════════════════════════╗
+╔═ 💾 Phase 3: Writing Language Files ═════════════════════════════╗
 
  ✅ Wrote: lang/es.json (78 total keys)
  ✅ Wrote: lang/es/messages.php (78 total keys)
@@ -191,8 +191,8 @@ The `sync` driver provides clear, step-by-step textual feedback for each chunk.
 
 ```
 ┌ Which translation files would you like to process? ───────────────────────────┐
-│ ● Root JSON file                                                              │
-└───────────────────────────────────────────────────────────────────────────────┘
+ ● Root JSON file                                                              
+└───────────────────────────────────────────────────────────────────────┘
 
  🐌 Running in synchronous mode - this will be slower but more stable!
 
