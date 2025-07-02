@@ -1,0 +1,5 @@
+/.venv
+*.py
+*.html
+*.txt
+languages.json
