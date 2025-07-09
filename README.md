@@ -105,4 +105,4 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 ---
 
-⭐ **Star this repo** if you find it helpful! | 🐛 **Report issues** on GitHub | 📖 **Read full docs** at [GitHub Pages](https://your-username.github.io/laravel-gemini-translator/)
+⭐ **Star this repo** if you find it helpful! | 🐛 **Report issues** on GitHub | 📖 **Read full docs** at [GitHub Pages](https://jayeshmepani.github.io/laravel-gemini-translator/)
