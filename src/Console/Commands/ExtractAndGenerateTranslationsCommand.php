@@ -31,7 +31,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--skip-existing : Only translate keys that are missing from one or more language files, then append them.}
                             {--max-retries=5 : Maximum number of retries for failed API calls}
                             {--retry-delay=3 : Base delay in seconds between retries (exponential backoff)}
-                            {--stop-key=q : The key to press to gracefully stop the translation process}';
+                            {--stop-key=q : The key to press to gracefully stop the translation process}
+                            {--context= : Provide project-specific context to Gemini for better translations}';
 
     protected $description = ' 🌐 Interactively extracts, analyzes, translates, and generates language files via Gemini AI.';
 
@@ -109,6 +110,9 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         // --- PHASE 2: TRANSLATE ---
         $this->phaseTitle(' 🤖 Phase 2: Translating with Gemini AI', 'magenta');
+        if ($this->option('context')) {
+            $this->info("💡 Applying project-specific context for enhanced translation accuracy.");
+        }
         $this->totalChunks = $this->calculateTotalChunks($keysToTranslate);
         if ($this->totalChunks === 0) {
             $this->warn('No tasks to run for translation.');
@@ -240,11 +244,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return array_map('array_unique', $keysThatNeedTranslation);
     }
 
-    /**
-     * **CORRECTED**: Writes only the translation files that were actually processed in this run.
-     * It iterates over the generated `$this->translations` array as the source of truth,
-     * ensuring that non-selected files are never touched or rewritten.
-     */
     /**
      * REWRITTEN: Now correctly handles flat JSON files vs. nested PHP array files.
      */
@@ -497,18 +496,25 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return false;
     }
 
-    public static function staticTranslateKeysWithGemini(array $keys, array $languages, string $contextFilename, int $maxRetries, int $baseRetryDelay): array
+    public static function staticTranslateKeysWithGemini(array $keys, array $languages, string $contextFilename, int $maxRetries, int $baseRetryDelay, ?string $projectContext = null): array
     {
         $langString = implode(', ', $languages);
         $keysString = "- " . implode("\n- ", $keys);
         $fileNameForPrompt = $contextFilename === self::JSON_FILE_KEY ? 'the main JSON file (e.g., en.json)' : "'{$contextFilename}.php'";
+
+        // Build the optional project context string
+        $projectContextString = '';
+        if (!empty($projectContext)) {
+            $sanitizedContext = trim(str_replace(["\n", "\r"], ' ', $projectContext));
+            $projectContextString = "- **Project-Specific Context**: Your translations should be tailored for the following context: {$sanitizedContext}\n";
+        }
 
         $prompt = <<<PROMPT
 You are a specialized translation assistant for a Laravel web application. Your sole purpose is to provide high-quality, professional translations for application strings. You must follow the rules below without exception.
 
 ### 1. CONTEXT & OBJECTIVE
 - **Source File Context**: The following translation keys are from a Laravel file named **{$fileNameForPrompt}**.
-- **Target Languages**: Translate the text for each key into: **{$langString}**.
+{$projectContextString}- **Target Languages**: Translate the text for each key into: **{$langString}**.
 - **Primary Goal**: Provide accurate, natural-sounding translations as **PLAIN TEXT ONLY**.
 
 ### 2. TRANSLATION KEYS
@@ -565,43 +571,22 @@ Return ONLY a valid JSON object with the following exact structure. Do not add a
 }
 PROMPT;
 
-        // --- DEEP DEBUG LOGGING ---
-        // Log::channel('daily')->debug('GEMINI_PROMPT: Preparing to send prompt.', [
-        //     'file_context' => $contextFilename,
-        //     'key_count' => count($keys),
-        //     'prompt' => $prompt
-        // ]);
-        // --- END DEEP DEBUG LOGGING ---
-
         $modelToUse = config('gemini.model', 'gemini-2.0-flash-lite');
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
-                // Log::channel('daily')->debug("GEMINI_API: Attempt {$attempt}/{$maxRetries} to generate content...");
                 $response = Gemini::generativeModel(model: $modelToUse)->generateContent($prompt);
                 $responseText = $response->text();
-
-                // Log::channel('daily')->debug('GEMINI_API: Raw response text received.', ['text' => $responseText]);
-
                 $cleanedResponseText = preg_replace('/^```json\s*([\s\S]*?)\s*```$/m', '$1', $responseText);
                 $decoded = json_decode(trim($cleanedResponseText), true, 512, JSON_THROW_ON_ERROR);
 
                 if (is_array($decoded)) {
-                    // Log::channel('daily')->info('GEMINI_API: Successfully decoded JSON response.', ['decoded_keys' => array_keys($decoded)]);
                     return $decoded;
                 }
             } catch (Throwable $e) {
-                // --- DEEP DEBUG LOGGING FOR ERRORS ---
-                // Log::channel('daily')->warning("GEMINI_API: API call failed on attempt {$attempt}.", [
-                //     'error_class' => get_class($e),
-                //     'error_message' => $e->getMessage(),
-                // ]);
-                // --- END DEEP DEBUG LOGGING ---
-
                 if (str_contains($e->getMessage(), 'quota') || str_contains($e->getMessage(), 'rate limit') || str_contains($e->getMessage(), 'exceeded')) {
                     if ($attempt < $maxRetries) {
                         $delay = ($baseRetryDelay * pow(3, $attempt) + mt_rand(500, 1500) / 1000);
-                        // Log::channel('daily')->warning("GEMINI_API: Rate limit error. Retrying in {$delay} seconds...");
                         usleep($delay * 1000000);
                     } else {
                         throw $e;
@@ -609,7 +594,6 @@ PROMPT;
                 } else {
                     if ($attempt < $maxRetries) {
                         $delay = ($baseRetryDelay * $attempt + mt_rand(1000, 3000) / 1000);
-                        // Log::channel('daily')->warning("GEMINI_API: General error. Retrying in {$delay} seconds...");
                         usleep($delay * 1000000);
                     } else {
                         throw $e;
@@ -617,7 +601,6 @@ PROMPT;
                 }
             }
         }
-        // Log::channel('daily')->error("GEMINI_API: Failed to get valid JSON response after {$maxRetries} attempts.", ['file' => $contextFilename]);
         throw new \Exception("Failed to get valid JSON response from Gemini after {$maxRetries} attempts for keys in {$contextFilename}.");
     }
 
@@ -748,6 +731,7 @@ PROMPT;
         $chunkSize = (int) $this->option('chunk-size');
         $maxRetries = (int) $this->option('max-retries');
         $retryDelay = (int) $this->option('retry-delay');
+        $projectContext = $this->option('context');
         $tasks = [];
         foreach ($structuredKeys as $filename => $keys) {
             if (empty($keys))
@@ -755,9 +739,9 @@ PROMPT;
 
             $keyChunks = array_chunk($keys, $chunkSize);
             foreach ($keyChunks as $chunk) {
-                $tasks[] = static function () use ($chunk, $languages, $filename, $maxRetries, $retryDelay) {
+                $tasks[] = static function () use ($chunk, $languages, $filename, $maxRetries, $retryDelay, $projectContext) {
                     try {
-                        $geminiResponse = self::staticTranslateKeysWithGemini($chunk, $languages, $filename, $maxRetries, $retryDelay);
+                        $geminiResponse = self::staticTranslateKeysWithGemini($chunk, $languages, $filename, $maxRetries, $retryDelay, $projectContext);
                         return [
                             'status' => 'success',
                             'data' => self::staticStructureTranslationsFromGemini($geminiResponse, $chunk, $filename, $languages),
@@ -817,8 +801,7 @@ PROMPT;
         $chunkSize = (int) $this->option('chunk-size');
         $maxRetries = (int) $this->option('max-retries');
         $retryDelay = (int) $this->option('retry-delay');
-
-        // Log::channel('daily')->debug('SYNC_DRIVER: Starting serial translation process.');
+        $projectContext = $this->option('context');
 
         foreach ($keysToTranslate as $filename => $keys) {
             if (empty($keys)) {
@@ -827,16 +810,16 @@ PROMPT;
 
             $this->line('');
             $this->info("Processing file: <fg=bright-cyan>{$filename}</>");
-            // Log::channel('daily')->debug("SYNC_DRIVER: Processing file '{$filename}'. Total keys: " . count($keys));
 
             $keyChunks = array_chunk($keys, $chunkSize);
             $totalKeysInFile = count($keys);
             $processedKeysInFile = 0;
 
             foreach ($keyChunks as $i => $chunk) {
-                // !!! --- FIX: REMOVED EXIT SIGNAL CHECK --- !!!
-                // The interactive check was causing the "press enter" issue. Removing it for stability.
-                // if ($this->checkForExitSignal()) { ... }
+                if ($this->checkForExitSignal()) {
+                    $this->warn("\n 🛑 User requested to stop. Finishing up...");
+                    break 2; // Break out of both loops
+                }
 
                 $this->processedChunks++;
                 $chunkKeyCount = count($chunk);
@@ -850,16 +833,13 @@ PROMPT;
                         return preg_replace('/[^\pL\p{N}._-]+/u', '', $key);
                     }, $chunk);
 
-                    // Log::channel('daily')->debug("SYNC_DRIVER: Chunk " . ($i + 1) . " prepared. Sanitized keys count: " . count($sanitizedChunk));
-
-                    $geminiResponse = self::staticTranslateKeysWithGemini($sanitizedChunk, $languages, $filename, $maxRetries, $retryDelay);
+                    $geminiResponse = self::staticTranslateKeysWithGemini($sanitizedChunk, $languages, $filename, $maxRetries, $retryDelay, $projectContext);
                     $structuredTranslations = self::staticStructureTranslationsFromGemini($geminiResponse, $chunk, $filename, $languages);
 
                     $this->mergeTranslations($structuredTranslations);
                     $this->totalKeysSuccessfullyProcessed += $chunkKeyCount;
 
                     $this->output->writeln("<fg=green;options=bold>✓ Done</>");
-                    // Log::channel('daily')->info("SYNC_DRIVER: Chunk " . ($i + 1) . " processed successfully.");
 
                 } catch (Throwable $e) {
                     $this->output->writeln("<fg=red;options=bold>✗ Failed</>");
@@ -867,7 +847,6 @@ PROMPT;
 
                     $this->totalKeysFailed += $chunkKeyCount;
                     $this->failedKeys[$filename] = array_merge($this->failedKeys[$filename] ?? [], $chunk);
-                    // Log::channel('daily')->error("SYNC_DRIVER: Exception caught for chunk " . ($i + 1), ['file' => $filename, 'error' => $e->getMessage()]);
                 }
 
                 $processedKeysInFile += $chunkKeyCount;
@@ -979,6 +958,10 @@ PROMPT;
         if (!empty($this->failedKeys)) {
             $this->line("    <fg=bright-white>Failure Log:</>                  <fg=bright-red>failed_translation_keys.json</>");
         }
+        if ($this->option('context')) {
+            $this->line("    <fg=bright-white>Project Context:</>              <fg=bright-cyan>Provided</>");
+        }
+
 
         $this->line('');
         if ($this->shouldExit) {
