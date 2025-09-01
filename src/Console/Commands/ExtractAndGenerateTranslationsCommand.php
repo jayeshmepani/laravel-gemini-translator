@@ -33,16 +33,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--stop-key=q : The key to press to gracefully stop the translation process}
                             {--context= : Provide project-specific context to Gemini for better translations}';
 
-    protected $description = ' 🌐 Interactively extracts, analyzes, translates, and generates language files via Gemini AI.';
+    protected $description = ' 🌐 Extracts, cross-checks, translates, and synchronizes language files via Gemini AI.';
 
     // --- State Properties ---
     private array $translations = [];
     private array $existingTranslations = [];
-    private array $sourceTextMap = []; // Enhanced: Stores the source text for each key with priority system
-    private array $masterKeyList = []; // NEW: Unified list of all keys from all sources
-    private array $frameworkKeys = []; // NEW: Keys found in Laravel framework defaults
-    private array $projectKeys = []; // NEW: Keys found in existing project lang files
-    private array $codeKeys = []; // NEW: Keys found by scanning source code
+    private array $sourceTextMap = []; // Stores the source text for each key, prioritizing 'en'
     private array $failedKeys = [];
     private float $startTime;
     private bool $shouldExit = false;
@@ -61,48 +57,30 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->startTime = microtime(true);
         $this->showWelcome();
 
-        // --- PHASE 1: COMPREHENSIVE KEY DISCOVERY ---
-        $this->phaseTitle(' 🔍 Phase 1: Comprehensive Key Discovery & Analysis', 'cyan');
+        // --- PHASE 1: SCAN & GATHER ---
+        $this->phaseTitle(' 🔍 Phase 1: Gathering Keys from All Sources', 'cyan');
 
-        // Step 1: Load existing project translations
-        $this->info("🔍 Step 1: Loading existing project translation files...");
-        $this->loadExistingProjectTranslations();
+        $this->loadExistingTranslations();
+        $this->loadFrameworkTranslations();
 
-        // Step 2: Load Laravel framework default translations
-        $this->info("🔍 Step 2: Loading Laravel framework default translations...");
-        $this->loadFrameworkDefaultTranslations();
-
-        // Step 3: Scan source code for translation keys
-        $this->info("🔍 Step 3: Scanning source code for translation keys...");
         [$scannedKeys, $keysWithSources] = $this->extractRawKeys();
-        $this->codeKeys = $scannedKeys;
+        $this->saveExtractionLog($keysWithSources);
+        $this->info("Detailed code extraction log saved to <fg=bright-cyan>translation_extraction_log.json</>");
 
-        // Step 4: Create unified master key list and build intelligent source text map
-        $this->info("🔍 Step 4: Building unified master key list and source text map...");
-        $this->createMasterKeyList();
-        $this->buildIntelligentSourceTextMap();
-
-        // Save comprehensive extraction log
-        $this->saveComprehensiveExtractionLog($keysWithSources);
-        $this->info("Comprehensive extraction log saved to <fg=bright-cyan>translation_extraction_log.json</>");
-
-        if (empty($this->masterKeyList)) {
+        $allPossibleKeys = $this->getAllKeySources($scannedKeys);
+        if (empty($allPossibleKeys)) {
             $this->alert('No translation keys were found from any source (code scan, existing lang files, framework defaults). Exiting.');
             return Command::SUCCESS;
         }
-
-        $this->success("Comprehensive key discovery complete! Found " . count($this->masterKeyList) . " unique keys from all sources.");
-        $this->line("  📁 Project files: " . count($this->projectKeys) . " keys");
-        $this->line("  🛠️  Framework defaults: " . count($this->frameworkKeys) . " keys");
-        $this->line("  💻 Source code scan: " . count($this->codeKeys) . " keys");
+        $this->success("Key discovery complete! Found " . count($allPossibleKeys) . " unique keys from all sources combined.");
         $this->line('');
 
         // --- INTERACTIVE SELECTION ---
-        $availableFiles = $this->determineAvailableFiles($this->masterKeyList);
+        $availableFiles = $this->determineAvailableFiles($allPossibleKeys);
         $selectedFiles = $this->promptForFileSelection($availableFiles);
         $selectedJsonKeyPrefixes = [];
         if (in_array(self::JSON_FILE_KEY, $selectedFiles)) {
-            $selectedJsonKeyPrefixes = $this->promptForJsonKeyPrefixes($this->masterKeyList);
+            $selectedJsonKeyPrefixes = $this->promptForJsonKeyPrefixes($allPossibleKeys);
             if (empty($selectedJsonKeyPrefixes)) {
                 $selectedFiles = array_diff($selectedFiles, [self::JSON_FILE_KEY]);
             }
@@ -111,16 +89,16 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->warn('No files or prefixes were selected for translation. Exiting.');
             return Command::SUCCESS;
         }
-        $keysForProcessing = $this->mapKeysToSelectedFiles($this->masterKeyList, $selectedFiles, $selectedJsonKeyPrefixes);
+        $keysForProcessing = $this->mapKeysToSelectedFiles($allPossibleKeys, $selectedFiles, $selectedJsonKeyPrefixes);
         $this->uniqueKeysForProcessing = array_sum(array_map('count', $keysForProcessing));
         $this->info(" ✅ Selected " . count($keysForProcessing) . " file groups containing {$this->uniqueKeysForProcessing} unique keys for processing.");
 
-        // --- PHASE 1.5: CROSS-LANGUAGE SYNCHRONIZATION ANALYSIS ---
-        $this->phaseTitle('🔄 Phase 1.5: Cross-Language Synchronization Analysis', 'blue');
-        $this->performCrossLanguageSynchronizationCheck($keysForProcessing);
+        // --- PHASE 1.5: ANALYZE & REPORT ---
+        $this->phaseTitle('📊 Phase 1.5: Analyzing Translation Status', 'blue');
+        $this->performCrossCheckAndReport($keysForProcessing);
 
-        // --- DETERMINE KEYS TO TRANSLATE (Enhanced with append mode logic) ---
-        $keysToTranslate = $this->filterKeysForTranslation($keysForProcessing);
+        // --- DETERMINE KEYS TO TRANSLATE ---
+        $keysToTranslate = $this->filterOutExistingKeys($keysForProcessing);
         $this->totalKeysToTranslate = array_sum(array_map('count', $keysToTranslate));
 
         if ($this->totalKeysToTranslate === 0) {
@@ -141,12 +119,13 @@ class ExtractAndGenerateTranslationsCommand extends Command
             return Command::SUCCESS;
         }
         $this->line("Press the '<fg=bright-red;options=bold>{$this->option('stop-key')}</>' key at any time to gracefully stop the process.");
-        $this->info(" 📊 Total keys to translate: <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
+        $this->info(" 📊 Total keys needing translation: <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
         $this->info(" 📦 Total chunks to process: <fg=bright-yellow;options=bold>{$this->totalChunks}</>");
 
         // --- Run translation based on driver ---
         $this->runTranslationProcess($keysToTranslate);
         $this->line('');
+
 
         // --- PHASE 3: WRITE FILES ---
         $this->phaseTitle(' 💾 Phase 3: Writing Language Files', 'green');
@@ -159,49 +138,45 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * NEW: Load existing project translation files with enhanced logic
-     */
-    private function loadExistingProjectTranslations(): void
+    private function loadExistingTranslations(): void
     {
         if (!empty($this->existingTranslations)) {
             return;
         }
 
+        $this->info("Reading existing project language files to find all keys...");
         $targetBaseDir = rtrim($this->option('target-dir'), '/');
         $languages = explode(',', $this->option('langs'));
         $loadedTranslations = [];
-        $projectKeys = [];
 
+        // Ensure all languages have an entry to avoid errors later
         foreach ($languages as $lang) {
-            // Load JSON file
-            $jsonPath = $targetBaseDir . '/' . $lang . '.json';
-            if (File::exists($jsonPath)) {
-                $jsonContent = json_decode(File::get($jsonPath), true);
-                if (is_array($jsonContent)) {
-                    $loadedTranslations[$lang][self::JSON_FILE_KEY] = $jsonContent;
-                    foreach ($jsonContent as $key => $text) {
-                        if (is_string($text)) {
-                            $projectKeys[] = $key;
-                        }
-                    }
-                }
-            }
+            $loadedTranslations[$lang] = [];
+        }
 
+        if (!File::isDirectory($targetBaseDir)) {
+            $this->comment("Language directory '{$targetBaseDir}' not found. Skipping project language file scan.");
+            $this->existingTranslations = $loadedTranslations;
+            return;
+        }
+
+        $allLangDirs = File::directories($targetBaseDir);
+
+        foreach ($allLangDirs as $langDirPath) {
+            $lang = basename($langDirPath);
             // Load PHP files
-            $langDir = $targetBaseDir . '/' . $lang;
-            if (File::isDirectory($langDir)) {
-                foreach (File::files($langDir, '*.php') as $file) {
-                    $filename = $file->getFilenameWithoutExtension();
-                    $includedData = @include $file->getPathname();
-                    if (is_array($includedData)) {
-                        $flatData = $this->flattenTranslationArray($includedData);
-                        $loadedTranslations[$lang][$filename] = $flatData;
-                        // Collect project keys
-                        foreach ($flatData as $keySuffix => $text) {
-                            if (is_string($text)) {
-                                $fullKey = "{$filename}.{$keySuffix}";
-                                $projectKeys[] = $fullKey;
+            foreach (File::files($langDirPath, '*.php') as $file) {
+                $filename = $file->getFilenameWithoutExtension();
+                $includedData = @include $file->getPathname();
+                if (is_array($includedData)) {
+                    $flatData = Arr::dot($includedData);
+                    $loadedTranslations[$lang][$filename] = $flatData;
+                    // Populate source text map, prioritizing 'en'
+                    foreach ($flatData as $keySuffix => $text) {
+                        if (is_string($text)) {
+                            $fullKey = "{$filename}.{$keySuffix}";
+                            if ($lang === 'en' || !isset($this->sourceTextMap[$fullKey])) {
+                                $this->sourceTextMap[$fullKey] = $text;
                             }
                         }
                     }
@@ -209,279 +184,149 @@ class ExtractAndGenerateTranslationsCommand extends Command
             }
         }
 
+        // Load JSON files for all languages
+        $jsonFiles = File::glob($targetBaseDir . '/*.json');
+        foreach ($jsonFiles as $jsonPath) {
+            $lang = pathinfo($jsonPath, PATHINFO_FILENAME);
+            $jsonContent = json_decode(File::get($jsonPath), true);
+            if (is_array($jsonContent)) {
+                $loadedTranslations[$lang][self::JSON_FILE_KEY] = $jsonContent;
+                foreach ($jsonContent as $key => $text) {
+                    if (is_string($text) && ($lang === 'en' || !isset($this->sourceTextMap[$key]))) {
+                        $this->sourceTextMap[$key] = $text;
+                    }
+                }
+            }
+        }
+
         $this->existingTranslations = $loadedTranslations;
-        $this->projectKeys = array_values(array_unique($projectKeys));
-        $this->info("Found " . count($this->projectKeys) . " keys in existing project translation files.");
     }
 
-    /**
-     * NEW: Load Laravel framework default translation files
-     */
-    private function loadFrameworkDefaultTranslations(): void
+    private function loadFrameworkTranslations(): void
     {
+        $this->info("Reading Laravel framework default language files...");
         $frameworkLangPath = base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en');
 
         if (!File::isDirectory($frameworkLangPath)) {
-            $this->warn("Could not find Laravel framework language directory. Skipping framework defaults.");
+            $this->warn("Could not find Laravel framework language directory. Skipping.");
             return;
         }
 
-        $frameworkKeys = [];
         foreach (File::files($frameworkLangPath, '*.php') as $file) {
             $filename = $file->getFilenameWithoutExtension();
             $includedData = @include $file->getPathname();
             if (is_array($includedData)) {
-                $flatData = $this->flattenTranslationArray($includedData);
+                $flatData = Arr::dot($includedData);
+                // We add these to the 'en' section of existing translations
+                // and directly to the source text map, as they are our primary source.
+                $this->existingTranslations['en'][$filename] = array_merge(
+                    $this->existingTranslations['en'][$filename] ?? [],
+                    $flatData
+                );
                 foreach ($flatData as $keySuffix => $text) {
                     if (is_string($text)) {
                         $fullKey = "{$filename}.{$keySuffix}";
-                        $frameworkKeys[] = $fullKey;
+                        if (!isset($this->sourceTextMap[$fullKey])) {
+                            $this->sourceTextMap[$fullKey] = $text;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private function getAllKeySources(array $scannedKeys): array
+    {
+        $allKeys = $scannedKeys;
+
+        // Add all keys from the existing translations (all languages)
+        foreach ($this->existingTranslations as $lang => $files) {
+            foreach ($files as $filename => $data) {
+                if ($filename === self::JSON_FILE_KEY) {
+                    $allKeys = array_merge($allKeys, array_keys($data));
+                } else {
+                    foreach (array_keys($data) as $keySuffix) {
+                        $allKeys[] = "{$filename}.{$keySuffix}";
                     }
                 }
             }
         }
 
-        $this->frameworkKeys = array_values(array_unique($frameworkKeys));
-        $this->info("Found " . count($this->frameworkKeys) . " keys in Laravel framework default files.");
+        // Add keys from the source map (catches framework keys specifically)
+        $allKeys = array_merge($allKeys, array_keys($this->sourceTextMap));
+
+        return array_values(array_unique($allKeys));
     }
 
-    /**
-     * NEW: Create unified master key list from all sources
-     */
-    private function createMasterKeyList(): void
-    {
-        $allKeys = array_merge($this->projectKeys, $this->frameworkKeys, $this->codeKeys);
-        $this->masterKeyList = array_values(array_unique($allKeys));
-        sort($this->masterKeyList);
-    }
 
-    /**
-     * NEW: Build intelligent source text map with priority system
-     */
-    private function buildIntelligentSourceTextMap(): void
-    {
-        $targetBaseDir = rtrim($this->option('target-dir'), '/');
-        $languages = explode(',', $this->option('langs'));
-
-        // Clear any existing source text map
-        $this->sourceTextMap = [];
-
-        foreach ($this->masterKeyList as $key) {
-            $sourceText = null;
-
-            // Priority 1: English (en) from project files
-            if (in_array('en', $languages) && $sourceText === null) {
-                $sourceText = $this->findSourceTextInLanguage($key, 'en', $targetBaseDir);
-            }
-
-            // Priority 2: English (en) from framework files
-            if ($sourceText === null) {
-                $sourceText = $this->findSourceTextInFramework($key);
-            }
-
-            // Priority 3: First available language from project files
-            if ($sourceText === null) {
-                foreach ($languages as $lang) {
-                    if ($lang === 'en')
-                        continue; // Already checked
-                    $sourceText = $this->findSourceTextInLanguage($key, $lang, $targetBaseDir);
-                    if ($sourceText !== null)
-                        break;
-                }
-            }
-
-            // Priority 4: Use the key itself as fallback
-            if ($sourceText === null) {
-                $sourceText = $key;
-            }
-
-            $this->sourceTextMap[$key] = $sourceText;
-        }
-
-        $this->info("Built intelligent source text map for " . count($this->sourceTextMap) . " keys.");
-    }
-
-    /**
-     * NEW: Find source text for a key in a specific language
-     */
-    private function findSourceTextInLanguage(string $key, string $lang, string $targetBaseDir): ?string
-    {
-        // Check JSON file first
-        $jsonPath = $targetBaseDir . '/' . $lang . '.json';
-        if (File::exists($jsonPath)) {
-            $jsonContent = json_decode(File::get($jsonPath), true);
-            if (is_array($jsonContent) && isset($jsonContent[$key]) && is_string($jsonContent[$key])) {
-                return $jsonContent[$key];
-            }
-        }
-
-        // Check PHP files
-        if (str_contains($key, '.')) {
-            $parts = explode('.', $key, 2);
-            $filename = $parts[0];
-            $keySuffix = $parts[1];
-
-            $phpPath = $targetBaseDir . '/' . $lang . '/' . $filename . '.php';
-            if (File::exists($phpPath)) {
-                $includedData = @include $phpPath;
-                if (is_array($includedData)) {
-                    $flatData = $this->flattenTranslationArray($includedData);
-                    if (isset($flatData[$keySuffix]) && is_string($flatData[$keySuffix])) {
-                        return $flatData[$keySuffix];
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * NEW: Find source text for a key in framework files
-     */
-    private function findSourceTextInFramework(string $key): ?string
-    {
-        if (!str_contains($key, '.')) {
-            return null;
-        }
-
-        $parts = explode('.', $key, 2);
-        $filename = $parts[0];
-        $keySuffix = $parts[1];
-
-        $frameworkLangPath = base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en');
-        $phpPath = $frameworkLangPath . '/' . $filename . '.php';
-
-        if (File::exists($phpPath)) {
-            $includedData = @include $phpPath;
-            if (is_array($includedData)) {
-                $flatData = $this->flattenTranslationArray($includedData);
-                if (isset($flatData[$keySuffix]) && is_string($flatData[$keySuffix])) {
-                    return $flatData[$keySuffix];
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * NEW: Enhanced array flattening that safely handles non-string values
-     */
-    private function flattenTranslationArray(array $array): array
-    {
-        $flattened = [];
-        $this->flattenArrayRecursive($array, '', $flattened);
-        return $flattened;
-    }
-
-    /**
-     * NEW: Recursive helper for array flattening that skips non-string values
-     */
-    private function flattenArrayRecursive(array $array, string $prefix, array &$result): void
-    {
-        foreach ($array as $key => $value) {
-            $newKey = $prefix === '' ? $key : $prefix . '.' . $key;
-
-            if (is_array($value)) {
-                $this->flattenArrayRecursive($value, $newKey, $result);
-            } elseif (is_string($value)) {
-                // Only add string values to prevent "Array to string conversion" errors
-                $result[$newKey] = $value;
-            }
-            // Ignore non-string, non-array values (integers, booleans, etc.)
-        }
-    }
-
-    /**
-     * ENHANCED: Cross-language synchronization check
-     */
-    private function performCrossLanguageSynchronizationCheck(array $structuredKeys): void
+    private function performCrossCheckAndReport(array $structuredKeys): void
     {
         $languages = explode(',', $this->option('langs'));
         $missingStats = [];
-        $totalMissingCount = 0;
-
-        $this->info("Performing cross-language synchronization check...");
 
         foreach ($structuredKeys as $filename => $keys) {
             foreach ($keys as $key) {
                 foreach ($languages as $lang) {
                     if (!isset($this->existingTranslations[$lang][$filename][$key])) {
                         $missingStats[$filename][$lang][] = $key;
-                        $totalMissingCount++;
                     }
                 }
             }
         }
 
         if (empty($missingStats)) {
-            $this->success("✅ Perfect synchronization! All selected keys exist in all target languages.");
+            $this->success("All selected keys are fully translated and synchronized across all target languages!");
             return;
         }
 
-        $this->warn("🔄 Cross-language synchronization issues found:");
-        $this->line("   Total missing translations: <fg=bright-red;options=bold>{$totalMissingCount}</>");
-        $this->line('');
-
+        $this->warn("Found missing translations needing synchronization:");
         foreach ($missingStats as $file => $langData) {
             $fileNameDisplay = ($file === self::JSON_FILE_KEY) ? "JSON File" : "{$file}.php";
-            $this->line("  <fg=bright-yellow;options=bold>📁 {$fileNameDisplay}:</>");
+            $this->line("  <fg=bright-yellow;options=bold>File: {$fileNameDisplay}</>");
             foreach ($langData as $lang => $keys) {
                 $count = count($keys);
-                $this->line("    <fg=bright-cyan>{$lang}</>: <fg=bright-red;options=bold>{$count}</> missing keys");
+                $this->line("    <fg=bright-white>-> Language '<fg=bright-cyan>{$lang}</>' is missing <fg=bright-red;options=bold>{$count}</> keys.</>");
             }
         }
-        $this->line('');
     }
 
-    /**
-     * ENHANCED: Filter keys for translation with robust append mode support
-     */
-    private function filterKeysForTranslation(array $structuredKeys): array
+    private function filterOutExistingKeys(array $structuredKeys): array
     {
+        if (empty($this->existingTranslations) && !$this->option('skip-existing')) {
+            return $structuredKeys;
+        }
+
         $languages = explode(',', $this->option('langs'));
-        $keysNeedingTranslation = [];
+        $keysThatNeedTranslation = [];
 
-        if ($this->option('skip-existing')) {
-            $this->info("🔄 Append Mode: Only translating keys missing from one or more languages...");
-
-            foreach ($structuredKeys as $filename => $keys) {
-                foreach ($keys as $key) {
-                    $isMissingInAtLeastOneLang = false;
-                    foreach ($languages as $lang) {
-                        if (!isset($this->existingTranslations[$lang][$filename][$key])) {
-                            $isMissingInAtLeastOneLang = true;
-                            break;
-                        }
+        foreach ($structuredKeys as $filename => $keys) {
+            foreach ($keys as $key) {
+                $isMissingInAtLeastOneLang = false;
+                foreach ($languages as $lang) {
+                    // Check if the key is missing in any of the target languages
+                    if (!isset($this->existingTranslations[$lang][$filename][$key])) {
+                        $isMissingInAtLeastOneLang = true;
+                        break;
                     }
+                }
 
-                    if ($isMissingInAtLeastOneLang) {
-                        $keysNeedingTranslation[$filename][] = $key;
+                if (!$this->option('skip-existing') || $isMissingInAtLeastOneLang) {
+                    // We need source text to translate it
+                    $fullKey = ($filename === self::JSON_FILE_KEY) ? $key : "{$filename}.{$key}";
+                    if (isset($this->sourceTextMap[$fullKey])) {
+                        $keysThatNeedTranslation[$filename][] = $key;
                     }
                 }
             }
-        } else {
-            $this->info("🔄 Full Translation Mode: Translating all selected keys...");
-            $keysNeedingTranslation = $structuredKeys;
+        }
+        foreach ($keysThatNeedTranslation as $filename => &$keys) {
+            $keys = array_unique($keys);
         }
 
-        // Remove empty arrays and ensure unique keys
-        foreach ($keysNeedingTranslation as $filename => $keys) {
-            if (empty($keys)) {
-                unset($keysNeedingTranslation[$filename]);
-            } else {
-                $keysNeedingTranslation[$filename] = array_values(array_unique($keys));
-            }
-        }
-
-        return $keysNeedingTranslation;
+        return $keysThatNeedTranslation;
     }
 
-    /**
-     * ENHANCED: Write translation files with robust merge logic
-     */
-    private function writeTranslationFiles(): void
+    private function writeTranslationFiles()
     {
         $targetBaseDir = rtrim($this->option('target-dir'), '/');
         $actionVerb = $this->option('skip-existing') ? 'Updated' : 'Wrote';
@@ -491,7 +336,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
             return;
         }
 
-        $this->info(" 💾 {$actionVerb} translation files:");
+        $this->info(" 💾 {$actionVerb} translation files on disk:");
 
         foreach ($this->translations as $lang => $processedFiles) {
             $langDir = $targetBaseDir . '/' . $lang;
@@ -499,8 +344,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
             foreach ($processedFiles as $filename => $newData) {
                 $existingData = $this->existingTranslations[$lang][$filename] ?? [];
-
-                // Enhanced merge logic: preserve existing + add new
                 $finalFlatData = array_merge($existingData, $newData);
 
                 if (empty($finalFlatData)) {
@@ -511,53 +354,18 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 if ($filename === self::JSON_FILE_KEY) {
                     $filePath = $targetBaseDir . '/' . $lang . '.json';
                     File::put($filePath, json_encode($finalFlatData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-                    $newCount = count($newData);
-                    $totalCount = count($finalFlatData);
-                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(+{$newCount} new, {$totalCount} total keys)</>");
+                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 } else {
                     $finalNestedData = Arr::undot($finalFlatData);
+                    ksort($finalNestedData);
                     $filePath = $langDir . '/' . $filename . '.php';
                     $content = "<?php\n\nreturn " . var_export($finalNestedData, true) . ";\n";
                     File::put($filePath, $content);
-                    $newCount = count($newData);
-                    $totalCount = count($finalFlatData);
-                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(+{$newCount} new, {$totalCount} total keys)</>");
+                    $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 }
             }
         }
     }
-
-    /**
-     * ENHANCED: Save comprehensive extraction log
-     */
-    private function saveComprehensiveExtractionLog(array $keysWithSources): void
-    {
-        ksort($keysWithSources);
-        $logData = [
-            'scan_timestamp' => date('Y-m-d H:i:s'),
-            'discovery_summary' => [
-                'total_unique_keys' => count($this->masterKeyList),
-                'project_keys_count' => count($this->projectKeys),
-                'framework_keys_count' => count($this->frameworkKeys),
-                'code_scan_keys_count' => count($this->codeKeys),
-            ],
-            'key_sources' => [
-                'project_keys' => $this->projectKeys,
-                'framework_keys' => $this->frameworkKeys,
-                'code_scan_keys' => $this->codeKeys,
-            ],
-            'code_scan_details' => [
-                'keys_with_file_locations' => $keysWithSources,
-            ],
-            'source_text_mapping' => [
-                'keys_with_source_text' => array_slice($this->sourceTextMap, 0, 50), // First 50 for brevity
-                'total_mapped_keys' => count($this->sourceTextMap),
-            ],
-        ];
-        File::put('translation_extraction_log.json', json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-    }
-
-    // === EXISTING METHODS (unchanged but compatible with new features) ===
 
     private function promptForMultiChoice(string $label, array $options, string $hint = '', ?array $default = null): array
     {
@@ -803,7 +611,7 @@ Translate the **Text** for each **Key** listed below. Before translating, mental
   "messages.agree_html": {
     "en": "I agree to the Terms of Service",
     "ru": "Я согласен с Условиями обслуживания",
-    "uz": "Men Xizmat ko'rsatish shartlariga roziman"
+    "uz": "Men Xizmat ko‘rsatish shartlariga roziman"
   }
 }
 
@@ -811,7 +619,7 @@ Translate the **Text** for each **Key** listed below. Before translating, mental
 Return ONLY a valid JSON object with the structure shown in the example above. Do not add any commentary.
 PROMPT;
 
-        $modelToUse = config('gemini.model', 'gemini-2.0-flash-lite');
+        $modelToUse = config('gemini.model', 'gemini-1.5-flash-latest');
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 $response = Gemini::generativeModel(model: $modelToUse)->generateContent($prompt);
@@ -1023,6 +831,13 @@ PROMPT;
         File::put('failed_translation_keys.json', json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
+    private function saveExtractionLog(array $keysWithSources)
+    {
+        ksort($keysWithSources);
+        $logData = ['scan_timestamp' => date('Y-m-d H:i:s'), 'total_unique_keys_found_in_code' => count($keysWithSources), 'keys' => $keysWithSources];
+        File::put('translation_extraction_log.json', json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
     private function calculateTotalChunks(array $structuredKeys): int
     {
         $chunkSize = (int) $this->option('chunk-size');
@@ -1039,7 +854,7 @@ PROMPT;
     {
         $this->line('');
         $this->line('<fg=bright-magenta;options=bold>╔═══════════════════════════════════════════════════════════════════════════════╗</>');
-        $this->line('<fg=bright-magenta;options=bold></>           <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION EXTRACTION & GENERATION TOOL</>          <fg=bright-magenta;options=bold></>');
+        $this->line('<fg=bright-magenta;options=bold></>         <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v3.0)</>         <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold></>         <fg=bright-white>Powered by Gemini AI • Built for Modern Laravel Applications</>        <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold>╚═══════════════════════════════════════════════════════════════════════════════╝</>');
         $this->line('');
@@ -1066,13 +881,9 @@ PROMPT;
         $this->line('<fg=bright-blue;options=bold></>                   <fg=bright-white;options=bold>📈 COMPLETE TRANSLATION SUMMARY REPORT</>                     <fg=bright-blue;options=bold></>');
         $this->line('<fg=bright-blue;options=bold>╚══════════════════════════════════════════════════════════════════════════════════════╝</>');
         $this->line('');
-        $this->line('  <fg=bright-cyan;options=bold>🔍 COMPREHENSIVE KEY DISCOVERY STATS</>');
-        $this->line("    <fg=bright-white>Files Scanned (Code):</>         <fg=bright-cyan;options=bold>{$this->filesScanned}</>");
-        $this->line("    <fg=bright-white>Project Keys Found:</>           <fg=bright-cyan;options=bold>" . count($this->projectKeys) . "</>");
-        $this->line("    <fg=bright-white>Framework Keys Found:</>         <fg=bright-cyan;options=bold>" . count($this->frameworkKeys) . "</>");
-        $this->line("    <fg=bright-white>Code Scan Keys Found:</>         <fg=bright-cyan;options=bold>" . count($this->codeKeys) . "</>");
-        $this->line("    <fg=bright-white>Total Master Key List:</>        <fg=bright-cyan;options=bold>" . count($this->masterKeyList) . "</>");
-        $this->line("    <fg=bright-white>Keys Selected for Processing:</>  <fg=bright-cyan;options=bold>{$this->uniqueKeysForProcessing}</>");
+        $this->line('  <fg=bright-cyan;options=bold>🔍 DISCOVERY & ANALYSIS STATS</>');
+        $this->line("    <fg=bright-white>Code Files Scanned:</>           <fg=bright-cyan;options=bold>{$this->filesScanned}</>");
+        $this->line("    <fg=bright-white>Unique Keys Selected:</>         <fg=bright-cyan;options=bold>{$this->uniqueKeysForProcessing}</>");
         $this->line('');
         $this->line('  <fg=bright-magenta;options=bold> 🤖 TRANSLATION STATS</>');
         $this->line("    <fg=bright-white>Total Keys Targeted:</>          <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
@@ -1086,10 +897,9 @@ PROMPT;
         }
         $this->line('');
         $this->line('  <fg=bright-yellow;options=bold> ⚙️  GENERAL INFO</>');
-        $this->line("    <fg=bright-white>Mode:</>                         <fg=bright-cyan;options=bold>" . ($this->option('skip-existing') ? 'Append Mode (--skip-existing)' : 'Full Translation Mode') . "</>");
         $this->line("    <fg=bright-white>Total Execution Time:</>         <fg=bright-yellow;options=bold>{$executionTime} seconds</>");
         $this->line("    <fg=bright-white>Output Directory:</>             <fg=bright-cyan>{$this->option('target-dir')}</>");
-        $this->line("    <fg=bright-white>Comprehensive Log:</>            <fg=bright-cyan>translation_extraction_log.json</>");
+        $this->line("    <fg=bright-white>Extraction Log:</>               <fg=bright-cyan>translation_extraction_log.json</>");
         if (!empty($this->failedKeys)) {
             $this->line("    <fg=bright-white>Failure Log:</>                  <fg=bright-red>failed_translation_keys.json</>");
         }

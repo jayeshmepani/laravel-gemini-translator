@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laravel Gemini AI Translation Extractor - Complete Documentation</title>
+    <title>Laravel Gemini AI Translation Synchronization Tool - Documentation</title>
     <style>
         :root {
             --primary-color: #3b82f6;
@@ -24,6 +24,10 @@
             padding: 0;
             box-sizing: border-box;
             list-style-position: inside;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -51,6 +55,7 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .logo {
@@ -85,6 +90,12 @@
             z-index: 100;
         }
 
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .nav-links {
             display: flex;
             gap: 2rem;
@@ -99,8 +110,27 @@
             transition: color 0.3s;
         }
 
-        .nav-links a:hover {
+        .nav-links a:hover,
+        .nav-links a.active {
             color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .hamburger-menu {
+            display: none;
+            cursor: pointer;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+        }
+
+        .hamburger-menu .bar {
+            width: 25px;
+            height: 3px;
+            background-color: var(--text-color);
+            border-radius: 2px;
+            transition: all 0.3s ease-in-out;
         }
 
         main {
@@ -187,10 +217,16 @@
             margin-bottom: 1rem;
         }
 
+        .table-responsive-wrapper {
+            overflow-x: auto;
+            width: 100%;
+        }
+
         .options-table {
             width: 100%;
             border-collapse: collapse;
             margin: 1rem 0;
+            min-width: 600px;
         }
 
         .options-table th,
@@ -234,38 +270,6 @@
             color: #065f46;
         }
 
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .nav-links {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .options-table {
-                font-size: 0.875rem;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            h2 {
-                font-size: 1.5rem;
-            }
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
         .back-to-top {
             position: fixed;
             bottom: 2rem;
@@ -281,19 +285,71 @@
             opacity: 0;
             transition: opacity 0.3s;
             z-index: 1000;
+            visibility: hidden;
         }
 
         .back-to-top.visible {
             opacity: 1;
+            visibility: visible;
         }
 
         .back-to-top:hover {
             background: var(--secondary-color);
         }
 
-        .nav-links a.active {
-            color: var(--primary-color);
-            font-weight: 600;
+        @media (max-width: 992px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: white;
+                box-shadow: var(--shadow);
+                padding: 1rem 0;
+                gap: 0;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links li {
+                width: 100%;
+            }
+
+            .nav-links a {
+                display: block;
+                padding: 0.75rem 20px;
+                text-align: center;
+            }
+
+            .hamburger-menu {
+                display: flex;
+            }
+
+            body.nav-open .hamburger-menu .bar:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+
+            body.nav-open .hamburger-menu .bar:nth-child(2) {
+                opacity: 0;
+            }
+
+            body.nav-open .hamburger-menu .bar:nth-child(3) {
+                transform: rotate(-45deg) translate(7px, -6px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -303,7 +359,7 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    🌐 Laravel Gemini AI Translation Extractor
+                    🌐 Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges">
                     <span class="badge">PHP 8.1+</span>
@@ -315,8 +371,8 @@
     </header>
 
     <nav>
-        <div class="container">
-            <ul class="nav-links">
+        <div class="container nav-container">
+            <ul class="nav-links" id="nav-links">
                 <li><a href="#overview">Overview</a></li>
                 <li><a href="#installation">Installation</a></li>
                 <li><a href="#configuration">Configuration</a></li>
@@ -328,6 +384,11 @@
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
                 <li><a href="#faq">FAQ</a></li>
             </ul>
+            <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle navigation menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
         </div>
     </nav>
 
@@ -336,18 +397,19 @@
             <section id="overview" class="section">
                 <h2>📋 Overview</h2>
                 <p>
-                    The Laravel Gemini AI Translation Extractor is a powerful Artisan command that revolutionizes the
-                    localization process for Laravel applications. It combines intelligent key extraction with
-                    AI-powered translation to dramatically speed up the creation and maintenance of multi-language
-                    applications.
+                    The Laravel Gemini AI Translation Synchronization Tool is a powerful Artisan command that
+                    revolutionizes the localization workflow for Laravel applications. It moves beyond simple extraction
+                    by discovering translation keys from all possible sources—your code, existing language files, and
+                    the Laravel framework itself—and then intelligently synchronizes them across all your target
+                    languages using AI.
                 </p>
 
                 <div class="feature-grid">
                     <div class="feature-card">
-                        <div class="feature-icon">🔍</div>
-                        <h3>Smart Key Detection</h3>
-                        <p>Scans Blade, PHP, Vue, JS, and TypeScript files using precise regular expressions to find
-                            translation keys across your entire codebase.</p>
+                        <div class="feature-icon">🔄</div>
+                        <h3>Full Synchronization</h3>
+                        <p>Discovers keys from your code, all existing language files, and framework defaults to create
+                            a complete picture, ensuring no translation is left behind.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">🤖</div>
@@ -366,7 +428,7 @@
                         <div class="feature-icon">🎯</div>
                         <h3>Interactive & Incremental</h3>
                         <p>An interactive interface lets you choose which files to process, while the <code
-                                class="inline-code">--skip-existing</code> flag allows for efficient incremental
+                                class="inline-code">--skip-existing</code> flag allows for efficient synchronization and
                             updates.</p>
                     </div>
                 </div>
@@ -381,8 +443,8 @@
 
                 <div class="alert alert-warning">
                     <strong>Windows Users:</strong> Because Windows does not natively support the <code
-                        class="inline-code">pcntl</code> extension, you must use the following command to ignore it
-                    during installation:
+                        class="inline-code">pcntl</code> extension required for the high-performance 'fork' driver, you
+                    must use the following command to ignore it during installation:
                     <pre><code>composer require jayesh/laravel-gemini-translator --ignore-platform-reqs=ext-pcntl</code></pre>
                 </div>
 
@@ -413,14 +475,14 @@ GEMINI_REQUEST_TIMEOUT=600</code></pre>
                 </p>
 
                 <div class="alert alert-warning">
-                    <strong>Free Tier Limits:</strong> The free tier has limits of 30 requests per minute and 1,500
-                    requests per day. For large projects, consider using smaller chunk sizes or processing in batches.
+                    <strong>Free Tier Limits:</strong> The free tier has limits on requests per minute/day. For large
+                    projects, consider using smaller chunk sizes or processing in batches to stay within these limits.
                 </div>
 
                 <h3>Configuration File</h3>
                 <p>The <code class="inline-code">config/gemini.php</code> file allows you to customize:</p>
                 <ul>
-                    <li>AI model selection (default: Gemini 2.0 Flash-Lite)</li>
+                    <li>AI model selection (e.g., Gemini 1.5 Flash)</li>
                     <li>Request timeout settings</li>
                     <li>Default language preferences</li>
                     <li>Retry logic parameters</li>
@@ -442,23 +504,27 @@ php artisan translations:extract-and-generate --driver=fork
 # Windows (maximum stability)
 php artisan translations:extract-and-generate --driver=sync</code></pre>
 
-                <h3>Incremental Updates</h3>
+                <h3>Incremental Updates & Synchronization</h3>
                 <p>To add new translations without overwriting existing ones, use the <code
-                        class="inline-code">--skip-existing</code> flag. This is perfect for ongoing projects.</p>
-                <pre><code># Only translate missing keys for Spanish and German
+                        class="inline-code">--skip-existing</code> flag. This is the core of the synchronization
+                    feature, perfect for ongoing projects.</p>
+                <pre><code># Find all missing keys in Spanish and German and translate them
 php artisan translations:extract-and-generate --skip-existing --langs=es,de</code></pre>
 
                 <h3>The Interactive Process</h3>
                 <p>The command guides you through a seamless workflow:</p>
                 <ol>
-                    <li><strong>Scanning:</strong> Searches your project for translation keys based on supported
-                        patterns.</li>
+                    <li><strong>Key Discovery:</strong> Gathers a complete list of translation keys from all sources:
+                        your project code, all existing language files (e.g., `en/`, `fr/`), and Laravel's built-in
+                        translations.</li>
                     <li><strong>File Selection:</strong> Prompts you to choose which translation file groups (e.g.,
                         `messages.php`, `auth.php`, JSON file) you wish to process.</li>
-                    <li><strong>Analysis:</strong> Reports which keys are missing in your target languages.</li>
-                    <li><strong>Translation:</strong> Sends key chunks to Gemini AI with a real-time progress bar.</li>
-                    <li><strong>File Generation:</strong> Writes the new or updated translations to the correct language
-                        files.</li>
+                    <li><strong>Cross-Check & Analysis:</strong> Reports exactly which keys are missing in your target
+                        languages, showing you what needs to be synchronized.</li>
+                    <li><strong>AI Translation:</strong> Sends the missing keys and their source text to Gemini AI for
+                        translation, showing a real-time progress bar.</li>
+                    <li><strong>File Generation:</strong> Intelligently writes the new translations to the correct
+                        language files, merging them with existing content.</li>
                 </ol>
 
                 <div class="alert alert-success">
@@ -478,37 +544,39 @@ php artisan translations:extract-and-generate --skip-existing --langs=es,de</cod
 
                 <h3>The Problem of Ambiguity</h3>
                 <p>Without context, an AI might misinterpret terms. For example:</p>
-                <table class="options-table">
-                    <thead>
-                        <tr>
-                            <th>Term</th>
-                            <th>General Meaning</th>
-                            <th>Domain-Specific Meaning</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Position</td>
-                            <td>A physical location</td>
-                            <td>A financial holding (Finance)</td>
-                        </tr>
-                        <tr>
-                            <td>Security</td>
-                            <td>Safety or protection</td>
-                            <td>A tradable financial asset (Finance)</td>
-                        </tr>
-                        <tr>
-                            <td>Cloud</td>
-                            <td>A white puff in the sky</td>
-                            <td>Cloud computing infrastructure (Tech)</td>
-                        </tr>
-                        <tr>
-                            <td>Container</td>
-                            <td>A box or receptacle</td>
-                            <td>A Docker container (Tech)</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive-wrapper">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th>Term</th>
+                                <th>General Meaning</th>
+                                <th>Domain-Specific Meaning</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Position</td>
+                                <td>A physical location</td>
+                                <td>A financial holding (Finance)</td>
+                            </tr>
+                            <tr>
+                                <td>Security</td>
+                                <td>Safety or protection</td>
+                                <td>A tradable financial asset (Finance)</td>
+                            </tr>
+                            <tr>
+                                <td>Cloud</td>
+                                <td>A white puff in the sky</td>
+                                <td>Cloud computing infrastructure (Tech)</td>
+                            </tr>
+                            <tr>
+                                <td>Container</td>
+                                <td>A box or receptacle</td>
+                                <td>A Docker container (Tech)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <h3>The Solution: The <code class="inline-code">--context</code> Flag</h3>
                 <p>Use the optional <code class="inline-code">--context</code> flag to guide the AI, ensuring it uses
@@ -523,21 +591,6 @@ php artisan translations:extract-and-generate --langs=ar
 php artisan translations:extract-and-generate --langs=ar \
 --context="A SaaS platform for financial trading of stocks. Terms like 'position' and 'security' refer to financial concepts."</code></pre>
 
-                <h3>Example: Children's Storybook vs. DevOps</h3>
-                <p>This shows how context prevents nonsensical translations. The source text is from a children's story.
-                </p>
-                <pre><code># Wrong Context: Telling the AI it's a tech tool.
-php artisan translations:extract-and-generate --langs=ar \
---context="A CI/CD pipeline monitoring tool for DevOps that uses Docker containers."
-
-# AI might incorrectly translate "The wooden container" to "The wooden Docker container".
-
-# Correct Context: Telling the AI it's a storybook.
-php artisan translations:extract-and-generate --langs=ar \
---context="A children's storybook. The language should be simple and whimsical."
-
-# The AI will now correctly translate "container" as a simple box.
-</code></pre>
                 <h3>Best Practices for Writing Context</h3>
                 <ul>
                     <li><strong>Be Specific:</strong> Mention the industry (e.g., "Healthcare", "Legal", "E-commerce").
@@ -551,91 +604,89 @@ php artisan translations:extract-and-generate --langs=ar \
 
             <section id="options" class="section">
                 <h2>🔧 Command Options</h2>
-                <table class="options-table">
-                    <thead>
-                        <tr>
-                            <th>Option</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>--langs</code></td>
-                            <td>Comma-separated language codes to translate to (e.g., <code
-                                    class="inline-code">es,fr,de</code>).</td>
-                        </tr>
-                        <tr>
-                            <td><code>--driver</code></td>
-                            <td>Concurrency driver: <code class="inline-code">fork</code> (fast, for Linux/macOS) or
-                                <code class="inline-code">sync</code> (stable, for Windows).</td>
-                        </tr>
-                        <tr>
-                            <td><code>--skip-existing</code></td>
-                            <td>A flag to only find and translate keys that are missing from target language files.</td>
-                        </tr>
-                        <tr>
-                            <td><code>--context</code></td>
-                            <td>Provide a project-specific description to Gemini for more accurate, domain-aware
-                                translations.</td>
-                        </tr>
-                        <tr>
-                            <td><code>--chunk-size</code></td>
-                            <td>Number of keys to send to the AI in a single request. Default: 100.</td>
-                        </tr>
-                        <tr>
-                            <td><code>--source</code></td>
-                            <td>The root directory of the application to scan for keys. Default: ".".</td>
-                        </tr>
-                        <tr>
-                            <td><code>--target-dir</code></td>
-                            <td>Root directory for the final Laravel translation files. Default: "lang".</td>
-                        </tr>
-                        <tr>
-                            <td><code>--exclude</code></td>
-                            <td>Comma-separated directories to exclude from the scan.</td>
-                        </tr>
-                        <tr>
-                            <td><code>--extensions</code></td>
-                            <td>Comma-separated file extensions to search within.</td>
-                        </tr>
-                        <tr>
-                            <td><code>--max-retries</code></td>
-                            <td>Maximum number of retries for a failed API call. Default: 5.</td>
-                        </tr>
-                        <tr>
-                            <td><code>--retry-delay</code></td>
-                            <td>Base delay in seconds between retries (uses exponential backoff). Default: 3.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive-wrapper">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>--langs</code></td>
+                                <td>Comma-separated language codes to translate to (e.g., <code
+                                        class="inline-code">es,fr,de</code>).</td>
+                            </tr>
+                            <tr>
+                                <td><code>--driver</code></td>
+                                <td>Concurrency driver: <code class="inline-code">fork</code> (fast, for Linux/macOS) or
+                                    <code class="inline-code">sync</code> (stable, for Windows).</td>
+                            </tr>
+                            <tr>
+                                <td><code>--skip-existing</code></td>
+                                <td>A flag to only find and translate keys that are missing from target language files,
+                                    preserving existing translations.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--context</code></td>
+                                <td>Provide a project-specific description to Gemini for more accurate, domain-aware
+                                    translations.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--chunk-size</code></td>
+                                <td>Number of keys to send to the AI in a single request. Default: 100.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--source</code></td>
+                                <td>The root directory of the application to scan for keys. Default: ".".</td>
+                            </tr>
+                            <tr>
+                                <td><code>--target-dir</code></td>
+                                <td>Root directory for the final Laravel translation files. Default: "lang".</td>
+                            </tr>
+                            <tr>
+                                <td><code>--exclude</code></td>
+                                <td>Comma-separated directories to exclude from the scan.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--extensions</code></td>
+                                <td>Comma-separated file extensions to search within.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--max-retries</code></td>
+                                <td>Maximum number of retries for a failed API call. Default: 5.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--retry-delay</code></td>
+                                <td>Base delay in seconds between retries (uses exponential backoff). Default: 3.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="examples" class="section">
                 <h2>💡 Usage Examples</h2>
 
-                <h3>Basic Translation</h3>
-                <pre><code># Translate to Spanish, French, and German
+                <h3>Basic Translation (Overwrite Mode)</h3>
+                <pre><code># Translate to Spanish, French, and German, overwriting existing files
 php artisan translations:extract-and-generate --langs=es,fr,de</code></pre>
 
-                <h3>High-Performance Processing</h3>
-                <pre><code># Use fork driver with smaller chunks for faster processing
-php artisan translations:extract-and-generate --driver=fork --chunk-size=50</code></pre>
+                <h3>High-Performance Synchronization</h3>
+                <pre><code># Use fork driver with smaller chunks to find and fill only missing keys
+php artisan translations:extract-and-generate --driver=fork --chunk-size=50 --skip-existing</code></pre>
 
-                <h3>Selective File Processing</h3>
-                <pre><code># Only scan Blade files and exclude additional directories
+                <h3>Selective Code Scan</h3>
+                <pre><code># Only scan Blade files for new keys, but still cross-reference all existing lang files
 php artisan translations:extract-and-generate \
-    --exclude=vendor,tests,docs,storage \
-    --extensions=blade.php</code></pre>
+    --extensions=blade.php \
+    --skip-existing</code></pre>
 
-                <h3>Incremental Updates</h3>
-                <pre><code># Only translate missing keys, skip existing ones
+                <h3>Context-Aware Synchronization</h3>
+                <pre><code># Provide context while updating translations for a healthcare app
 php artisan translations:extract-and-generate \
     --skip-existing \
-    --langs=es,fr</code></pre>
-
-                <h3>Context-Aware Translation</h3>
-                <pre><code># Provide context for a healthcare application
-php artisan translations:extract-and-generate \
     --langs=es,fr \
     --context="A patient management system for hospitals. 'Discharge' means patient release, 'case' means patient case."</code></pre>
             </section>
@@ -644,7 +695,9 @@ php artisan translations:extract-and-generate \
                 <h2>🚀 Advanced Usage</h2>
                 <h3>Example Output</h3>
                 <h4>Fork Driver Output (Linux/macOS)</h4>
-                <pre><code>┌ Which translation files would you like to process? ────────┐
+                <pre><code>✅ Key discovery complete! Found 235 unique keys from all sources combined.
+
+┌ Which translation files would you like to process? ────────┐
  ● messages.php                                                                
  ○ auth.php                                                                    
  ● Root JSON file                                                              
@@ -652,20 +705,22 @@ php artisan translations:extract-and-generate \
 
 Press the 'q' key at any time to gracefully stop the process.
 ⚡ Using 'fork' driver for high-performance concurrency.
-📊 Total keys to translate: 156
+📊 Total keys needing translation: 156
 📦 Total chunks to process: 2
 🚀 156/156 [============================] 100% -- ✅ Chunk 2/2 - SUCCESS (156 keys) ⏱️  18s
 
 ╔═ 💾 Phase 3: Writing Language Files ═════════════════════════════╗
 
- ✅ Wrote: lang/es.json (78 total keys)
- ✅ Wrote: lang/es/messages.php (78 total keys)
- ✅ Wrote: lang/fr.json (78 total keys)
- ✅ Wrote: lang/fr/messages.php (78 total keys)
+ ✅ Updated: lang/es.json (110 total keys)
+ ✅ Updated: lang/es/messages.php (125 total keys)
+ ✅ Updated: lang/fr.json (110 total keys)
+ ✅ Updated: lang/fr/messages.php (125 total keys)
 </code></pre>
 
                 <h4>Sync Driver Output (Windows)</h4>
-                <pre><code>┌ Which translation files would you like to process? ───────────────┐
+                <pre><code>✅ Key discovery complete! Found 222 unique keys from all sources combined.
+
+┌ Which translation files would you like to process? ───────────────┐
  ● Root JSON file                                                              
 └───────────────────────────────────────────────────────────────────┘
 
@@ -682,59 +737,48 @@ Processing file: __JSON__
   ✅ Wrote: lang/fr.json (222 total keys)
 </code></pre>
 
-                <h3>Generated File Structure</h3>
-                <p>The command intelligently organizes translations based on Laravel conventions:</p>
-                <pre><code>lang/
-├── es/
-│   ├── auth.php
-│   └── messages.php
-├── fr/
-│   ├── auth.php
-│   └── messages.php
-├── es.json
-└── fr.json
-</code></pre>
-
                 <h3>Supported Functions & Patterns</h3>
                 <p>The scanner is pre-configured to find keys used in the most common Laravel and JavaScript
                     localization functions.</p>
-                <table class="options-table">
-                    <thead>
-                        <tr>
-                            <th>Pattern</th>
-                            <th>Example</th>
-                            <th>Typical Context</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>__()</code>, <code>trans()</code>, <code>@lang()</code></td>
-                            <td><code>__('messages.welcome')</code></td>
-                            <td>PHP & Blade</td>
-                        </tr>
-                        <tr>
-                            <td><code>trans_choice()</code>, <code>@choice()</code></td>
-                            <td><code>trans_choice('messages.apples', 5)</code></td>
-                            <td>PHP & Blade (Pluralization)</td>
-                        </tr>
-                        <tr>
-                            <td><code>$t()</code>, <code>i18n.t()</code></td>
-                            <td><code>$t('user.profile')</code></td>
-                            <td>Vue.js, JavaScript (i18n Libraries)</td>
-                        </tr>
-                        <tr>
-                            <td><code>v-t</code>, <code>x-text</code></td>
-                            <td><code>&lt;span v-t="'buttons.submit'"&gt;</code></td>
-                            <td>Vue.js & Alpine.js Directives</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive-wrapper">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>Example</th>
+                                <th>Typical Context</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>__()</code>, <code>trans()</code>, <code>@lang()</code></td>
+                                <td><code>__('messages.welcome')</code></td>
+                                <td>PHP & Blade</td>
+                            </tr>
+                            <tr>
+                                <td><code>trans_choice()</code>, <code>@choice()</code></td>
+                                <td><code>trans_choice('messages.apples', 5)</code></td>
+                                <td>PHP & Blade (Pluralization)</td>
+                            </tr>
+                            <tr>
+                                <td><code>$t()</code>, <code>i18n.t()</code></td>
+                                <td><code>$t('user.profile')</code></td>
+                                <td>Vue.js, JavaScript (i18n Libraries)</td>
+                            </tr>
+                            <tr>
+                                <td><code>v-t</code>, <code>x-text</code></td>
+                                <td><code>&lt;span v-t="'buttons.submit'"&gt;</code></td>
+                                <td>Vue.js & Alpine.js Directives</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <h3>Logging & Debugging</h3>
                 <p>For transparency and debugging, the command creates two log files in your project root:</p>
                 <ul>
                     <li><code class="inline-code">translation_extraction_log.json</code>: A detailed log of every unique
-                        key found and the file paths where it was located.</li>
+                        key found in your *code* and the file paths where it was located.</li>
                     <li><code class="inline-code">failed_translation_keys.json</code>: A list of any keys that failed to
                         be translated by the AI, so you can easily retry them.</li>
                 </ul>
@@ -742,61 +786,64 @@ Processing file: __JSON__
 
             <section id="troubleshooting" class="section">
                 <h2>🔧 Troubleshooting</h2>
-                <table class="options-table">
-                    <thead>
-                        <tr>
-                            <th>Error / Issue</th>
-                            <th>Common Cause</th>
-                            <th>Solution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>"Invalid API key"</td>
-                            <td>The <code class="inline-code">GEMINI_API_KEY</code> in your <code
-                                    class="inline-code">.env</code> file is incorrect or missing.</td>
-                            <td>Verify the key is correct and has no extra spaces. Run <code
-                                    class="inline-code">php artisan config:cache</code> after changes.</td>
-                        </tr>
-                        <tr>
-                            <td>"Quota exceeded" or "Rate limit" errors</td>
-                            <td>The free tier API limit (e.g., 30 requests/minute) has been reached.</td>
-                            <td>
-                                Lower the chunk size with <code class="inline-code">--chunk-size=25</code> and/or wait a
-                                few minutes before retrying.
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>"Call to undefined function pcntl_fork()"</td>
-                            <td>You are trying to use <code class="inline-code">--driver=fork</code> on an environment
-                                without the <code class="inline-code">pcntl</code> PHP extension (like standard
-                                Windows).</td>
-                            <td>Use the stable driver: <code class="inline-code">--driver=sync</code>.</td>
-                        </tr>
-                        <tr>
-                            <td>Script hangs or runs very slowly</td>
-                            <td>Processing a very large number of keys with the <code class="inline-code">sync</code>
-                                driver.</td>
-                            <td>Be patient, as sync mode is sequential. For large projects, use the <code
-                                    class="inline-code">fork</code> driver on Linux/macOS/WSL if possible.</td>
-                        </tr>
-                        <tr>
-                            <td>"Invalid JSON response from Gemini"</td>
-                            <td>A rare API issue where the response is not valid JSON, or a network interruption.</td>
-                            <td>The built-in retry logic usually handles this. If it persists, try reducing the <code
-                                    class="inline-code">--chunk-size</code>.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive-wrapper">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th>Error / Issue</th>
+                                <th>Common Cause</th>
+                                <th>Solution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>"Invalid API key"</td>
+                                <td>The <code class="inline-code">GEMINI_API_KEY</code> in your <code
+                                        class="inline-code">.env</code> file is incorrect or missing.</td>
+                                <td>Verify the key is correct and has no extra spaces. Run <code
+                                        class="inline-code">php artisan config:cache</code> after changes.</td>
+                            </tr>
+                            <tr>
+                                <td>"Quota exceeded" or "Rate limit" errors</td>
+                                <td>The free tier API limit has been reached.</td>
+                                <td>Lower the chunk size with <code class="inline-code">--chunk-size=25</code> and/or
+                                    wait a few minutes before retrying.</td>
+                            </tr>
+                            <tr>
+                                <td>"Call to undefined function pcntl_fork()"</td>
+                                <td>You are trying to use <code class="inline-code">--driver=fork</code> on an
+                                    environment without the <code class="inline-code">pcntl</code> PHP extension (like
+                                    standard Windows).</td>
+                                <td>Use the stable driver: <code class="inline-code">--driver=sync</code>.</td>
+                            </tr>
+                            <tr>
+                                <td>Script hangs or runs very slowly</td>
+                                <td>Processing a very large number of keys with the <code
+                                        class="inline-code">sync</code> driver.</td>
+                                <td>Be patient, as sync mode is sequential. For large projects, use the <code
+                                        class="inline-code">fork</code> driver on Linux/macOS/WSL if possible.</td>
+                            </tr>
+                            <tr>
+                                <td>"Invalid JSON response from Gemini"</td>
+                                <td>A rare API issue where the response is not valid JSON, or a network interruption.
+                                </td>
+                                <td>The built-in retry logic usually handles this. If it persists, try reducing the
+                                    <code class="inline-code">--chunk-size</code>.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="faq" class="section">
                 <h2>❓ Frequently Asked Questions</h2>
 
                 <h3>Q: Can I use this with existing translation files?</h3>
-                <p><strong>A:</strong> Yes! Use the <code>--skip-existing</code> option to only translate missing keys
-                    while preserving your existing translations. The command will merge new translations with your
-                    existing files.</p>
+                <p><strong>A:</strong> Yes, and that's its biggest strength! The tool is designed to work with existing
+                    projects. It reads all your current language files to build a complete list of every key your
+                    application knows about. When you run it with <code class="inline-code">--skip-existing</code>, it
+                    will only translate what's missing, perfectly synchronizing your language files while preserving all
+                    your existing work.</p>
 
                 <h3>Q: How accurate are the AI translations?</h3>
                 <p><strong>A:</strong> Gemini AI provides high-quality translations, but we always recommend a final
@@ -810,9 +857,9 @@ Processing file: __JSON__
                     so you can review and handle it manually.</p>
 
                 <h3>Q: Is this suitable for production applications?</h3>
-                <p><strong>A:</strong> Absolutely. It's designed to be a powerful developer tool to accelerate the
-                    localization workflow. By using it in development and staging, then committing the generated files,
-                    you can safely deploy them to production after a review.</p>
+                <p><strong>A:</strong> Absolutely. It's a powerful developer tool to accelerate the localization
+                    workflow. By using it in your development environment and committing the generated/updated language
+                    files to your repository, you can safely deploy them to production after a quick review.</p>
             </section>
 
             <section id="contributing" class="section">
@@ -841,56 +888,60 @@ Processing file: __JSON__
     <button class="back-to-top" onclick="scrollToTop()">↑</button>
 
     <script>
-        window.addEventListener('scroll', function () {
-            const backToTop = document.querySelector('.back-to-top');
-            if (window.pageYOffset > 300) {
-                backToTop.classList.add('visible');
-            } else {
-                backToTop.classList.remove('visible');
-            }
+        document.addEventListener('DOMContentLoaded', function () {
+            const backToTopButton = document.querySelector('.back-to-top');
+            const hamburger = document.getElementById('hamburger-menu');
+            const navLinks = document.getElementById('nav-links');
+
+            // Back to Top button visibility
+            window.addEventListener('scroll', function () {
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.add('visible');
+                } else {
+                    backToTopButton.classList.remove('visible');
+                }
+            });
+
+            // Hamburger menu toggle
+            hamburger.addEventListener('click', function () {
+                navLinks.classList.toggle('active');
+                document.body.classList.toggle('nav-open');
+            });
+
+            // Close mobile nav when a link is clicked
+            navLinks.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (navLinks.classList.contains('active')) {
+                        navLinks.classList.remove('active');
+                        document.body.classList.remove('nav-open');
+                    }
+                });
+            });
+
+            // Active nav link on scroll
+            const sections = document.querySelectorAll('section[id]');
+            const navLinkElements = document.querySelectorAll('nav a[href^="#"]');
+            window.addEventListener('scroll', function () {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinkElements.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
         });
 
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    const offset = 80;
-                    const bodyRect = document.body.getBoundingClientRect().top;
-                    const elementRect = target.getBoundingClientRect().top;
-                    const elementPosition = elementRect - bodyRect;
-                    const offsetPosition = elementPosition - offset;
-
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                    });
-                }
-            });
-        });
-
-        window.addEventListener('scroll', function () {
-            const sections = document.querySelectorAll('section[id]');
-            const navLinks = document.querySelectorAll('nav a[href^="#"]');
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                if (pageYOffset >= sectionTop - 100) {
-                    current = section.getAttribute('id');
-                }
-            });
-
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === '#' + current) {
-                    link.classList.add('active');
-                }
-            });
-        });
     </script>
 </body>
 
