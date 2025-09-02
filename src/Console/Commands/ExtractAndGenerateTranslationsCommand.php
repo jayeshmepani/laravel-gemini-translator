@@ -72,6 +72,10 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->alert('No translation keys were found from any source (code scan, existing lang files, framework defaults). Exiting.');
             return Command::SUCCESS;
         }
+
+        // FIX: Ensure all discovered keys have a source text, even if it's just the key itself.
+        $this->populateSourceTextForNewKeys($allPossibleKeys);
+
         $this->success("Key discovery complete! Found " . count($allPossibleKeys) . " unique keys from all sources combined.");
         $this->line('');
 
@@ -136,6 +140,16 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
         $this->displayFinalSummary();
         return Command::SUCCESS;
+    }
+
+    private function populateSourceTextForNewKeys(array $allKeys): void
+    {
+        foreach ($allKeys as $key) {
+            if (!isset($this->sourceTextMap[$key])) {
+                // For brand new keys found only in code, use the key itself as the source text.
+                $this->sourceTextMap[$key] = $key;
+            }
+        }
     }
 
     private function loadExistingTranslations(): void
@@ -619,7 +633,7 @@ Translate the **Text** for each **Key** listed below. Before translating, mental
 Return ONLY a valid JSON object with the structure shown in the example above. Do not add any commentary.
 PROMPT;
 
-        $modelToUse = config('gemini.model', 'gemini-1.5-flash-latest');
+        $modelToUse = config('gemini.model', 'gemini-2.5-flash-lite');
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 $response = Gemini::generativeModel(model: $modelToUse)->generateContent($prompt);

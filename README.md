@@ -95,7 +95,7 @@ lang/
 
 ## 🐛 Issues & Support
 
-- **Rate Limits:** Free tier has 30 RPM / 1,500 daily requests
+- **Rate Limits:** Free tier has 15 RPM / 1000 daily requests
 - **Performance:** Use `--driver=fork` on Linux/macOS for best performance
 - **Help:** Run `php artisan help translations:extract-and-generate`
 
@@ -105,4 +105,4 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 
 ---
 
-⭐ **Star this repo** if you find it helpful! | 🐛 **Report issues** on GitHub | 📖 **Read full docs** at [GitHub Pages](https://jayeshmepani.github.io/laravel-gemini-translator/)
+⭐ **Star this repo** if you find it helpful! | 🐛 **Report issues** on GitHub | 📖 **Read full docs** at [Here](https://jayeshmepani.github.io/laravel-gemini-translator/)
