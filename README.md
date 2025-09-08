@@ -58,7 +58,7 @@ php artisan translations:extract-and-generate
 
 For detailed documentation, step-by-step guides, and advanced usage examples, visit our comprehensive documentation:
 
-**[📚 Full Documentation](https://your-username.github.io/laravel-gemini-translator/)**
+**[📚 Full Documentation](https://jayeshmepani.github.io/laravel-gemini-translator/)**
 
 ## 🔧 Common Options
 
