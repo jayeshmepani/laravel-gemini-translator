@@ -83,6 +83,10 @@
             .alert-success {
                 background-color: rgba(16, 185, 129, 0.15);
             }
+
+            p a {
+                color: lightseagreen;
+            }
         }
 
         * {
@@ -375,6 +379,7 @@
         h3 {
             font-size: 1.5rem;
             color: var(--primary-color);
+            margin-block: 1rem 0.37rem;
         }
 
         p {
@@ -418,6 +423,13 @@
             border-radius: 0.3rem;
             font-size: 0.9rem;
             border: 1px solid var(--border-color);
+            text-wrap-mode: nowrap;
+
+            &.wrap {
+                display: inline-block;
+                transform: translateY(-0.5ch);
+                margin-inline: 0.5ch;
+            }
         }
 
         .feature-grid {
@@ -636,9 +648,10 @@
                     🌐 Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges">
+                    <span class="badge">v3.7</span>
                     <span class="badge">PHP 8.1+</span>
                     <span class="badge">Laravel 10+</span>
-                    <span class="badge">AI Powered</span>
+                    <span class="badge">Module Support</span>
                 </div>
             </div>
         </div>
@@ -651,12 +664,14 @@
                 <li><a href="#installation">Installation</a></li>
                 <li><a href="#configuration">Configuration</a></li>
                 <li><a href="#usage">Usage</a></li>
-                <li><a href="#context">Context-Aware AI</a></li>
+                <li><a href="#modules">Module Support</a></li>
+                <li><a href="#advanced">Advanced Usage</a></li>
+                <li><a href="#context">AI-First Translation</a></li>
                 <li><a href="#options">Options</a></li>
                 <li><a href="#examples">Examples</a></li>
-                <li><a href="#advanced">Advanced</a></li>
                 <li><a href="#troubleshooting">Troubleshooting</a></li>
                 <li><a href="#faq">FAQ</a></li>
+                <li><a href="#contributing">Contributing</a></li>
             </ul>
             <div class="nav-controls">
                 <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
@@ -693,69 +708,67 @@
                 <h2>📋 Overview</h2>
                 <p>
                     The Laravel Gemini AI Translation Synchronization Tool is a powerful Artisan command that
-                    revolutionizes the localization workflow for Laravel applications. It moves beyond simple extraction
-                    by discovering translation keys from all possible sources—your code, existing language files, and
-                    the Laravel framework itself—and then intelligently synchronizes them across all your target
-                    languages using AI.
+                    revolutionizes the localization workflow for modern Laravel applications, including those built
+                    with <a href="https://laravelmodules.com/"
+                        target="_blank">nwidart/laravel-modules</a>.
+                    It goes beyond simple key extraction by discovering keys from all sources—your code, existing
+                    language files, and the framework—and then intelligently synchronizes them across all target
+                    languages using Gemini AI.
                 </p>
 
                 <div class="feature-grid">
                     <div class="feature-card">
-                        <div class="feature-icon">🔄</div>
-                        <h3>Full Synchronization</h3>
-                        <p>Discovers keys from your code, all existing language files, and framework defaults to create
-                            a complete picture, ensuring no translation is left behind.</p>
+                        <div class="feature-icon">🧩</div>
+                        <h3>Full Module Support</h3>
+                        <p>Automatically detects and handles translations for the main application and any enabled <code
+                                class="inline-code">nwidart</code> modules, keeping them separate and organized.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">🤖</div>
-                        <h3>Context-Aware AI</h3>
-                        <p>Leverages Google's Gemini AI and an optional <code class="inline-code">--context</code> flag
-                            to provide high-quality, domain-specific translations.</p>
+                        <h3>AI-First Translation</h3>
+                        <p>Trusts the AI to interpret both namespaced keys (e.g., <code
+                                class="inline-code">messages.welcome</code>) and literal strings to generate accurate,
+                            context-aware translations.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>True Synchronization</h3>
+                        <p>Discovers keys from your code and existing files to create a complete picture, ensuring no
+                            translation is left behind. Use <code class="inline-code">--skip-existing</code> to only add
+                            missing keys.</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">⚡</div>
                         <h3>High Performance</h3>
-                        <p>Features a <code class="inline-code">fork</code> driver for Linux/macOS enabling
-                            lightning-fast parallel processing, and a stable <code class="inline-code">sync</code>
-                            driver for Windows compatibility.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🎯</div>
-                        <h3>Interactive & Incremental</h3>
-                        <p>An interactive interface lets you choose which files to process, while the <code
-                                class="inline-code">--skip-existing</code> flag allows for efficient synchronization and
-                            updates.</p>
+                        <p>Features a <code class="inline-code">fork</code> driver for lightning-fast parallel
+                            processing on Linux/macOS/WSL, and a stable <code class="inline-code">sync</code> driver for
+                            Windows.</p>
                     </div>
                 </div>
             </section>
 
             <section id="installation" class="section">
                 <h2>🚀 Installation</h2>
-
                 <h3>Step 1: Install via Composer</h3>
-                <p>For Linux, macOS, or WSL users:</p>
                 <pre><code>composer require jayesh/laravel-gemini-translator</code></pre>
 
-                <div class="alert alert-warning">
-                    <strong>Windows Users:</strong> Because Windows does not natively support the <code
-                        class="inline-code">pcntl</code> extension required for the high-performance 'fork' driver, you
-                    must use the following command to ignore it during installation:
-                    <pre><code>composer require jayesh/laravel-gemini-translator --ignore-platform-reqs=ext-pcntl</code></pre>
-                </div>
-
                 <h3>Step 2: Publish Configuration</h3>
-                <pre><code>php artisan gemini:install</code></pre>
+                <pre><code>php artisan vendor:publish --provider="Gemini\Laravel\GeminiServiceProvider"</code></pre>
                 <p>This creates the <code class="inline-code">config/gemini.php</code> file.</p>
 
                 <h3>Step 3: Add API Key</h3>
                 <p>Add your Gemini API key to your <code class="inline-code">.env</code> file. You can get a key from
                     the <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
                 <pre><code>GEMINI_API_KEY="YOUR_GEMINI_API_KEY"</code></pre>
+                <div class="alert alert-info">
+                    <strong>Offline Mode:</strong> If you run the command without a <code
+                        class="inline-code">GEMINI_API_KEY</code>, it will automatically switch to Offline Mode,
+                    generating placeholder files so your application doesn't break.
+                </div>
             </section>
 
             <section id="configuration" class="section">
                 <h2>⚙️ Configuration</h2>
-
                 <h3>Environment Variables</h3>
                 <p>Add these variables to your <code class="inline-code">.env</code> file:</p>
                 <pre><code>GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
@@ -788,7 +801,8 @@ GEMINI_REQUEST_TIMEOUT=600</code></pre>
                 <h2>🎯 Usage</h2>
 
                 <h3>Basic Command</h3>
-                <p>Simply run the command to start the interactive process.</p>
+                <p>Simply run the command to start the interactive process. It will guide you through selecting which
+                    parts of your application and which files to process.</p>
                 <pre><code>php artisan translations:extract-and-generate</code></pre>
 
                 <h3>Platform-Specific Recommendations</h3>
@@ -799,233 +813,78 @@ php artisan translations:extract-and-generate --driver=fork
 # Windows (maximum stability)
 php artisan translations:extract-and-generate --driver=sync</code></pre>
 
-                <h3>Incremental Updates & Synchronization</h3>
+                <h3>Incremental Updates (Synchronization)</h3>
                 <p>To add new translations without overwriting existing ones, use the <code
-                        class="inline-code">--skip-existing</code> flag. This is the core of the synchronization
-                    feature, perfect for ongoing projects.</p>
-                <pre><code># Find all missing keys in Spanish and German and translate them
+                        class="inline-code">--skip-existing</code> flag. This is the recommended workflow for ongoing
+                    projects.</p>
+                <pre><code># Find and translate only the keys that are missing in Spanish and German
 php artisan translations:extract-and-generate --skip-existing --langs=es,de</code></pre>
-
-                <h3>The Interactive Process</h3>
-                <p>The command guides you through a seamless workflow:</p>
-                <ol>
-                    <li><strong>Key Discovery:</strong> Gathers a complete list of translation keys from all sources:
-                        your project code, all existing language files (e.g., `en/`, `fr/`), and Laravel's built-in
-                        translations.</li>
-                    <li><strong>File Selection:</strong> Prompts you to choose which translation file groups (e.g.,
-                        `messages.php`, `auth.php`, JSON file) you wish to process.</li>
-                    <li><strong>Cross-Check & Analysis:</strong> Reports exactly which keys are missing in your target
-                        languages, showing you what needs to be synchronized.</li>
-                    <li><strong>AI Translation:</strong> Sends the missing keys and their source text to Gemini AI for
-                        translation, showing a real-time progress bar.</li>
-                    <li><strong>File Generation:</strong> Intelligently writes the new translations to the correct
-                        language files, merging them with existing content.</li>
-                </ol>
-
-                <div class="alert alert-success">
-                    <strong>Pro Tip:</strong> Press the '<code class="inline-code">q</code>' key at any time during
-                    translation to gracefully stop the process. All completed translations up to that point will be
-                    saved.
-                </div>
             </section>
 
-            <section id="context" class="section">
-                <h2>💡 Context-Aware Translations</h2>
-                <p>
-                    Providing project-specific context is one of the most powerful features for achieving high-quality,
-                    accurate translations. It helps Gemini resolve ambiguity for words that have different meanings in
-                    different domains.
-                </p>
+            <section id="modules" class="section">
+                <h2>🧩 Module Support (<code class="inline-code wrap">nwidart/laravel-modules</code>)</h2>
+                <p>The tool is designed from the ground up to support modular applications. It automatically detects
+                    enabled modules and treats them as separate translation contexts.</p>
 
-                <h3>The Problem of Ambiguity</h3>
-                <p>Without context, an AI might misinterpret terms. For example:</p>
-                <div class="table-responsive-wrapper">
-                    <table class="options-table">
-                        <thead>
-                            <tr>
-                                <th>Term</th>
-                                <th>General Meaning</th>
-                                <th>Domain-Specific Meaning</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Position</td>
-                                <td>A physical location</td>
-                                <td>A financial holding (Finance)</td>
-                            </tr>
-                            <tr>
-                                <td>Security</td>
-                                <td>Safety or protection</td>
-                                <td>A tradable financial asset (Finance)</td>
-                            </tr>
-                            <tr>
-                                <td>Cloud</td>
-                                <td>A white puff in the sky</td>
-                                <td>Cloud computing infrastructure (Tech)</td>
-                            </tr>
-                            <tr>
-                                <td>Container</td>
-                                <td>A box or receptacle</td>
-                                <td>A Docker container (Tech)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <h3>1. Select Scan Targets</h3>
+                <p>When you run the command, you will be prompted to choose which parts of your application to scan.</p>
+                <pre><code>┌ Which parts of the application would you like to scan and process? ┐
+ ● -- ALL TARGETS --
+ ○ Main Application
+ ○ Module: Settings
+ ○ Module: Blog
+└────────────────────────────────────────────────────────────────────┘</code></pre>
 
-                <h3>The Solution: The <code class="inline-code">--context</code> Flag</h3>
-                <p>Use the optional <code class="inline-code">--context</code> flag to guide the AI, ensuring it uses
-                    the correct terminology for your project's domain.</p>
+                <h3>2. Select Files to Process</h3>
+                <p>The tool then shows you all the translation files it has discovered, correctly grouped by their
+                    origin (Main App or Module), including those in subdirectories.</p>
+                <pre><code>┌ Which translation files would you like to process? ──────────┐
+ ○ Main Application: JSON File (web/*.json)
+ ● Main Application: validation.php
+ ○ Module: Blog: JSON File (*.json)
+ ● Module: Settings: JSON File (web/*.json)
+└──────────────────────────────────────────────────────────────┘</code></pre>
 
-                <h3>Example: Financial Application</h3>
-                <p>Imagine you are translating for a stock trading platform.</p>
-                <pre><code># Without context, translations may be generic or wrong.
-php artisan translations:extract-and-generate --langs=ar
-
-# With correct context, translations are precise.
-php artisan translations:extract-and-generate --langs=ar \
---context="A SaaS platform for financial trading of stocks. Terms like 'position' and 'security' refer to financial concepts."</code></pre>
-
-                <h3>Best Practices for Writing Context</h3>
-                <ul>
-                    <li><strong>Be Specific:</strong> Mention the industry (e.g., "Healthcare", "Legal", "E-commerce").
-                    </li>
-                    <li><strong>Define Ambiguous Terms:</strong> Explicitly state what key terms mean in your domain.
-                    </li>
-                    <li><strong>Describe the Tone:</strong> Mention the target audience (e.g., "for professional
-                        lawyers," "for young children," "formal and corporate").</li>
-                </ul>
-            </section>
-
-            <section id="options" class="section">
-                <h2>🔧 Command Options</h2>
-                <div class="table-responsive-wrapper">
-                    <table class="options-table">
-                        <thead>
-                            <tr>
-                                <th>Option</th>
-                                <th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code>--langs</code></td>
-                                <td>Comma-separated language codes to translate to (e.g., <code
-                                        class="inline-code">es,fr,de</code>).</td>
-                            </tr>
-                            <tr>
-                                <td><code>--driver</code></td>
-                                <td>Concurrency driver: <code class="inline-code">fork</code> (fast, for Linux/macOS) or
-                                    <code class="inline-code">sync</code> (stable, for Windows).
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><code>--skip-existing</code></td>
-                                <td>A flag to only find and translate keys that are missing from target language files,
-                                    preserving existing translations.</td>
-                            </tr>
-                            <tr>
-                                <td><code>--context</code></td>
-                                <td>Provide a project-specific description to Gemini for more accurate, domain-aware
-                                    translations.</td>
-                            </tr>
-                            <tr>
-                                <td><code>--chunk-size</code></td>
-                                <td>Number of keys to send to the AI in a single request. Default: 100.</td>
-                            </tr>
-                            <tr>
-                                <td><code>--source</code></td>
-                                <td>The root directory of the application to scan for keys. Default: ".".</td>
-                            </tr>
-                            <tr>
-                                <td><code>--target-dir</code></td>
-                                <td>Root directory for the final Laravel translation files. Default: "lang".</td>
-                            </tr>
-                            <tr>
-                                <td><code>--exclude</code></td>
-                                <td>Comma-separated directories to exclude from the scan.</td>
-                            </tr>
-                            <tr>
-                                <td><code>--extensions</code></td>
-                                <td>Comma-separated file extensions to search within.</td>
-                            </tr>
-                            <tr>
-                                <td><code>--max-retries</code></td>
-                                <td>Maximum number of retries for a failed API call. Default: 5.</td>
-                            </tr>
-                            <tr>
-                                <td><code>--retry-delay</code></td>
-                                <td>Base delay in seconds between retries (uses exponential backoff). Default: 3.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <section id="examples" class="section">
-                <h2>💡 Usage Examples</h2>
-
-                <h3>Basic Translation (Overwrite Mode)</h3>
-                <pre><code># Translate to Spanish, French, and German, overwriting existing files
-php artisan translations:extract-and-generate --langs=es,fr,de</code></pre>
-
-                <h3>High-Performance Synchronization</h3>
-                <pre><code># Use fork driver with smaller chunks to find and fill only missing keys
-php artisan translations:extract-and-generate --driver=fork --chunk-size=50 --skip-existing</code></pre>
-
-                <h3>Selective Code Scan</h3>
-                <pre><code># Only scan Blade files for new keys, but still cross-reference all existing lang files
-php artisan translations:extract-and-generate \
-    --extensions=blade.php \
-    --skip-existing</code></pre>
-
-                <h3>Context-Aware Synchronization</h3>
-                <pre><code># Provide context while updating translations for a healthcare app
-php artisan translations:extract-and-generate \
-    --skip-existing \
-    --langs=es,fr \
-    --context="A patient management system for hospitals. 'Discharge' means patient release, 'case' means patient case."</code></pre>
+                <h3>3. Separate File Generation</h3>
+                <p>The translated files are written to their correct locations, keeping your module translations
+                    encapsulated.</p>
+                <pre><code> ✅ Updated: lang/en/validation.php (138 total keys)
+ ✅ Updated: Modules/Settings/lang/web/en.json (52 total keys)
+ ✅ Updated: Modules/Blog/lang/en.json (128 total keys)</code></pre>
             </section>
 
             <section id="advanced" class="section">
-                <h2>🚀 Advanced Usage</h2>
-                <h3>Example Output</h3>
-                <h4>Fork Driver Output (Linux/macOS)</h4>
-                <pre><code>✅ Key discovery complete! Found 235 unique keys from all sources combined.
+                <h2>🚀 Advanced Usage & Output</h2>
 
-┌ Which translation files would you like to process? ────────┐
- ● messages.php                                                                
- ○ auth.php                                                                    
- ● Root JSON file                                                              
-└────────────────────────────────────────────────────────────┘
+                <h3>Fork Driver Output (Linux/macOS)</h3>
+                <p>The high-performance `fork` driver shows a real-time progress bar for all keys being processed
+                    concurrently.</p>
+                <pre><code>✅ Key discovery complete! Found 451 unique keys from all sources combined.
 
 Press the 'q' key at any time to gracefully stop the process.
-⚡ Using 'fork' driver for high-performance concurrency.
-📊 Total keys needing translation: 156
+📊 Total keys needing translation: 7
 📦 Total chunks to process: 2
-🚀 156/156 [============================] 100% -- ✅ Chunk 2/2 - SUCCESS (156 keys) ⏱️  18s
+⚡ Using 'fork' driver for high-performance concurrency.
+🚀 7/7 [============================] 100% -- ✅ Chunk 2/2 - SUCCESS (5 keys) ⏱️     3 s
 
-╔═ 💾 Phase 3: Writing Language Files ═════════════════════════════╗
+╔═ 💾 Phase 3: Writing Language Files ════════════════════════════════════╗
 
- ✅ Updated: lang/es.json (110 total keys)
- ✅ Updated: lang/es/messages.php (125 total keys)
- ✅ Updated: lang/fr.json (110 total keys)
- ✅ Updated: lang/fr/messages.php (125 total keys)
+ ✅ Updated: lang/en/auth.php (8 total keys)
+ ✅ Updated: lang/ru/auth.php (8 total keys)
+ ✅ Updated: lang/uz/auth.php (8 total keys)
 </code></pre>
 
-                <h4>Sync Driver Output (Windows)</h4>
+                <h3>Sync Driver Output (Windows)</h3>
+                <p>The stable `sync` driver processes chunks sequentially and provides feedback for each one, which is
+                    ideal for environments that don't support forking.</p>
                 <pre><code>✅ Key discovery complete! Found 222 unique keys from all sources combined.
-
-┌ Which translation files would you like to process? ───────────────┐
- ● Root JSON file                                                              
-└───────────────────────────────────────────────────────────────────┘
 
  🐌 Running in synchronous mode - this will be slower but more stable!
 
-Processing file: __JSON__
-  -> Processing keys 1-100 of 222... ✓ Done
-  -> Processing keys 101-200 of 222... ✓ Done
-  -> Processing keys 201-222 of 222... ✓ Done
+  -> Processing chunk 1/3... ✓ Done
+  -> Processing chunk 2/3... ✓ Done
+  -> Processing chunk 3/3... ✗ Failed
+     Error: File: __MAIN__::__JSON__, Keys: An unknown error occurred.,... - Error: Syntax error
 
 ╔═ 💾 Phase 3: Writing Language Files ═══════════════════════════════════════╗
 
@@ -1080,6 +939,139 @@ Processing file: __JSON__
                 </ul>
             </section>
 
+            <section id="context" class="section">
+                <h2>💡 AI-First Translation</h2>
+                <p>
+                    This tool adopts an "AI-First" philosophy. Instead of trying to pre-process translation keys into
+                    human-readable text (which can be buggy), it trusts the AI to correctly interpret the keys based on
+                    Laravel conventions.
+                </p>
+
+                <h3>How the AI Interprets Keys</h3>
+                <p>The prompt sent to Gemini is specially designed to handle two types of keys:</p>
+                <div class="table-responsive-wrapper">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th>Key Type</th>
+                                <th>Example Key</th>
+                                <th>AI's Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Namespaced (PHP-style)</td>
+                                <td><code class="inline-code">auth.failed</code></td>
+                                <td>"Based on Laravel conventions, this means an authentication failure. I will generate
+                                    'These credentials do not match our records.'"</td>
+                            </tr>
+                            <tr>
+                                <td>Literal (JSON-style)</td>
+                                <td><code class="inline-code">Save Changes</code></td>
+                                <td>"This is a literal string. I will translate 'Save Changes' directly."</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Improving Accuracy with the <code class="inline-code">--context</code> Flag</h3>
+                <p>For domain-specific terms, you can guide the AI with the <code class="inline-code">--context</code>
+                    flag. This is crucial for avoiding ambiguity.</p>
+
+                <pre><code># For a financial trading app, this context ensures accuracy.
+php artisan translations:extract-and-generate \
+--context="A SaaS platform for financial trading. 'Position' and 'security' refer to financial assets."</code></pre>
+            </section>
+
+            <section id="options" class="section">
+                <h2>🔧 Command Options</h2>
+                <div class="table-responsive-wrapper">
+                    <table class="options-table">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>--langs</code></td>
+                                <td>Comma-separated language codes to translate to (e.g., <code
+                                        class="inline-code">es,fr,de</code>).</td>
+                            </tr>
+                            <tr>
+                                <td><code>--driver</code></td>
+                                <td>Concurrency driver: <code class="inline-code">fork</code> (fast, for Linux/macOS) or
+                                    <code class="inline-code">sync</code> (stable, for Windows).
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>--skip-existing</code></td>
+                                <td>A flag to only find and translate keys that are missing from target language files.
+                                    Ideal for updates.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--context</code></td>
+                                <td>Provide a project-specific description to Gemini for more accurate, domain-aware
+                                    translations.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--chunk-size</code></td>
+                                <td>Number of keys to send to the AI in a single request. Default: 25.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--source</code></td>
+                                <td><strong>(Deprecated)</strong> The root directory to scan. The interactive prompt is
+                                    now preferred. Default: ".".</td>
+                            </tr>
+                            <tr>
+                                <td><code>--target-dir</code></td>
+                                <td>Root directory for the translation files within the app/modules. Default: "lang".
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><code>--exclude</code></td>
+                                <td>Comma-separated directories to exclude from the scan.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--extensions</code></td>
+                                <td>Comma-separated file extensions to search within.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--max-retries</code></td>
+                                <td>Maximum number of retries for a failed API call. Default: 5.</td>
+                            </tr>
+                            <tr>
+                                <td><code>--retry-delay</code></td>
+                                <td>Base delay in seconds between retries (uses exponential backoff). Default: 3.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="examples" class="section">
+                <h2>💡 Usage Examples</h2>
+
+                <h3>Fresh Translation for a Modular Project</h3>
+                <pre><code># Generate all translations for the main app and all modules
+php artisan translations:extract-and-generate --driver=fork --langs=es,fr</code></pre>
+
+                <h3>Synchronize Missing Keys in a Single Module</h3>
+                <pre><code># Interactively select only the 'Blog' module and its files
+# Then, find and fill only missing keys
+php artisan translations:extract-and-generate --driver=fork --skip-existing</code></pre>
+
+                <h3>High-Performance Synchronization</h3>
+                <pre><code># Use fork driver with smaller chunks to find and fill only missing keys
+php artisan translations:extract-and-generate --driver=fork --chunk-size=25 --skip-existing</code></pre>
+
+                <h3>Context-Aware Update for a Specific Module</h3>
+                <pre><code># Select the 'ECommerce' module, then provide context for its specific terminology
+php artisan translations:extract-and-generate --skip-existing \
+--context="An e-commerce module. 'Shipment' refers to a package delivery."</code></pre>
+            </section>
+
             <section id="troubleshooting" class="section">
                 <h2>🔧 Troubleshooting</h2>
                 <div class="table-responsive-wrapper">
@@ -1100,10 +1092,18 @@ Processing file: __JSON__
                                         class="inline-code">php artisan config:cache</code> after changes.</td>
                             </tr>
                             <tr>
+                                <td>"Syntax error" from Gemini / Low success rate</td>
+                                <td>The AI's safety filters may have been triggered by a batch of keys, or the model
+                                    returned a malformed response.</td>
+                                <td>Reduce the chunk size significantly. Try <code
+                                        class="inline-code">--chunk-size=20</code> or lower and re-run. Check
+                                    `failed_translation_keys.json` for problematic keys.</td>
+                            </tr>
+                            <tr>
                                 <td>"Quota exceeded" or "Rate limit" errors</td>
                                 <td>The free tier API limit has been reached.</td>
                                 <td>Lower the chunk size with <code class="inline-code">--chunk-size=25</code> and/or
-                                    wait a few minutes before retrying.</td>
+                                    wait a few minutes before retrying. The tool has built-in exponential backoff.</td>
                             </tr>
                             <tr>
                                 <td>"Call to undefined function pcntl_fork()"</td>
@@ -1119,14 +1119,6 @@ Processing file: __JSON__
                                 <td>Be patient, as sync mode is sequential. For large projects, use the <code
                                         class="inline-code">fork</code> driver on Linux/macOS/WSL if possible.</td>
                             </tr>
-                            <tr>
-                                <td>"Invalid JSON response from Gemini"</td>
-                                <td>A rare API issue where the response is not valid JSON, or a network interruption.
-                                </td>
-                                <td>The built-in retry logic usually handles this. If it persists, try reducing the
-                                    <code class="inline-code">--chunk-size</code>.
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1134,6 +1126,14 @@ Processing file: __JSON__
 
             <section id="faq" class="section">
                 <h2>❓ Frequently Asked Questions</h2>
+                <h3>Q: How does this handle translations in subdirectories like <code
+                        class="inline-code">lang/web/en.json</code>?</h3>
+                <p><strong>A:</strong> Perfectly. The tool recursively scans your `lang` directories (in both the main
+                    app and modules). It will detect `web/en.json` and present it in the selection prompt as a distinct
+                    file group, for example: `Main Application: JSON File (web/*.json)`. When it writes the files, it
+                    will
+                    place the translated versions in the correct subdirectories (`lang/web/ru.json`, etc.), preserving
+                    your structure.</p>
 
                 <h3>Q: Can I use this with existing translation files?</h3>
                 <p><strong>A:</strong> Yes, and that's its biggest strength! The tool is designed to work with existing
@@ -1148,15 +1148,12 @@ Processing file: __JSON__
                     language. Using the <code class="inline-code">--context</code> flag dramatically improves accuracy
                     for domain-specific projects.</p>
 
-                <h3>Q: What happens if the translation fails?</h3>
-                <p><strong>A:</strong> The command has built-in retry logic with exponential backoff. If a key
-                    consistently fails, it is logged in <code>failed_translation_keys.json</code> in your project root,
-                    so you can review and handle it manually.</p>
-
-                <h3>Q: Is this suitable for production applications?</h3>
-                <p><strong>A:</strong> Absolutely. It's a powerful developer tool to accelerate the localization
-                    workflow. By using it in your development environment and committing the generated/updated language
-                    files to your repository, you can safely deploy them to production after a quick review.</p>
+                <h3>Q: What happens if the AI translation fails for a chunk?</h3>
+                <p><strong>A:</strong> The command has built-in retry logic with exponential backoff. If a chunk of keys
+                    consistently fails after all retries, it is logged in <code>failed_translation_keys.json</code> in
+                    your project root,
+                    so you can review the problematic keys and handle them manually or retry with a smaller chunk size.
+                </p>
             </section>
 
             <section id="contributing" class="section">
