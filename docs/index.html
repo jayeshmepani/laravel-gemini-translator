@@ -3,677 +3,94 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Laravel Gemini AI Translation Synchronization Tool - Documentation</title>
-    <style>
-        :root {
-            --primary-color: #3b82f6;
-            --secondary-color: #1e40af;
-            --accent-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
 
-            --bg-color-light: #f8fafc;
-            --text-color-light: #1f2937;
-            --border-color-light: #e5e7eb;
-            --code-bg-light: #f1f5f9;
-            --section-bg-light: rgba(255, 255, 255, 0.8);
-            --nav-bg-light: rgba(255, 255, 255, 0.85);
-
-            --bg-color-dark: #0f172a;
-            --text-color-dark: #e2e8f0;
-            --border-color-dark: #334155;
-            --code-bg-dark: #1e293b;
-            --section-bg-dark: rgba(30, 41, 59, 0.8);
-            --nav-bg-dark: rgba(15, 23, 42, 0.85);
-
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            --gradient-accent: linear-gradient(135deg, var(--accent-color), #059669);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        :root {
-            --bg-color: var(--bg-color-light);
-            --text-color: var(--text-color-light);
-            --border-color: var(--border-color-light);
-            --code-bg: var(--code-bg-light);
-            --section-bg: var(--section-bg-light);
-            --nav-bg: var(--nav-bg-light);
-        }
-
-        html.dark {
-            --bg-color: var(--bg-color-dark);
-            --text-color: var(--text-color-dark);
-            --border-color: var(--border-color-dark);
-            --code-bg: var(--code-bg-dark);
-            --section-bg: var(--section-bg-dark);
-            --nav-bg: var(--nav-bg-dark);
-
-            .theme-toggle {
-                .sun-icon {
-                    transform: scale(0);
-                    opacity: 0;
-                }
-
-                .moon-icon {
-                    transform: scale(1);
-                    opacity: 1;
-                }
-            }
-
-            :is(h1, h2, h3) {
-                color: var(--primary-color);
-            }
-
-            .feature-icon {
-                color: var(--primary-color);
-            }
-
-            .alert-info {
-                background-color: rgba(59, 130, 246, 0.15);
-            }
-
-            .alert-warning {
-                background-color: rgba(245, 158, 11, 0.15);
-            }
-
-            .alert-success {
-                background-color: rgba(16, 185, 129, 0.15);
-            }
-
-            p a {
-                color: lightseagreen;
-            }
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            list-style-position: inside;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.7;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            background-attachment: fixed;
-            transition: var(--transition);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        header {
-            background: var(--gradient-primary);
-            color: white;
-            padding: 3rem 0;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            overflow: hidden;
-
-            &::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 60%);
-                animation: rotate 40s linear infinite;
-            }
-        }
-
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            position: relative;
-            z-index: 1;
-            animation: slideInUp 0.8s ease-out;
-        }
-
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .badges {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.4rem 0.8rem;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: var(--transition);
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.25);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-md);
-            }
-        }
-
-        nav {
-            background: var(--nav-bg);
-            padding: 1rem 0;
-            box-shadow: var(--shadow-md);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.3s;
-        }
-
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 1rem;
-            list-style: none;
-            flex-wrap: wrap;
-
-            a {
-                color: var(--text-color);
-                text-decoration: none;
-                font-weight: 500;
-                padding: 0.5rem 1rem;
-                border-radius: 0.5rem;
-                position: relative;
-                transition: var(--transition);
-
-                &::after {
-                    content: '';
-                    position: absolute;
-                    bottom: 0;
-                    left: 50%;
-                    width: 0;
-                    height: 2px;
-                    background: var(--gradient-primary);
-                    transform: translateX(-50%);
-                    transition: var(--transition);
-                    border-radius: 2px;
-                }
-
-                &:hover,
-                &.active {
-                    color: var(--primary-color);
-                    background: rgba(59, 130, 246, 0.1);
-
-                    &::after {
-                        width: 80%;
-                    }
-                }
-            }
-        }
-
-        .nav-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .theme-toggle {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            width: 40px;
-            height: 40px;
-
-            &:hover {
-                background: rgba(59, 130, 246, 0.1);
-            }
-
-            svg {
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-                color: var(--text-color);
-            }
-
-            .sun-icon {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            .moon-icon {
-                transform: scale(0);
-                opacity: 0;
-            }
-        }
-
-        .hamburger-menu {
-            display: none;
-            cursor: pointer;
-            flex-direction: column;
-            gap: 5px;
-            background: none;
-            border: none;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-
-            .bar {
-                width: 25px;
-                height: 3px;
-                background-color: var(--text-color);
-                border-radius: 2px;
-                transition: all 0.3s ease-in-out;
-            }
-        }
-
-        main {
-            padding: 3rem 0;
-            animation: fadeIn 1s ease-out;
-        }
-
-        .section {
-            margin-bottom: 4rem;
-            background: var(--section-bg);
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--border-color);
-            position: relative;
-            transition: var(--transition);
-
-            &:hover {
-                transform: translateY(-5px);
-                box-shadow: var(--shadow-lg);
-            }
-        }
-
-        h1,
-        h2,
-        h3 {
-            margin-bottom: 1.5rem;
-            color: var(--secondary-color);
-            font-weight: 700;
-        }
-
-        h2 {
-            font-size: 2rem;
-            position: relative;
-            padding-bottom: 1rem;
-
-            &::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 50px;
-                height: 3px;
-                background: var(--gradient-primary);
-                border-radius: 3px;
-            }
-        }
-
-        h3 {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            margin-block: 1rem 0.37rem;
-        }
-
-        p {
-            margin-bottom: 1.5rem;
-            font-size: 1.05rem;
-            line-height: 1.8;
-        }
-
-        pre {
-            background: var(--code-bg);
-            padding: 1.5rem;
-            padding-top: 2.5rem;
-            border-radius: 0.75rem;
-            overflow-x: auto;
-            margin: 1.5rem 0;
-            border: 1px solid var(--border-color);
-            position: relative;
-            box-shadow: var(--shadow-sm);
-
-            &::before {
-                content: '';
-                position: absolute;
-                top: 0.75rem;
-                left: 1rem;
-                width: 12px;
-                height: 12px;
-                border-radius: 50%;
-                background: #ff5f56;
-                box-shadow: 20px 0 #ffbd2e, 40px 0 #27ca3f;
-            }
-        }
-
-        code {
-            font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
-            font-size: 0.9rem;
-        }
-
-        .inline-code {
-            background: var(--code-bg);
-            padding: 0.2rem 0.5rem;
-            border-radius: 0.3rem;
-            font-size: 0.9rem;
-            border: 1px solid var(--border-color);
-            text-wrap-mode: nowrap;
-
-            &.wrap {
-                display: inline-block;
-                transform: translateY(-0.5ch);
-                margin-inline: 0.5ch;
-            }
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin: 2.5rem 0;
-        }
-
-        .feature-card {
-            background: var(--bg-color);
-            padding: 2rem;
-            border-radius: 0.75rem;
-            border: 1px solid var(--border-color);
-            transition: var(--transition);
-
-            &:hover {
-                transform: translateY(-5px);
-                box-shadow: var(--shadow-lg);
-                border-color: var(--primary-color);
-
-                .feature-icon {
-                    transform: scale(1.1);
-                    color: var(--primary-color);
-                }
-            }
-        }
-
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            transition: var(--transition);
-            display: inline-block;
-            color: var(--secondary-color);
-        }
-
-
-
-        .table-responsive-wrapper {
-            overflow-x: auto;
-            width: 100%;
-            border-radius: 0.75rem;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--border-color);
-        }
-
-        .options-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 600px;
-
-            th,
-            td {
-                padding: 1rem;
-                text-align: left;
-                border-bottom: 1px solid var(--border-color);
-            }
-
-            th {
-                background: var(--code-bg);
-                font-weight: 600;
-                color: var(--secondary-color);
-
-
-                html.dark & {
-                    color: var(--primary-color);
-                }
-            }
-
-
-            tr:last-child td {
-                border-bottom: none;
-            }
-
-            tr:hover {
-                background-color: rgba(59, 130, 246, 0.05);
-            }
-        }
-
-        .alert {
-            padding: 1.25rem 1.5rem;
-            border-radius: 0.75rem;
-            margin: 1.5rem 0;
-            border: 1px solid transparent;
-            position: relative;
-            border-left-width: 4px;
-        }
-
-        .alert-info {
-            border-color: var(--primary-color);
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-
-        .alert-warning {
-            border-color: var(--warning-color);
-            background-color: rgba(245, 158, 11, 0.1);
-        }
-
-        .alert-success {
-            border-color: var(--accent-color);
-            background-color: rgba(16, 185, 129, 0.1);
-        }
-
-        .back-to-top {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0;
-            transition: var(--transition);
-            z-index: 1000;
-            visibility: hidden;
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            &.visible {
-                opacity: 1;
-                visibility: visible;
-                transform: scale(1);
-            }
-
-            &:hover {
-                transform: scale(1.1) translateY(-3px);
-                box-shadow: 0 15px 25px -5px rgba(30, 64, 175, 0.4);
-            }
-        }
-
-        @media (max-width: 992px) {
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                width: 100%;
-                background: var(--bg-color);
-                box-shadow: var(--shadow-lg);
-                padding: 1rem 0;
-                gap: 0;
-                border-top: 1px solid var(--border-color);
-
-                &.active {
-                    display: flex;
-                    animation: slideInUp 0.3s ease-out;
-                }
-
-                a {
-                    display: block;
-                    padding: 1rem;
-                    text-align: center;
-                    margin: 0.25rem 1rem;
-                }
-            }
-
-            .nav-controls {
-                margin-left: auto;
-            }
-
-            .hamburger-menu {
-                display: flex;
-            }
-
-            body.nav-open .hamburger-menu {
-                .bar:nth-child(1) {
-                    transform: rotate(45deg) translate(5px, 5px);
-                }
-
-                .bar:nth-child(2) {
-                    opacity: 0;
-                }
-
-                .bar:nth-child(3) {
-                    transform: rotate(-45deg) translate(7px, -6px);
-                }
-            }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 15px;
-            }
-
-            .section {
-                padding: 2rem 1.5rem;
-            }
-
-            h2 {
-                font-size: 1.75rem;
-            }
-
-            .logo {
-                font-size: 1.25rem;
-            }
-
-            header {
-                padding: 2.5rem 0;
-            }
-        }
-    </style>
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="script.js" as="script">
+    <link rel="dns-prefetch" href="//github.com">
+    <link rel="dns-prefetch" href="//makersuite.google.com">
+    <link rel="dns-prefetch" href="//laravelmodules.com">
+
+    <meta name="description"
+        content="Official documentation for the Laravel Gemini AI Translation Synchronization Tool, an Artisan command to extract, translate, and sync language files for Laravel and nwidart/laravel-modules projects using Google's Gemini AI.">
+    <meta name="keywords"
+        content="laravel translation, laravel localization, gemini ai, artisan command, nwidart laravel modules, php translation tool, auto translate laravel, language files sync, i18n, l10n, google gemini">
+    <meta name="author" content="Jayesh Mepani">
+    <meta name="robots" content="index, follow">
+
+    <link rel="canonical" href="https://jayeshmepani.github.io/laravel-gemini-translator/">
+
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E🌐%3C/text%3E%3C/svg%3E">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Laravel Gemini AI Translation Synchronization Tool - Documentation">
+    <meta property="og:description"
+        content="An Artisan command to extract, translate, and sync language files for Laravel and nwidart/laravel-modules projects using Google's Gemini AI.">
+    <meta property="og:url" content="https://jayeshmepani.github.io/laravel-gemini-translator/">
+    <meta property="og:image" content="https://jayeshmepani.github.io/laravel-gemini-translator/social-preview.png">
+
+    <meta name="theme-color" content="#3b82f6">
+
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <header>
+    <header role="banner">
         <div class="container">
             <div class="header-content">
-                <div class="logo">
+                <div class="logo" role="img" aria-label="Laravel AI Translation Synchronization Tool Logo">
                     🌐 Laravel AI Translation Synchronization Tool
                 </div>
-                <div class="badges">
-                    <span class="badge">v3.7</span>
-                    <span class="badge">PHP 8.1+</span>
-                    <span class="badge">Laravel 10+</span>
-                    <span class="badge">Module Support</span>
+                <div class="badges" role="group" aria-label="Project Information Badges">
+                    <span class="badge" aria-label="Version 3.7">v3.7</span>
+                    <span class="badge" aria-label="Requires PHP 8.1 or higher">PHP 8.1+</span>
+                    <span class="badge" aria-label="Requires Laravel 10 or higher">Laravel 10+</span>
+                    <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <nav>
+    <nav role="navigation" aria-label="Main navigation">
         <div class="container nav-container">
-            <ul class="nav-links" id="nav-links">
-                <li><a href="#overview">Overview</a></li>
-                <li><a href="#installation">Installation</a></li>
-                <li><a href="#configuration">Configuration</a></li>
-                <li><a href="#usage">Usage</a></li>
-                <li><a href="#modules">Module Support</a></li>
-                <li><a href="#advanced">Advanced Usage</a></li>
-                <li><a href="#context">AI-First Translation</a></li>
-                <li><a href="#options">Options</a></li>
-                <li><a href="#examples">Examples</a></li>
-                <li><a href="#troubleshooting">Troubleshooting</a></li>
-                <li><a href="#faq">FAQ</a></li>
-                <li><a href="#contributing">Contributing</a></li>
+            <ul class="nav-links" id="nav-links" role="menubar" aria-label="Documentation sections">
+                <li role="none"><a href="#overview" role="menuitem" aria-label="Go to Overview section">Overview</a>
+                </li>
+                <li role="none"><a href="#installation" role="menuitem"
+                        aria-label="Go to Installation section">Installation</a></li>
+                <li role="none"><a href="#configuration" role="menuitem"
+                        aria-label="Go to Configuration section">Configuration</a></li>
+                <li role="none"><a href="#usage" role="menuitem" aria-label="Go to Usage section">Usage</a></li>
+                <li role="none"><a href="#modules" role="menuitem" aria-label="Go to Module Support section">Module
+                        Support</a></li>
+                <li role="none"><a href="#advanced" role="menuitem" aria-label="Go to Advanced Usage section">Advanced
+                        Usage</a></li>
+                <li role="none"><a href="#context" role="menuitem"
+                        aria-label="Go to AI-First Translation section">AI-First Translation</a></li>
+                <li role="none"><a href="#options" role="menuitem" aria-label="Go to Options section">Options</a></li>
+                <li role="none"><a href="#examples" role="menuitem" aria-label="Go to Examples section">Examples</a>
+                </li>
+                <li role="none"><a href="#troubleshooting" role="menuitem"
+                        aria-label="Go to Troubleshooting section">Troubleshooting</a></li>
+                <li role="none"><a href="#faq" role="menuitem" aria-label="Go to FAQ section">FAQ</a></li>
+                <li role="none"><a href="#contributing" role="menuitem"
+                        aria-label="Go to Contributing section">Contributing</a></li>
             </ul>
             <div class="nav-controls">
+                <a href="https://github.com/jayeshmepani/laravel-gemini-translator" target="_blank" class="github-link"
+                    aria-label="View on GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="22"
+                        height="22">
+                        <path
+                            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                    </svg>
+                </a>
                 <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                     <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -702,43 +119,44 @@
         </div>
     </nav>
 
-    <main>
+    <main role="main" aria-label="Main content">
         <div class="container">
-            <section id="overview" class="section">
-                <h2>📋 Overview</h2>
+            <section id="overview" class="section" aria-labelledby="overview-heading">
+                <h2 id="overview-heading">📋 Overview</h2>
                 <p>
                     The Laravel Gemini AI Translation Synchronization Tool is a powerful Artisan command that
                     revolutionizes the localization workflow for modern Laravel applications, including those built
-                    with <a href="https://laravelmodules.com/"
-                        target="_blank">nwidart/laravel-modules</a>.
+                    with <a href="https://laravelmodules.com/" target="_blank" rel="noopener noreferrer"
+                        aria-label="Laravel Modules package (opens in new tab)">nwidart/laravel-modules</a>.
                     It goes beyond simple key extraction by discovering keys from all sources—your code, existing
                     language files, and the framework—and then intelligently synchronizes them across all target
                     languages using Gemini AI.
                 </p>
 
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🧩</div>
+                <div class="feature-grid" role="list" aria-label="Key features">
+                    <div class="feature-card" role="listitem">
+                        <div class="feature-icon" role="img" aria-label="Module icon">🧩</div>
                         <h3>Full Module Support</h3>
-                        <p>Automatically detects and handles translations for the main application and any enabled <code
-                                class="inline-code">nwidart</code> modules, keeping them separate and organized.</p>
+                        <p>Scans are correctly isolated between the main app and modules. A new feature also lets you
+                            choose to keep module translations separate or consolidate them into the main `lang`
+                            directory.</p>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🤖</div>
+                    <div class="feature-card" role="listitem">
+                        <div class="feature-icon" role="img" aria-label="AI robot icon">🤖</div>
                         <h3>AI-First Translation</h3>
                         <p>Trusts the AI to interpret both namespaced keys (e.g., <code
                                 class="inline-code">messages.welcome</code>) and literal strings to generate accurate,
                             context-aware translations.</p>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🔄</div>
+                    <div class="feature-card" role="listitem">
+                        <div class="feature-icon" role="img" aria-label="Synchronization icon">🔄</div>
                         <h3>True Synchronization</h3>
                         <p>Discovers keys from your code and existing files to create a complete picture, ensuring no
                             translation is left behind. Use <code class="inline-code">--skip-existing</code> to only add
                             missing keys.</p>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">⚡</div>
+                    <div class="feature-card" role="listitem">
+                        <div class="feature-icon" role="img" aria-label="Performance lightning icon">⚡</div>
                         <h3>High Performance</h3>
                         <p>Features a <code class="inline-code">fork</code> driver for lightning-fast parallel
                             processing on Linux/macOS/WSL, and a stable <code class="inline-code">sync</code> driver for
@@ -747,8 +165,8 @@
                 </div>
             </section>
 
-            <section id="installation" class="section">
-                <h2>🚀 Installation</h2>
+            <section id="installation" class="section" aria-labelledby="installation-heading">
+                <h2 id="installation-heading">🚀 Installation</h2>
                 <h3>Step 1: Install via Composer</h3>
                 <pre><code>composer require jayesh/laravel-gemini-translator</code></pre>
 
@@ -767,8 +185,8 @@
                 </div>
             </section>
 
-            <section id="configuration" class="section">
-                <h2>⚙️ Configuration</h2>
+            <section id="configuration" class="section" aria-labelledby="configuration-heading">
+                <h2 id="configuration-heading">⚙️ Configuration</h2>
                 <h3>Environment Variables</h3>
                 <p>Add these variables to your <code class="inline-code">.env</code> file:</p>
                 <pre><code>GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
@@ -797,8 +215,8 @@ GEMINI_REQUEST_TIMEOUT=600</code></pre>
                 </ul>
             </section>
 
-            <section id="usage" class="section">
-                <h2>🎯 Usage</h2>
+            <section id="usage" class="section" aria-labelledby="usage-heading">
+                <h2 id="usage-heading">🎯 Usage</h2>
 
                 <h3>Basic Command</h3>
                 <p>Simply run the command to start the interactive process. It will guide you through selecting which
@@ -823,34 +241,30 @@ php artisan translations:extract-and-generate --skip-existing --langs=es,de</cod
 
             <section id="modules" class="section">
                 <h2>🧩 Module Support (<code class="inline-code wrap">nwidart/laravel-modules</code>)</h2>
-                <p>The tool is designed from the ground up to support modular applications. It automatically detects
-                    enabled modules and treats them as separate translation contexts.</p>
+                <p>The tool is designed from the ground up to support modular applications. Scans are now correctly
+                    isolated, so selecting the "Main Application" will <strong>not</strong> incorrectly scan `Modules/`
+                    directories, preventing key contamination.</p>
 
                 <h3>1. Select Scan Targets</h3>
-                <p>When you run the command, you will be prompted to choose which parts of your application to scan.</p>
-                <pre><code>┌ Which parts of the application would you like to scan and process? ┐
- ● -- ALL TARGETS --
- ○ Main Application
- ○ Module: Settings
- ○ Module: Blog
-└────────────────────────────────────────────────────────────────────┘</code></pre>
+                <p>First, you will be prompted to choose which parts of your application to scan.</p>
+                <pre><code> ┌ Which parts of the application would you like to scan and process? ┐
+ │ Module: Settings                                                   │
+ └────────────────────────────────────────────────────────────────────┘</code></pre>
 
-                <h3>2. Select Files to Process</h3>
-                <p>The tool then shows you all the translation files it has discovered, correctly grouped by their
-                    origin (Main App or Module), including those in subdirectories.</p>
-                <pre><code>┌ Which translation files would you like to process? ──────────┐
- ○ Main Application: JSON File (web/*.json)
- ● Main Application: validation.php
- ○ Module: Blog: JSON File (*.json)
- ● Module: Settings: JSON File (web/*.json)
-└──────────────────────────────────────────────────────────────┘</code></pre>
-
-                <h3>3. Separate File Generation</h3>
-                <p>The translated files are written to their correct locations, keeping your module translations
-                    encapsulated.</p>
-                <pre><code> ✅ Updated: lang/en/validation.php (138 total keys)
- ✅ Updated: Modules/Settings/lang/web/en.json (52 total keys)
- ✅ Updated: Modules/Blog/lang/en.json (128 total keys)</code></pre>
+                <h3>2. Consolidating Module Translations (New Feature)</h3>
+                <p>If you select any modules, you'll be asked a new question. This gives you full control over your
+                    project's structure.</p>
+                <pre><code> ┌ Consolidate all module translations into the main application's `lang` directory? ┐
+ │ No                                                                                │
+ └───────────────────────────────────────────────────────────────────────────────────┘</code></pre>
+                <ul>
+                    <li><strong>Default (No):</strong> Translations are kept separate. A key from the `Settings` module
+                        is written to `Modules/Settings/lang/en.json`.</li>
+                    <li><strong>Consolidate (Yes):</strong> All translations, regardless of origin, are written to the
+                        main application's `lang` directory (e.g., `lang/en.json`).</li>
+                </ul>
+                <p>You can bypass this prompt for automated scripts using the <code
+                        class="inline-code">--consolidate-modules</code> flag.</p>
             </section>
 
             <section id="advanced" class="section">
@@ -892,16 +306,60 @@ Press the 'q' key at any time to gracefully stop the process.
   ✅ Wrote: lang/fr.json (222 total keys)
 </code></pre>
 
+
+                <h3>Example 1: Updating a Single Module (Separate)</h3>
+                <p>This output shows the workflow for updating only the `Settings` module and keeping its translations
+                    separate.</p>
+                <pre><code>Scanning 1 target(s): Module: Settings
+
+ ┌ Consolidate all module translations into the main application's `lang` directory? ┐
+ │ No                                                                                │
+ └───────────────────────────────────────────────────────────────────────────────────┘
+...
+Found missing translations needing synchronization:
+  File: Module: Settings -> JSON File (web/*.json)
+    -> Language 'en' is missing 36 keys.
+...
+⚡ Using 'fork' driver for high-performance concurrency.
+🚀 36/36 [============================] 100% -- ✅ Chunk 1/1 - SUCCESS (36 keys) ⏱️    12 s
+
+╔═ 💾 Phase 3: Writing Language Files ════════════════════════════════════╗
+
+ ✅ Updated: /.../Modules/Settings/lang/web/en.json (104 total keys)
+ ✅ Updated: /.../Modules/Settings/lang/web/ru.json (104 total keys)
+ ✅ Updated: /.../Modules/Settings/lang/web/uz.json (104 total keys)
+</code></pre>
+
+                <h3>Example 2: Updating Only the Main Application</h3>
+                <p>Notice how the scan is now correctly isolated to the main application, even though modules exist in
+                    the project.</p>
+                <pre><code>Scanning 1 target(s): Main Application
+Reading existing language files from selected targets...
+...
+Found missing translations needing synchronization:
+  File: Main Application -> JSON File (web/*.json)
+    -> Language 'en' is missing 34 keys.
+...
+🚀 34/34 [============================] 100% -- ✅ Chunk 1/1 - SUCCESS (34 keys) ⏱️    12 s
+
+╔═ 💾 Phase 3: Writing Language Files ════════════════════════════════════╗
+
+ ✅ Updated: /.../lang/web/en.json (485 total keys)
+ ✅ Updated: /.../lang/web/ru.json (485 total keys)
+ ✅ Updated: /.../lang/web/uz.json (485 total keys)
+</code></pre>
+
                 <h3>Supported Functions & Patterns</h3>
                 <p>The scanner is pre-configured to find keys used in the most common Laravel and JavaScript
                     localization functions.</p>
-                <div class="table-responsive-wrapper">
-                    <table class="options-table">
+                <div class="table-responsive-wrapper" role="region" aria-label="Supported translation patterns table"
+                    tabindex="0">
+                    <table class="options-table" role="table" aria-label="Laravel translation patterns and examples">
                         <thead>
                             <tr>
-                                <th>Pattern</th>
-                                <th>Example</th>
-                                <th>Typical Context</th>
+                                <th scope="col">Pattern</th>
+                                <th scope="col">Example</th>
+                                <th scope="col">Typical Context</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1025,6 +483,10 @@ php artisan translations:extract-and-generate \
                                     now preferred. Default: ".".</td>
                             </tr>
                             <tr>
+                                <td><code>--consolidate-modules</code></td>
+                                <td>Consolidate all module translations into the main application's lang directory,
+                                    skipping the interactive prompt.</td>
+                            <tr>
                                 <td><code>--target-dir</code></td>
                                 <td>Root directory for the translation files within the app/modules. Default: "lang".
                                 </td>
@@ -1057,9 +519,20 @@ php artisan translations:extract-and-generate \
                 <pre><code># Generate all translations for the main app and all modules
 php artisan translations:extract-and-generate --driver=fork --langs=es,fr</code></pre>
 
-                <h3>Synchronize Missing Keys in a Single Module</h3>
-                <pre><code># Interactively select only the 'Blog' module and its files
-# Then, find and fill only missing keys
+                <h3>Synchronize a Single Module (Separate)</h3>
+                <pre><code># Interactively select only the 'Settings' module.
+# When prompted, choose NOT to consolidate.
+# This will find and update missing keys only within Modules/Settings/lang/
+php artisan translations:extract-and-generate --driver=fork --skip-existing</code></pre>
+
+                <h3>Translate All Modules into Main `lang` Directory</h3>
+                <pre><code># Scan all targets (main app + all modules).
+# The --consolidate-modules flag ensures all translations land in the root lang/ dir.
+php artisan translations:extract-and-generate --driver=fork --consolidate-modules</code></pre>
+
+                <h3>Update Only the Main Application (Ignoring Modules)</h3>
+                <pre><code># Interactively select ONLY the "Main Application".
+# The scanner will now correctly ignore the Modules/ directory.
 php artisan translations:extract-and-generate --driver=fork --skip-existing</code></pre>
 
                 <h3>High-Performance Synchronization</h3>
@@ -1119,6 +592,14 @@ php artisan translations:extract-and-generate --skip-existing \
                                 <td>Be patient, as sync mode is sequential. For large projects, use the <code
                                         class="inline-code">fork</code> driver on Linux/macOS/WSL if possible.</td>
                             </tr>
+                            <tr>
+                                <td>Keys from a module appear in the main app's files.</td>
+                                <td>You selected to consolidate translations either via the prompt or the
+                                    <code class="inline-code">--consolidate-modules</code> flag.
+                                </td>
+                                <td>This is intended behavior when consolidation is active. If you want separate files,
+                                    re-run the command and choose "No" when prompted about consolidation.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1158,17 +639,26 @@ php artisan translations:extract-and-generate --skip-existing \
 
             <section id="contributing" class="section">
                 <h2>📋 Contributing & Support</h2>
+                <p>This project is open-source and maintained by <a href="https://github.com/jayeshmepani"
+                        target="_blank">Jayesh Mepani</a>. Contributions are welcome!</p>
 
                 <h3>How to Contribute</h3>
                 <ul>
-                    <li>Report bugs and request features via GitHub Issues.</li>
-                    <li>Submit pull requests for improvements.</li>
-                    <li>Star the repository if you find it useful.</li>
+                    <li p>Report bugs and request features on the <a
+                            href="https://github.com/jayeshmepani/laravel-gemini-translator/issues"
+                            target="_blank">GitHub Issues</a> page.</li>
+                    <li p>Submit pull requests to the <a
+                            href="https://github.com/jayeshmepani/laravel-gemini-translator"
+                            target="_blank">repository</a> for improvements.</li>
+                    <li p>Star the <a href="https://github.com/jayeshmepani/laravel-gemini-translator"
+                            target="_blank">repository on GitHub</a> if you find it useful!</li>
                 </ul>
 
                 <h3>Support</h3>
                 <p>If you encounter issues, please check the troubleshooting section first. If the problem persists,
-                    create a new issue on GitHub with detailed information, including your OS, PHP version, and the
+                    create a new issue on the <a href="https://github.com/jayeshmepani/laravel-gemini-translator/issues"
+                        target="_blank">GitHub repository</a> with detailed information, including your OS, PHP version,
+                    and the
                     exact command used.</p>
 
                 <div class="alert alert-warning">
@@ -1179,87 +669,9 @@ php artisan translations:extract-and-generate --skip-existing \
         </div>
     </main>
 
-    <button class="back-to-top" onclick="scrollToTop()">↑</button>
+    <button class="back-to-top" onclick="scrollToTop()" aria-label="Back to top" title="Back to top">↑</button>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const backToTopButton = document.querySelector('.back-to-top');
-            const hamburger = document.getElementById('hamburger-menu');
-            const navLinks = document.getElementById('nav-links');
-            const themeToggle = document.getElementById('theme-toggle');
-            const htmlElement = document.documentElement;
-
-            const applyTheme = (theme) => {
-                if (theme === 'dark') {
-                    htmlElement.classList.add('dark');
-                } else {
-                    htmlElement.classList.remove('dark');
-                }
-                localStorage.setItem('theme', theme);
-            };
-
-            const toggleTheme = () => {
-                const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
-                applyTheme(currentTheme);
-            };
-
-            const storedTheme = localStorage.getItem('theme');
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (storedTheme) {
-                applyTheme(storedTheme);
-            } else {
-                applyTheme(systemPrefersDark ? 'dark' : 'light');
-            }
-
-            themeToggle.addEventListener('click', toggleTheme);
-
-            hamburger.addEventListener('click', function () {
-                navLinks.classList.toggle('active');
-                document.body.classList.toggle('nav-open');
-            });
-
-            navLinks.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => {
-                    if (navLinks.classList.contains('active')) {
-                        navLinks.classList.remove('active');
-                        document.body.classList.remove('nav-open');
-                    }
-                });
-            });
-
-            const sections = document.querySelectorAll('section[id]');
-            const navLinkElements = document.querySelectorAll('nav a[href^="#"]');
-
-            const handleScroll = () => {
-                if (window.pageYOffset > 300) {
-                    backToTopButton.classList.add('visible');
-                } else {
-                    backToTopButton.classList.remove('visible');
-                }
-
-                let current = '';
-                sections.forEach(section => {
-                    const sectionTop = section.offsetTop;
-                    if (window.pageYOffset >= sectionTop - 100) {
-                        current = section.getAttribute('id');
-                    }
-                });
-
-                navLinkElements.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === '#' + current) {
-                        link.classList.add('active');
-                    }
-                });
-            };
-
-            window.addEventListener('scroll', handleScroll, { passive: true });
-        });
-
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 
 </html>

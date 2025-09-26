@@ -9,6 +9,7 @@ use Gemini\Laravel\Facades\Gemini;
 use Spatie\Fork\Fork;
 use Symfony\Component\Finder\Finder;
 use Throwable;
+use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;
 
 class ExtractAndGenerateTranslationsCommand extends Command
@@ -30,6 +31,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--chunk-size=25 : Number of keys to send to Gemini in a single request}
                             {--driver=default : Concurrency driver (default, fork, sync)}
                             {--skip-existing : Only translate keys that are missing from one or more language files, then append them.}
+                            {--consolidate-modules : Consolidate all module translations into the main application\'s lang directory.}
                             {--max-retries=5 : Maximum number of retries for failed API calls}
                             {--retry-delay=3 : Base delay in seconds between retries (exponential backoff)}
                             {--stop-key=q : The key to press to gracefully stop the translation process}
@@ -45,6 +47,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
     private float $startTime;
     private bool $shouldExit = false;
     private bool $isOffline = false;
+    private bool $consolidateModules = false;
 
     /** @var array<string, array{name: string, path: string, lang_path: string}> */
     private array $scanTargets = [];
@@ -82,6 +85,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
         $this->scanTargets = array_intersect_key($this->availableScanTargets, array_flip($selectedTargets));
         $this->info("Scanning " . count($this->scanTargets) . " target(s): " . implode(', ', array_column($this->scanTargets, 'name')));
+
+        $this->promptForConsolidation();
 
         $this->loadExistingTranslations();
         $this->loadFrameworkTranslations();
@@ -153,6 +158,20 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return Command::SUCCESS;
     }
 
+    private function promptForConsolidation(): void
+    {
+        $this->consolidateModules = $this->option('consolidate-modules');
+        $hasModulesSelected = count(array_diff(array_keys($this->scanTargets), [self::MAIN_APP_KEY])) > 0;
+
+        if ($hasModulesSelected && !$this->option('consolidate-modules') && !$this->option('no-interaction')) {
+            $this->consolidateModules = confirm(
+                label: 'Consolidate all module translations into the main application\'s `lang` directory?',
+                default: false,
+                hint: 'No: Keep translations inside each module (e.g., Modules/Settings/lang). Yes: Put all translations in the root `lang/`.'
+            );
+        }
+    }
+
     private function getScanTargets(): array
     {
         $targets = [];
@@ -210,6 +229,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 continue;
             }
 
+            $origin = $this->consolidateModules ? self::MAIN_APP_KEY : $targetKey;
+
             foreach (File::directories($baseLangPath) as $langDirPath) {
                 $lang = basename($langDirPath);
                 if (!in_array($lang, $languages) && $lang !== 'en') {
@@ -221,13 +242,13 @@ class ExtractAndGenerateTranslationsCommand extends Command
                     }
                     $relativePath = $file->getRelativePathname();
                     $fileKey = str_replace(['.php', DIRECTORY_SEPARATOR], ['', '/'], $relativePath);
-                    $contextualFileKey = $targetKey . self::FILE_KEY_SEPARATOR . $fileKey;
+                    $contextualFileKey = $origin . self::FILE_KEY_SEPARATOR . $fileKey;
 
                     $includedData = @include $file->getPathname();
                     if (is_array($includedData)) {
                         $flatData = Arr::dot($includedData);
                         $this->existingTranslations[$lang][$contextualFileKey] = $flatData;
-                        $this->fileTargetMap[$contextualFileKey] = $targetKey;
+                        $this->fileTargetMap[$contextualFileKey] = $origin;
 
                         foreach ($flatData as $keySuffix => $text) {
                             if (is_string($text)) {
@@ -250,12 +271,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 }
                 $relativePath = $jsonFile->getRelativePath();
                 $fileKey = !empty($relativePath) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $relativePath), '/') . '/' . self::JSON_FILE_KEY : self::JSON_FILE_KEY;
-                $contextualFileKey = $targetKey . self::FILE_KEY_SEPARATOR . $fileKey;
+                $contextualFileKey = $origin . self::FILE_KEY_SEPARATOR . $fileKey;
 
                 $jsonContent = json_decode($jsonFile->getContents(), true);
                 if (is_array($jsonContent)) {
                     $this->existingTranslations[$lang][$contextualFileKey] = $jsonContent;
-                    $this->fileTargetMap[$contextualFileKey] = $targetKey;
+                    $this->fileTargetMap[$contextualFileKey] = $origin;
                     foreach ($jsonContent as $key => $text) {
                         if (is_string($text) && ($lang === 'en' || !isset($this->sourceTextMap[$key]))) {
                             $this->sourceTextMap[$key] = $text;
@@ -279,8 +300,17 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $extractionBar->setMessage('Starting code scan...');
         $extractionBar->start();
 
+        // **BUG FIX**: Get the name of the modules directory to exclude from the main app scan.
+        $moduleDirectoryToExclude = [];
+        if (class_exists(\Nwidart\Modules\Facades\Module::class)) {
+            $modulesPath = config('modules.paths.modules', base_path('Modules'));
+            $moduleDirectoryToExclude = [basename($modulesPath)];
+        }
+
         foreach ($this->scanTargets as $targetKey => $target) {
-            $finder = $this->configureFinder([$target['path']]);
+            // If scanning the main app, add the modules directory name to the exclusion list.
+            $extraExcludes = ($targetKey === self::MAIN_APP_KEY && !empty($moduleDirectoryToExclude)) ? $moduleDirectoryToExclude : [];
+            $finder = $this->configureFinder([$target['path']], $extraExcludes);
             $allPatterns = $this->getExtractionPatterns();
 
             foreach ($finder as $file) {
@@ -288,6 +318,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 $extractionBar->setMessage('Scanning: ' . $file->getRelativePathname());
                 $relativePath = $file->getRelativePathname();
                 $content = $file->getContents();
+                $origin = $this->consolidateModules ? self::MAIN_APP_KEY : $targetKey;
+
                 foreach ($allPatterns as $pattern) {
                     if (preg_match_all($pattern, $content, $matches)) {
                         $foundKeys = array_merge(...array_slice($matches, 1));
@@ -302,7 +334,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                                 $keysWithSources[$key][] = $relativePath;
                             }
                             if (!isset($this->keyOriginMap[$key])) {
-                                $this->keyOriginMap[$key] = $targetKey;
+                                $this->keyOriginMap[$key] = $origin;
                             }
                         }
                     }
@@ -315,15 +347,24 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return [array_keys($keysWithSources), $keysWithSources];
     }
 
-
-    private function configureFinder(array $scanPaths): Finder
+    private function configureFinder(array $scanPaths, array $extraExcludes = []): Finder
     {
         $finder = new Finder();
+        $defaultExcludes = explode(',', $this->option('exclude'));
         $filesToExclude = ['artisan', 'composer.json', 'composer.lock', 'failed_translation_keys.json', 'translation_extraction_log.json', 'laravel-translation-extractor.sh', 'package.json', 'package-lock.json', 'phpunit.xml', 'README.md', 'vite.config.js', '.env*', '.phpactor.json', '.phpunit.result.cache', 'Homestead.*', 'auth.json',];
-        $finder->files()->in($scanPaths)->exclude(explode(',', $this->option('exclude')))->notName($filesToExclude)->notName('*.log')->ignoreDotFiles(true)->ignoreVCS(true);
+
+        $finder->files()
+            ->in($scanPaths)
+            ->exclude(array_merge($defaultExcludes, $extraExcludes)) // Use merged excludes
+            ->notName($filesToExclude)
+            ->notName('*.log')
+            ->ignoreDotFiles(true)
+            ->ignoreVCS(true);
+
         $extensions = explode(',', $this->option('extensions'));
-        foreach ($extensions as $ext)
+        foreach ($extensions as $ext) {
             $finder->name('*.' . trim($ext));
+        }
         return $finder;
     }
 
@@ -342,7 +383,9 @@ class ExtractAndGenerateTranslationsCommand extends Command
             foreach ($processedFiles as $contextualFileKey => $newData) {
                 [$targetKey, $fileKey] = explode(self::FILE_KEY_SEPARATOR, $contextualFileKey, 2);
 
-                $target = $this->availableScanTargets[$targetKey];
+                // If consolidating, all writes go to the main app's lang path
+                $writeTargetKey = $this->consolidateModules ? self::MAIN_APP_KEY : $targetKey;
+                $target = $this->availableScanTargets[$writeTargetKey];
                 $targetBaseDir = $target['lang_path'];
 
                 $existingData = $this->existingTranslations[$lang][$contextualFileKey] ?? [];
@@ -782,7 +825,7 @@ Generate translations for the following keys:
 Return ONLY the valid JSON object.
 PROMPT;
 
-        $modelToUse = config('gemini.model', 'gemini-1.5-flash-latest');
+        $modelToUse = config('gemini.model', 'gemini-2.5-flash-lite');
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 $response = Gemini::generativeModel(model: $modelToUse)->generateContent($prompt);
