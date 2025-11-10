@@ -171,16 +171,6 @@
                 <h3>Step 1: Install via Composer</h3>
                 <pre><code>composer require jayesh/laravel-gemini-translator</code></pre>
 
-                <div class="alert alert-info">
-                    <strong>Package Requirements:</strong>
-                    <ul>
-                        <li>PHP: <code class="inline-code">^8.2</code></li>
-                        <li>Laravel: <code class="inline-code">^11.0 || ^12.0</code></li>
-                        <li>Key dependencies: <code class="inline-code">google-gemini-php/laravel</code> <small>(^2.0)</small>,
-                            <code class="inline-code">spatie/fork</code> <small>(^1.2)</small></li>
-                    </ul>
-                </div>
-
                 <h3>Step 2: Publish Configuration</h3>
                 <pre><code>php artisan vendor:publish --provider="Jayesh\LaravelGeminiTranslator\TranslationServiceProvider"</code></pre>
                 <p>This creates the <code class="inline-code">config/gemini.php</code> file.</p>
