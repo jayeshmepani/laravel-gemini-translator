@@ -16,8 +16,8 @@ An interactive Artisan command that scans your Laravel project for translation k
 
 ## 📋 Requirements
 
-- PHP 8.1 or higher
-- Laravel 10.0 or higher
+- PHP 8.2 or higher
+- Laravel 11.0 or higher
 - Google Gemini API key
 - `pcntl` extension (for fork driver on Linux/macOS)
 

@@ -49,8 +49,8 @@
                 </div>
                 <div class="badges" role="group" aria-label="Project Information Badges">
                     <span class="badge" aria-label="Version 3.8">v3.8.0</span>
-                    <span class="badge" aria-label="Requires PHP 8.1 or higher">PHP 8.1+</span>
-                    <span class="badge" aria-label="Requires Laravel 10 or higher">Laravel 10+</span>
+                    <span class="badge" aria-label="Requires PHP 8.2 or higher">PHP 8.2+</span>
+                    <span class="badge" aria-label="Requires Laravel 11 or higher">Laravel 11+</span>
                     <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
                 </div>
             </div>
@@ -171,8 +171,18 @@
                 <h3>Step 1: Install via Composer</h3>
                 <pre><code>composer require jayesh/laravel-gemini-translator</code></pre>
 
+                <div class="alert alert-info">
+                    <strong>Package Requirements:</strong>
+                    <ul>
+                        <li>PHP: <code class="inline-code">^8.2</code></li>
+                        <li>Laravel: <code class="inline-code">^11.0 || ^12.0</code></li>
+                        <li>Key dependencies: <code class="inline-code">google-gemini-php/laravel</code> <small>(^2.0)</small>,
+                            <code class="inline-code">spatie/fork</code> <small>(^1.2)</small></li>
+                    </ul>
+                </div>
+
                 <h3>Step 2: Publish Configuration</h3>
-                <pre><code>php artisan vendor:publish --provider="Gemini\Laravel\GeminiServiceProvider"</code></pre>
+                <pre><code>php artisan vendor:publish --provider="Jayesh\LaravelGeminiTranslator\TranslationServiceProvider"</code></pre>
                 <p>This creates the <code class="inline-code">config/gemini.php</code> file.</p>
 
                 <h3>Step 3: Add API Key</h3>
@@ -538,7 +548,7 @@ php artisan translations:extract-and-generate \
 php artisan translations:extract-and-generate --driver=fork --langs=es,fr</code></pre>
 
                 <h3>Synchronize a Single Module (Separate)</h3>
-                <pre><code># Interactively select only the 'Settings' module.
+                <pre><code></code># Interactively select only the 'Settings' module.
 # When prompted, choose NOT to consolidate.
 # This will find and update missing keys only within Modules/Settings/lang/
 php artisan translations:extract-and-generate --driver=fork --skip-existing</code></pre>
