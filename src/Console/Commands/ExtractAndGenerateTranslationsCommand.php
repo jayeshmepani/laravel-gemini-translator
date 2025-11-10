@@ -24,7 +24,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
     protected $signature = 'translations:extract-and-generate
                             {--source=. : The root directory of the application to scan for keys (deprecated; use interactive prompt)}
                             {--target-dir=lang : Root directory for final Laravel translation files}
-                            {--langs=en,ru,uz : Comma-separated language codes to translate to}
+                            {--langs=en : Comma-separated language codes to translate to}
                             {--exclude=vendor,node_modules,storage,public,bootstrap,tests,lang,config,database,routes,app/Console,.phpunit.cache,lang-output,.fleet,.idea,.nova,.vscode,.zed : Comma-separated directories to exclude from scanning}
                             {--extensions=php,blade.php,vue,js,jsx,ts,tsx : Comma-separated file extensions to search}
                             {--no-advanced : Disable advanced, context-based pattern detection}
@@ -368,6 +368,17 @@ class ExtractAndGenerateTranslationsCommand extends Command
         return $finder;
     }
 
+    private function ksortRecursive(array &$a): void
+    {
+        ksort($a);
+        foreach ($a as &$v) {
+            if (is_array($v)) {
+                $this->ksortRecursive($v);
+            }
+        }
+    }
+
+
     private function writeTranslationFiles()
     {
         $actionVerb = $this->isOffline ? 'Generated placeholder' : ($this->option('skip-existing') ? 'Updated' : 'Wrote');
@@ -403,11 +414,14 @@ class ExtractAndGenerateTranslationsCommand extends Command
                     $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 } else {
                     $finalNestedData = Arr::undot($finalFlatData);
-                    ksort($finalNestedData);
+                    $this->ksortRecursive($finalNestedData);
+
                     $filePath = rtrim($targetBaseDir, '/') . '/' . $lang . '/' . $fileKey . '.php';
                     File::ensureDirectoryExists(dirname($filePath));
+
                     $content = "<?php\n\nreturn " . var_export($finalNestedData, true) . ";\n";
                     File::put($filePath, $content);
+
                     $this->line("  <fg=bright-green;options=bold> ✅ {$actionVerb}:</> <fg=bright-cyan>{$filePath}</> <fg=bright-white>(" . count($finalFlatData) . " total keys)</>");
                 }
             }
@@ -557,10 +571,13 @@ class ExtractAndGenerateTranslationsCommand extends Command
             return;
         }
 
-        foreach (File::files($frameworkLangPath, '*.php') as $file) {
+        foreach (File::files($frameworkLangPath) as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
             $filename = $file->getFilenameWithoutExtension();
             $contextualFileKey = self::MAIN_APP_KEY . self::FILE_KEY_SEPARATOR . $filename;
-            $this->keyOriginMap[$filename] = self::MAIN_APP_KEY;
+            // $this->keyOriginMap[$filename] = self::MAIN_APP_KEY;
 
             $includedData = @include $file->getPathname();
             if (is_array($includedData)) {
@@ -669,26 +686,56 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
     private function promptForMultiChoice(string $label, array $options, string $hint = '', ?array $default = null): array
     {
-        if (PHP_OS_FAMILY === 'Windows' || !stream_isatty(STDIN)) {
+        // 1️⃣ Non-interactive environment (CI, cron, supervisor)
+        // Do not prompt. Just return defaults or everything.
+        if (!$this->input->isInteractive()) {
+            return $default ?? array_keys($options);
+        }
+
+        // 2️⃣ Windows interactive terminal fallback
+        // Laravel Prompts multiselect does NOT work properly on Windows cmd/powershell
+        if (PHP_OS_FAMILY === 'Windows') {
             $this->line("<fg=yellow;options=bold>{$label}</>");
             if ($hint) {
                 $this->comment($hint);
             }
-            $selection = $this->choice($label, array_values($options), $default ? implode(',', $default) : null, null, true);
-            $selectedKeys = [];
-            $flippedOptions = array_flip($options);
-            foreach ($selection as $selectedDisplay) {
-                if (isset($flippedOptions[$selectedDisplay])) {
-                    $selectedKeys[] = $flippedOptions[$selectedDisplay];
-                }
-            }
-            return $selectedKeys;
+
+            // Basic numbered list selection
+            $selection = $this->choice(
+                question: $label,
+                choices: array_values($options),
+                default: null,
+                attempts: null,
+                multiple: true
+            );
+
+            $flipped = array_flip($options);
+
+            // Return selected keys based on display string values
+            return array_values(
+                array_filter(
+                    array_map(fn($display) => $flipped[$display] ?? null, $selection)
+                )
+            );
         }
-        return multiselect(label: $label, options: $options, hint: $hint, default: $default ?? []);
+
+        // 3️⃣ Interactive Linux/macOS → full multiselect UI
+        return multiselect(
+            label: $label,
+            options: $options,
+            hint: $hint,
+            default: $default ?? []
+        );
     }
 
-    public static function staticStructureTranslationsFromGemini(array $geminiData, array $originalKeys, string $contextualFileKey, array $languages): array
-    {
+
+    public static function staticStructureTranslationsFromGemini(
+        array $geminiData,
+        array $originalKeys,
+        string $contextualFileKey,
+        array $languages,
+        array $sourceTextMap
+    ): array {
         $chunkTranslations = [];
         [, $fileKey] = explode(self::FILE_KEY_SEPARATOR, $contextualFileKey, 2);
         $isJsonFile = str_ends_with($fileKey, self::JSON_FILE_KEY);
@@ -699,8 +746,17 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $keyTranslations = $geminiData[$keyToLookup] ?? null;
 
             foreach ($languages as $lang) {
-                $translationText = $keyTranslations[$lang] ?? "NEEDS TRANSLATION (KEY: {$keyToLookup})";
-                $chunkTranslations[$lang][$contextualFileKey][$originalKey] = $translationText;
+                // no placeholders; always yield clean text
+                if (is_array($keyTranslations) && isset($keyTranslations[$lang]) && is_string($keyTranslations[$lang])) {
+                    $text = $keyTranslations[$lang];
+                } elseif (is_string($keyTranslations) && count($languages) === 1) {
+                    // single-language run: Gemini returned a raw string
+                    $text = $keyTranslations;
+                } else {
+                    // fallback to known source text, or the key itself
+                    $text = $sourceTextMap[$keyToLookup] ?? $keyToLookup;
+                }
+                $chunkTranslations[$lang][$contextualFileKey][$originalKey] = $text;
             }
         }
         return $chunkTranslations;
@@ -769,45 +825,109 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
 
         $prompt = <<<PROMPT
-You are an expert Laravel translation generator. Your task is to generate high-quality, professional translations for a list of localization keys.
+You are an expert Laravel translation generator. Your task is to generate high-quality, professional translations for a list of localization keys. Follow ALL rules below EXACTLY. These rules are strict and non-negotiable.
 
-### 1. OBJECTIVE & CONTEXT
-- **Goal**: Generate translations for the provided list of keys.
-- **Source File Context**: The keys are from a Laravel file context represented by **{$fileNameForPrompt}**.
-{$projectContextString}- **Target Languages**: Generate translations for: **{$langString}**.
+## 1. OBJECTIVE & CONTEXT
+- Goal: Produce accurate translations for the provided keys.
+- Source File Context: These keys belong to the Laravel file: {$fileNameForPrompt}.
+{$projectContextString}
+- Target Languages: Generate translations for: {$langString}.
 
-### 2. HOW TO INTERPRET KEYS (VERY IMPORTANT)
-You will receive a list of keys. You must interpret them in one of two ways:
-- **A) Namespaced Keys (e.g., `auth.failed`, `messages.welcome`):**
-    - These follow the `file.key` pattern.
-    - Interpret them based on standard Laravel conventions. For `auth.failed`, provide the standard "These credentials do not match..." message. For `messages.welcome`, provide a generic "Welcome" message.
-    - Generate a natural, human-readable phrase that fits the key's meaning.
-- **B) Literal Keys (e.g., `"Profile"`, `"Save Changes"`, `"An unknown error occurred."`):**
-    - These are simple strings, often full sentences.
-    - Translate the string literally and accurately.
+## 2. KEY INTERPRETATION LOGIC (EXTREMELY IMPORTANT)
+You will receive a list of keys. Each key is one of two types:
 
-### 3. TRANSLATION KEYS
-Generate translations for the following keys:
+A) Namespaced Laravel Keys (e.g., auth.failed, validation.required)
+- These follow file.subkey patterns.
+- Interpret meaning using Laravel's convention.
+- If it is a standard Laravel key:
+  - Use the official standard phrasing (no creative rewrites).
+- If it is a custom namespaced key:
+  - Provide a clear, natural, human-readable translation.
+
+B) Literal UI Text (e.g., "Profile", "Save Changes", "An unknown error occurred.")
+- Translate the literal displayed text.
+- Do not change wording, tone, casing, punctuation, or capitalization unless required for grammar.
+
+## 3. TRANSLATION KEYS TO PROCESS
+Translate the following keys:
 {$keysString}
 
-### 4. CRITICAL OUTPUT RULES - NON-NEGOTIABLE
-- **A) VALID JSON ONLY**: Your entire output must be a single, valid JSON object. Do not include any text, explanations, or code fences like \`\`\`json before or after the JSON.
-- **B) USE EXACT KEYS**: You MUST use the exact keys provided in the list above as the top-level keys in your JSON output. Do not alter, rename, or omit them.
-- **C) NO HTML**: Your output must NEVER contain any HTML tags (e.g., `<strong>`, `<a>`, `<span>`). If a key implies HTML, translate only the plain text content.
-- **D) PRESERVE PLACEHOLDERS**: Only keep Laravel placeholders (words starting with a colon, like `:attribute`, `:seconds`) if they are part of a standard translation for that key (e.g., `auth.throttle`). Do NOT invent new placeholders. Do NOT translate the placeholder name itself.
-- **E) TONE & QUALITY**: Use natural, professional language. Avoid overly literal translations for phrases.
+## 4. OUTPUT FORMAT RULES (STRICT)
+Your entire output must follow ALL these rules:
 
-### 5. EXAMPLE
-- **INPUT KEYS:**
-  - `auth.throttle`
-  - `Save Changes`
-  - `I agree to the <strong>Terms of Service</strong>`
-- **YOUR REQUIRED JSON OUTPUT:**
+A) VALID JSON OBJECT ONLY
+- Output EXACTLY one JSON object.
+- Do NOT include code fences, markdown, comments, or explanations.
+
+B) USE EXACT KEYS
+- Top-level keys MUST match the input keys exactly.
+- Do NOT modify key names in any way.
+- Do NOT split dotted keys.
+- Do NOT convert dotted keys into nested objects.
+- JSON keys must remain flat, exactly as given.
+
+C) STRICT LANGUAGE STRUCTURE
+Each top-level key must map to an object of language => translation pairs.
+Example structure (do not output this literally):
+{
+  "some.key": {
+    "en": "English text",
+    "ru": "Russian text"
+  }
+}
+- Only include the exact target languages: {$langString}.
+- Do NOT invent additional languages.
+- Do NOT remove any required languages.
+
+D) NO HTML
+- Remove all HTML tags.
+- Translate only the human-readable text.
+
+E) PRESERVE PLACEHOLDERS
+- Keep placeholders like :attribute, :seconds, :count.
+- Do NOT translate placeholder names.
+- Do NOT add new placeholders.
+- Do NOT remove existing placeholders.
+
+F) TRANSLATION QUALITY REQUIREMENTS
+- Use natural, professional language.
+- Avoid overly literal translations.
+- Maintain correct grammar.
+- Do NOT add words or change meaning.
+- Do NOT add punctuation unless necessary for grammatical correctness.
+- Do NOT invent context.
+
+G) PROPER NOUN PRESERVATION
+- Do NOT translate proper names, brand names, or system names.
+- Translate only surrounding text.
+
+H) WHITESPACE & FORMATTING
+- Preserve spacing exactly.
+- Do NOT add extra spaces.
+- Do NOT remove spaces.
+- Do NOT add trailing whitespace.
+
+## 5. IF A KEY IS UNKNOWN
+If a key has no clear or conventional meaning:
+- Translate literally.
+- Do NOT guess hidden meaning.
+- Do NOT output placeholders like "Needs translation".
+- Do NOT output internal comments.
+
+## 6. WORKED EXAMPLE (for instruction only)
+This example demonstrates the required structure and formatting. This example must NOT appear in your actual output.
+
+Example input:
+auth.throttle
+Save Changes
+I agree to the <strong>Terms of Service</strong>
+
+Example correct output structure:
 {
   "auth.throttle": {
     "en": "Too many login attempts. Please try again in :seconds seconds.",
     "ru": "Слишком много попыток входа. Пожалуйста, повторите попытку через :seconds секунд.",
-    "uz": "Juda koʻp urinishlar boʻldi. Iltimos, :seconds soniyadan so'ng qayta urinib ko'ring."
+    "uz": "Juda ko‘p urinishlar bo‘ldi. Iltimos, :seconds soniyadan so‘ng qayta urinib ko‘ring."
   },
   "Save Changes": {
     "en": "Save Changes",
@@ -821,9 +941,10 @@ Generate translations for the following keys:
   }
 }
 
-### 6. FINAL INSTRUCTION
-Return ONLY the valid JSON object.
+## 7. FINAL RULE
+Return ONLY the valid JSON object. No other text.
 PROMPT;
+
 
         $modelToUse = config('gemini.model', 'gemini-2.5-flash-lite');
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
@@ -891,15 +1012,46 @@ PROMPT;
 
             foreach ($keyChunks as $index => $chunk) {
                 $originalChunk = $originalKeyChunks[$index];
-                $tasks[] = static function () use ($chunk, $originalChunk, $languages, $contextualFileKey, $maxRetries, $retryDelay, $projectContext) {
+
+                // capture instance map for the worker/closure
+                $sourceTextMap = $this->sourceTextMap;
+
+                $tasks[] = static function () use ($chunk, $originalChunk, $languages, $contextualFileKey, $maxRetries, $retryDelay, $projectContext, $sourceTextMap) {
                     try {
-                        $geminiResponse = self::staticTranslateKeysWithGemini($chunk, $languages, $contextualFileKey, $maxRetries, $retryDelay, $projectContext);
-                        return ['status' => 'success', 'data' => self::staticStructureTranslationsFromGemini($geminiResponse, $originalChunk, $contextualFileKey, $languages), 'chunk_keys_count' => count($chunk)];
+                        $geminiResponse = self::staticTranslateKeysWithGemini(
+                            $chunk,
+                            $languages,
+                            $contextualFileKey,
+                            $maxRetries,
+                            $retryDelay,
+                            $projectContext
+                        );
+
+                        $structured = self::staticStructureTranslationsFromGemini(
+                            $geminiResponse,
+                            $originalChunk,
+                            $contextualFileKey,
+                            $languages,
+                            $sourceTextMap
+                        );
+
+                        return [
+                            'status' => 'success',
+                            'data' => $structured,
+                            'chunk_keys_count' => count($chunk),
+                        ];
                     } catch (Throwable $e) {
-                        return ['status' => 'error', 'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . "... - Error: " . $e->getMessage(), 'chunk_keys_count' => count($chunk), 'failed_keys' => $originalChunk, 'filename' => $contextualFileKey];
+                        return [
+                            'status' => 'error',
+                            'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . "... - Error: " . $e->getMessage(),
+                            'chunk_keys_count' => count($chunk),
+                            'failed_keys' => $originalChunk,
+                            'filename' => $contextualFileKey
+                        ];
                     }
                 };
             }
+
         }
         return $tasks;
     }
@@ -1026,7 +1178,8 @@ PROMPT;
     private function phaseTitle(string $title, string $color = 'yellow')
     {
         $this->line('');
-        $padding = str_repeat('═', 70 - mb_strlen($title));
+        $pad = max(0, 70 - mb_strlen($title));
+        $padding = str_repeat('═', $pad);
         $this->line("<fg=bright-{$color};options=bold>╔═{$title} {$padding}╗</>");
         $this->line('');
     }

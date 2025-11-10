@@ -48,7 +48,7 @@
                     🌐 Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges" role="group" aria-label="Project Information Badges">
-                    <span class="badge" aria-label="Version 3.7">v3.7</span>
+                    <span class="badge" aria-label="Version 3.8">v3.8.0</span>
                     <span class="badge" aria-label="Requires PHP 8.1 or higher">PHP 8.1+</span>
                     <span class="badge" aria-label="Requires Laravel 10 or higher">Laravel 10+</span>
                     <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
@@ -71,7 +71,7 @@
                         Support</a></li>
                 <li role="none"><a href="#advanced" role="menuitem" aria-label="Go to Advanced Usage section">Advanced
                         Usage</a></li>
-                <li role="none"><a href="#context" role="menuitem"
+                <li role="none"><a href="#ai-first-translation" role="menuitem"
                         aria-label="Go to AI-First Translation section">AI-First Translation</a></li>
                 <li role="none"><a href="#options" role="menuitem" aria-label="Go to Options section">Options</a></li>
                 <li role="none"><a href="#examples" role="menuitem" aria-label="Go to Examples section">Examples</a>
@@ -160,8 +160,8 @@
                         <div class="feature-icon" role="img" aria-label="Performance lightning icon">⚡</div>
                         <h3>High Performance</h3>
                         <p>Features a <code class="inline-code">fork</code> driver for lightning-fast parallel
-                            processing on Linux/macOS/WSL, and a stable <code class="inline-code">sync</code> driver for
-                            Windows.</p>
+                            processing, and a stable <code class="inline-code">sync</code> driver. <strong>Now with full
+                                support for Windows and non-interactive CI/CD environments.</strong></p>
                     </div>
                 </div>
             </section>
@@ -316,7 +316,6 @@ Press the 'q' key at any time to gracefully stop the process.
  ┌ Consolidate all module translations into the main application's `lang` directory? ┐
  │ No                                                                                │
  └───────────────────────────────────────────────────────────────────────────────────┘
-...
 Found missing translations needing synchronization:
   File: Module: Settings -> JSON File (web/*.json)
     -> Language 'en' is missing 36 keys.
@@ -398,7 +397,7 @@ Found missing translations needing synchronization:
                 </ul>
             </section>
 
-            <section id="context" class="section">
+            <section id="ai-first-translation" class="section">
                 <h2>💡 AI-First Translation</h2>
                 <p>
                     This tool adopts an "AI-First" philosophy. Instead of trying to pre-process translation keys into
@@ -433,6 +432,21 @@ Found missing translations needing synchronization:
                     </table>
                 </div>
 
+                <h3>✨ New in v3.8: Intelligent Fallbacks</h3>
+                <p>
+                    The tool no longer generates useless placeholders like <code
+                        class="inline-code">"NEEDS TRANSLATION"</code>. If the AI fails to provide a translation for a
+                    key, the system now uses this intelligent fallback logic:
+                </p>
+                <ol>
+                    <li>It first looks for an existing English translation for that key in your language files.</li>
+                    <li>If none is found, it uses the key itself as the placeholder text.</li>
+                </ol>
+                <p>
+                    This ensures your generated files are always usable and immediately show you the source text that
+                    needs attention, dramatically speeding up the manual review process.
+                </p>
+
                 <h3>Improving Accuracy with the <code class="inline-code">--context</code> Flag</h3>
                 <p>For domain-specific terms, you can guide the AI with the <code class="inline-code">--context</code>
                     flag. This is crucial for avoiding ambiguity.</p>
@@ -455,8 +469,11 @@ php artisan translations:extract-and-generate \
                         <tbody>
                             <tr>
                                 <td><code>--langs</code></td>
-                                <td>Comma-separated language codes to translate to (e.g., <code
-                                        class="inline-code">es,fr,de</code>).</td>
+                                <td>
+                                    Comma-separated language codes to translate to (e.g., <code
+                                        class="inline-code">es,fr,de</code>).
+                                    <strong>Default is now <code class="inline-code">en</code>.</strong>
+                                </td>
                             </tr>
                             <tr>
                                 <td><code>--driver</code></td>
@@ -544,6 +561,11 @@ php artisan translations:extract-and-generate --driver=fork --chunk-size=25 --sk
                 <pre><code># Select the 'ECommerce' module, then provide context for its specific terminology
 php artisan translations:extract-and-generate --skip-existing \
 --context="An e-commerce module. 'Shipment' refers to a package delivery."</code></pre>
+
+                <h3>Automated Run in a CI/CD Pipeline</h3>
+                <pre><code># This command runs non-interactively, great for a GitHub Action.
+# It skips prompts, consolidates modules, and only syncs missing Spanish keys.
+php artisan translations:extract-and-generate --langs=es --skip-existing --consolidate-modules</code></pre>
             </section>
 
             <section id="troubleshooting" class="section">
@@ -601,6 +623,21 @@ php artisan translations:extract-and-generate --skip-existing \
                                 <td>This is intended behavior when consolidation is active. If you want separate files,
                                     re-run the command and choose "No" when prompted about consolidation.</td>
                             </tr>
+                            <tr>
+                                <td>The command ran automatically without asking me any questions.</td>
+                                <td>You are running in a non-interactive environment (like a CI/CD pipeline, Docker, or
+                                    Git Bash on Windows).</td>
+                                <td>This is the new intended behavior for automation. The tool automatically proceeds
+                                    without prompts. If you need to limit the scope, use flags like <code
+                                        class="inline-code">--skip-existing</code>.</td>
+                            </tr>
+                            <tr>
+                                <td>All my PHP translation arrays were reordered after running the command.</td>
+                                <td>This is an intentional, one-time change in v3.8.</td>
+                                <td>The tool now performs a recursive sort on all PHP arrays to ensure a stable,
+                                    deterministic order. This makes future code reviews (diffs) much cleaner. You should
+                                    commit this one-time change.</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -608,6 +645,7 @@ php artisan translations:extract-and-generate --skip-existing \
 
             <section id="faq" class="section">
                 <h2>❓ Frequently Asked Questions</h2>
+
                 <h3>Q: How does this handle translations in subdirectories like <code
                         class="inline-code">lang/web/en.json</code>?</h3>
                 <p><strong>A:</strong> Perfectly. The tool recursively scans your `lang` directories (in both the main
@@ -631,11 +669,11 @@ php artisan translations:extract-and-generate --skip-existing \
                     for domain-specific projects.</p>
 
                 <h3>Q: What happens if the AI translation fails for a chunk?</h3>
-                <p><strong>A:</strong> The command has built-in retry logic with exponential backoff. If a chunk of keys
-                    consistently fails after all retries, it is logged in <code>failed_translation_keys.json</code> in
-                    your project root,
-                    so you can review the problematic keys and handle them manually or retry with a smaller chunk size.
-                </p>
+                <p><strong>A:</strong> The tool is now much more resilient. Instead of leaving a useless placeholder, it
+                    uses an intelligent fallback: it will use your existing English source text for the key, or the key
+                    itself if no source text is found. Any keys that consistently fail after all retries are still
+                    logged to <code>failed_translation_keys.json</code> for your review, but your application's language
+                    files will remain functional.</p>
             </section>
 
             <section id="contributing" class="section">
