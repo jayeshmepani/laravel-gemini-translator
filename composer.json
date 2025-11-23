@@ -3,6 +3,31 @@
     "description": "An interactive command to extract and generate Laravel translations using Gemini AI.",
     "type": "laravel-package",
     "license": "MIT",
+    "keywords": [
+        "laravel",
+        "laravel-package",
+        "translation",
+        "translation-generator",
+        "translation-extractor",
+        "laravel-translator",
+        "laravel-localization",
+        "laravel-ai",
+        "i18n",
+        "multilingual",
+        "localization",
+        "language-files",
+        "ai-translator",
+        "ai-tools",
+        "google-gemini",
+        "gemini-ai",
+        "artisan-command",
+        "composer-package",
+        "developer-tools",
+        "automation",
+        "php"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
     "authors": [
         {
             "name": "Jayesh Patel",
@@ -25,6 +50,11 @@
             "providers": [
                 "Jayesh\\LaravelGeminiTranslator\\TranslationServiceProvider"
             ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
         }
     }
 }

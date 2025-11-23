@@ -1,10 +1,11 @@
-
 document.addEventListener('DOMContentLoaded', function () {
     const backToTopButton = document.querySelector('.back-to-top');
     const hamburger = document.getElementById('hamburger-menu');
     const navLinks = document.getElementById('nav-links');
     const themeToggle = document.getElementById('theme-toggle');
     const htmlElement = document.documentElement;
+    const navLinkElements = document.querySelectorAll('nav a[href^="#"]');
+    const sections = document.querySelectorAll('.section');
 
     const applyTheme = (theme) => {
         if (theme === 'dark') {
@@ -15,9 +16,17 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.setItem('theme', theme);
     };
 
+    function runWithViewTransition(fn) {
+        if (!document.startViewTransition) {
+            fn();
+            return;
+        }
+        document.startViewTransition(fn);
+    }
+
     const toggleTheme = () => {
-        const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
-        applyTheme(currentTheme);
+        const nextTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+        runWithViewTransition(() => applyTheme(nextTheme));
     };
 
     const storedTheme = localStorage.getItem('theme');
@@ -35,17 +44,58 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.classList.toggle('nav-open');
     });
 
-    navLinks.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
+    function activateSection(id) {
+        sections.forEach(sec => sec.classList.remove('active'));
+
+        const targetSection = document.getElementById(id);
+        if (targetSection) {
+            targetSection.classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+
+        navLinkElements.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+    }
+
+    const initialHash = location.hash && location.hash.startsWith('#')
+        ? location.hash.slice(1)
+        : sections[0]?.id;
+    if (initialHash) {
+        activateSection(initialHash);
+    }
+
+    navLinks.querySelectorAll('a[href^="#"]').forEach(link => {
+        const href = link.getAttribute('href');
+        const id = href.slice(1);
+
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+
             if (navLinks.classList.contains('active')) {
                 navLinks.classList.remove('active');
                 document.body.classList.remove('nav-open');
             }
+
+            const fn = () => {
+                activateSection(id);
+                history.pushState(null, '', '#' + id);
+            };
+
+            if (document.startViewTransition) {
+                document.startViewTransition(fn);
+            } else {
+                fn();
+            }
         });
     });
 
-    const sections = document.querySelectorAll('section[id]');
-    const navLinkElements = document.querySelectorAll('nav a[href^="#"]');
+    window.addEventListener('popstate', () => {
+        const hash = location.hash && location.hash.startsWith('#')
+            ? location.hash.slice(1)
+            : sections[0]?.id;
+        if (hash) activateSection(hash);
+    });
 
     const handleScroll = () => {
         if (window.pageYOffset > 300) {
@@ -53,21 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             backToTopButton.classList.remove('visible');
         }
-
-        let current = '';
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            if (window.pageYOffset >= sectionTop - 100) {
-                current = section.getAttribute('id');
-            }
-        });
-
-        navLinkElements.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === '#' + current) {
-                link.classList.add('active');
-            }
-        });
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
