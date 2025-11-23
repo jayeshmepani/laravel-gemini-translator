@@ -135,4 +135,4 @@ All notable changes to this project will be documented in this file.
 - Translation quality has been significantly improved with script-aware formatting and robust fallback mechanisms
 - The addition of `--refresh` and `--dry-run` modes enables safer integration into deployment pipelines
 
-[v4.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/v3.8...v4.0.0
+[v4.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/3.8...4.0
