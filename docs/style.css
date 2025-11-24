@@ -109,24 +109,23 @@ html::view-transition {
     inset: 0;
 }
 
-::view-transition-group(section-content),
-::view-transition-image-pair(section-content) {
+::view-transition-old(root),
+::view-transition-new(root) {
     position: absolute;
     inset: 0;
-    animation-duration: inherit;
-    animation-fill-mode: inherit;
+    animation: 0.55s ease-in-out both;
 }
 
-::view-transition-old(section-content) {
-    animation: fadeOut 300ms ease-out both;
+::view-transition-old(root) {
+    animation-name: fadeOut;
 }
 
-::view-transition-new(section-content) {
-    animation: fadeIn 300ms ease-in both;
+::view-transition-new(root) {
+    animation-name: fadeIn;
 }
 
 html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     transition-behavior: allow-discrete;
 }
 
@@ -256,7 +255,7 @@ header {
 
 .badge {
     display: inline-block;
-    padding: 0.4rem 0.8rem 0.2rem;
+    padding: 0.4rem 0.8rem 0.3rem;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 9999px;
     font-size: 0.875rem;
@@ -412,21 +411,13 @@ main {
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-color);
     position: relative;
-    transition: var(--transition);
     scroll-margin: 1.5rem;
-    view-transition-name: section-content;
-    display: none;
 
     &:hover {
         transform: translateY(-5px);
         box-shadow: var(--shadow-lg);
     }
-
-    &.active {
-        display: block;
-    }
 }
-
 
 h1,
 h2,

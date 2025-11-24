@@ -147,14 +147,35 @@ class TranslationService
             if (empty($keys))
                 continue;
 
+            // Filter out empty or whitespace-only keys
+            $keys = array_filter($keys, function ($key) {
+                return is_string($key) && trim($key) !== '';
+            });
+            $keys = array_values($keys); // Re-index
+
+            // Skip if all keys were filtered out
+            if (empty($keys))
+                continue;
+
             [, $fileKey] = explode('::', $contextualFileKey, 2);
             $isJsonFile = str_ends_with($fileKey, '__JSON__');
             $prefix = $isJsonFile ? '' : str_replace('/', '.', $fileKey) . '.';
 
             $fullKeysForAI = $isJsonFile ? $keys : array_map(fn($key) => $prefix . $key, $keys);
 
-            $keyChunks = array_chunk($fullKeysForAI, $chunkSize);
-            $originalKeyChunks = array_chunk($keys, $chunkSize);
+            // Intelligent chunk size adjustment based on key complexity
+            $effectiveChunkSize = $chunkSize;
+            $avgKeyLength = array_sum(array_map('strlen', $fullKeysForAI)) / count($fullKeysForAI);
+
+            // If average key length is very long (>80 chars), reduce chunk size significantly
+            if ($avgKeyLength > 80) {
+                $effectiveChunkSize = max(1, min(3, $chunkSize)); // Limit to max 3 keys per chunk
+            } elseif ($avgKeyLength > 60) {
+                $effectiveChunkSize = max(1, min(5, $chunkSize)); // Limit to max 5 keys per chunk
+            }
+
+            $keyChunks = array_chunk($fullKeysForAI, $effectiveChunkSize);
+            $originalKeyChunks = array_chunk($keys, $effectiveChunkSize);
 
             foreach ($keyChunks as $index => $chunk) {
                 $originalChunk = $originalKeyChunks[$index];
@@ -244,6 +265,19 @@ class TranslationService
      */
     public static function staticTranslateKeysWithGemini(array $keys, array $languages, string $contextualFileKey, int $maxRetries, int $baseRetryDelay, ?string $projectContext = null): array
     {
+        // Filter out empty or whitespace-only keys to prevent syntax errors
+        $keys = array_filter($keys, function ($key) {
+            return is_string($key) && trim($key) !== '';
+        });
+
+        // Re-index array after filtering
+        $keys = array_values($keys);
+
+        // If all keys were filtered out, return empty array
+        if (empty($keys)) {
+            return [];
+        }
+
         $langString = implode(', ', $languages);
         $keysString = '';
         foreach ($keys as $key) {
@@ -435,7 +469,18 @@ USER;
                 if (is_array($decoded))
                     return $decoded;
             } catch (Throwable $e) {
-                $lastError = $e->getMessage(); // Track the last error
+                // Track the last error with more details for debugging
+                $lastError = $e->getMessage();
+
+                // Log the raw response for debugging if available
+                if (isset($responseText) && $attempt === $maxRetries) {
+                    // Only log on last attempt to avoid spam
+                    $truncatedResponse = strlen($responseText) > 500
+                        ? substr($responseText, 0, 500) . '... [truncated]'
+                        : $responseText;
+                    error_log("Gemini API Response Error for file {$contextualFileKey}: {$lastError}");
+                    error_log("Raw response (truncated): {$truncatedResponse}");
+                }
 
                 // Check if this is a JSON parsing error
                 $isJsonError = $e instanceof JsonException;
@@ -469,8 +514,8 @@ USER;
         }
         throw new Exception(
             "Failed to translate keys after {$maxRetries} attempts. " .
-            "File: {$fileKey}, Keys: " . implode(', ', array_slice($keys, 0, 5)) . "... " .
-            "Last error: " . ($lastError ?? 'unknown')
+                "File: {$fileKey}, Keys: " . implode(', ', array_slice($keys, 0, 5)) . "... " .
+                "Last error: " . ($lastError ?? 'unknown')
         );
     }
 

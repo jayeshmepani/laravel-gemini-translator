@@ -48,7 +48,7 @@
                     🌐 Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges" role="group" aria-label="Project Information Badges">
-                    <span class="badge" aria-label="Version 4.0">v4.0</span>
+                    <span class="badge" aria-label="Version 4.0.1">v4.0.1</span>
                     <span class="badge" aria-label="Requires PHP 8.2 or higher">PHP 8.2+</span>
                     <span class="badge" aria-label="Requires Laravel 11 or higher">Laravel 11+</span>
                     <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
@@ -125,7 +125,7 @@
         <main role="main" aria-label="Main content" id="main">
             <div class="container">
                 <h1 class="sr-only">Laravel Gemini AI Translation Synchronization Tool Documentation</h1>
-                <section id="overview" class="section active" aria-labelledby="overview-heading">
+                <section id="overview" class="section" aria-labelledby="overview-heading">
                     <h2 id="overview-heading">📋 Overview</h2>
                     <p>
                         The Laravel Gemini AI Translation Synchronization Tool is a powerful Artisan command that
@@ -449,7 +449,7 @@ Found missing translations needing synchronization:
                             </tbody>
                         </table>
                     </div>
-                    <h3>✨ New in v4.0: Intelligent Fallbacks</h3>
+                    <h3>✨ New in v4.0.1: Intelligent Fallbacks</h3>
                     <p>
                         The tool no longer generates useless placeholders like <code
                             class="inline-code">"NEEDS TRANSLATION"</code>. If the AI fails to provide a translation for
@@ -465,7 +465,7 @@ Found missing translations needing synchronization:
                         that
                         needs attention, dramatically speeding up the manual review process.
                     </p>
-                    <h3>✨ New in v4.0: Placeholder Mismatch Detection</h3>
+                    <h3>✨ New in v4.0.1: Placeholder Mismatch Detection</h3>
                     <p>Added robust placeholder validation with count checking instead of just presence. This ensures:
                     </p>
                     <ul>
@@ -637,6 +637,17 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                                             class="inline-code">php artisan config:cache</code> after changes.</td>
                                 </tr>
                                 <tr>
+                                    <td>"Configuration value must be an integer, string given"</td>
+                                    <td>The <code class="inline-code">config/gemini.php</code> file has incorrect type
+                                        casting for <code class="inline-code">request_timeout</code>.</td>
+                                    <td>Edit <code class="inline-code">config/gemini.php</code> and change:<br>
+                                        <code
+                                            class="inline-code">'request_timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 600),</code><br>
+                                        Not: <code class="inline-code">env('GEMINI_REQUEST_TIMEOUT', 600)</code>
+                                        (without cast)
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td>"Syntax error" from Gemini / Low success rate</td>
                                     <td>The AI's safety filters may have been triggered by a batch of keys, or the model
                                         returned a malformed response.</td>
@@ -688,7 +699,7 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                                 </tr>
                                 <tr>
                                     <td>All my PHP translation arrays were reordered after running the command.</td>
-                                    <td>This is an intentional, one-time change in v4.0</td>
+                                    <td>This is an intentional, one-time change in v4.0.1</td>
                                     <td>The tool now performs a recursive sort on all PHP arrays to ensure a stable,
                                         deterministic order. This makes future code reviews (diffs) much cleaner. You
                                         should

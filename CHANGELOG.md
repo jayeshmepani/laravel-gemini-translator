@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v4.0.1] - 2025-11-24
+
+### 🐛 Fixed
+
+- **Translation Service**
+  - Added automatic filtering of empty and whitespace-only translation keys before AI processing
+  - Prevents "Syntax error" from Gemini API when empty string keys are present in language files
+  - Empty keys are now filtered at two points: in `buildTranslationTasks()` and `staticTranslateKeysWithGemini()`
+
+### 🚀 Performance
+
+- **Intelligent Chunk Sizing**
+  - Added automatic chunk size reduction for extremely long translation keys
+  - Keys with average length > 80 characters now limited to max 3 keys per chunk
+  - Keys with average length > 60 characters now limited to max 5 keys per chunk
+  - Significantly improves success rate for complex validation attribute keys
+
+### 🔧 Changed
+
+- **Error Logging**
+  - Enhanced error logging to capture raw Gemini API responses on final retry attempt
+  - Logs now include truncated API response text for easier debugging
+  - Helps diagnose "Syntax error" and other API-related failures
+
+### 📚 Documentation
+
+- Added critical warning about `config/gemini.php` type casting requirement
+- Added troubleshooting guide for "Configuration value must be an integer" error with solution
+- Created comprehensive troubleshooting reference covering configuration errors, rate limiting, and API connectivity
+- Documented v4.0.1+ automatic features (empty key filtering, intelligent chunking)
+
 ## [v4.0.0] - 2025-11-23
 
 ### ⚠ BREAKING CHANGES
@@ -136,3 +167,4 @@ All notable changes to this project will be documented in this file.
 - The addition of `--refresh` and `--dry-run` modes enables safer integration into deployment pipelines
 
 [v4.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/3.8...4.0
+[v4.0.1]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0...4.0.1

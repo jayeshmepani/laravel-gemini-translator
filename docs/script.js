@@ -4,9 +4,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const navLinks = document.getElementById('nav-links');
     const themeToggle = document.getElementById('theme-toggle');
     const htmlElement = document.documentElement;
-    const navLinkElements = document.querySelectorAll('nav a[href^="#"]');
-    const sections = document.querySelectorAll('.section');
 
+    // --------------------
+    // THEME TOGGLE
+    // --------------------
     const applyTheme = (theme) => {
         if (theme === 'dark') {
             htmlElement.classList.add('dark');
@@ -16,17 +17,9 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.setItem('theme', theme);
     };
 
-    function runWithViewTransition(fn) {
-        if (!document.startViewTransition) {
-            fn();
-            return;
-        }
-        document.startViewTransition(fn);
-    }
-
     const toggleTheme = () => {
-        const nextTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
-        runWithViewTransition(() => applyTheme(nextTheme));
+        const currentTheme = htmlElement.classList.contains('dark') ? 'light' : 'dark';
+        applyTheme(currentTheme);
     };
 
     const storedTheme = localStorage.getItem('theme');
@@ -37,75 +30,129 @@ document.addEventListener('DOMContentLoaded', function () {
         applyTheme(systemPrefersDark ? 'dark' : 'light');
     }
 
-    themeToggle.addEventListener('click', toggleTheme);
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
 
-    hamburger.addEventListener('click', function () {
-        navLinks.classList.toggle('active');
-        document.body.classList.toggle('nav-open');
-    });
-
-    function activateSection(id) {
-        sections.forEach(sec => sec.classList.remove('active'));
-
-        const targetSection = document.getElementById(id);
-        if (targetSection) {
-            targetSection.classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'auto' });
-        }
-
-        navLinkElements.forEach(link => {
-            link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+    // --------------------
+    // MOBILE NAV
+    // --------------------
+    if (hamburger && navLinks) {
+        hamburger.addEventListener('click', function () {
+            navLinks.classList.toggle('active');
+            document.body.classList.toggle('nav-open');
         });
     }
 
-    const initialHash = location.hash && location.hash.startsWith('#')
-        ? location.hash.slice(1)
-        : sections[0]?.id;
-    if (initialHash) {
-        activateSection(initialHash);
-    }
+    // --------------------
+    // VIEW TRANSITION WRAPPER
+    // --------------------
+    const runWithViewTransition = (fn) => {
+        if (!document.startViewTransition) {
+            // No support → just do normal behavior (with smooth scroll)
+            fn(true);
+            return;
+        }
 
-    navLinks.querySelectorAll('a[href^="#"]').forEach(link => {
-        const href = link.getAttribute('href');
-        const id = href.slice(1);
+        document.startViewTransition(() => {
+            fn(false);
+        });
+    };
 
+    // --------------------
+    // NAV LINKS + SMOOTH SECTION SWITCH
+    // --------------------
+    const sections = document.querySelectorAll('section[id]');
+    const navLinkElements = document.querySelectorAll('nav a[href^="#"]');
+
+    navLinkElements.forEach(link => {
         link.addEventListener('click', (event) => {
+            const href = link.getAttribute('href');
+            if (!href || !href.startsWith('#')) {
+                return;
+            }
+
             event.preventDefault();
 
-            if (navLinks.classList.contains('active')) {
+            const targetId = href.slice(1);
+            const target = document.getElementById(targetId);
+            if (!target) return;
+
+            runWithViewTransition((noVT) => {
+                if (noVT) {
+                    // Fallback: normal smooth scroll
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Inside View Transition: instant jump, animation handles smoothness
+                    target.scrollIntoView({ behavior: 'instant', block: 'start' });
+                }
+
+                // Keep URL hash in sync without extra scrolling
+                history.pushState(null, '', `#${targetId}`);
+            });
+
+            // Close mobile nav if open
+            if (navLinks && navLinks.classList.contains('active')) {
                 navLinks.classList.remove('active');
                 document.body.classList.remove('nav-open');
             }
+        });
+    });
 
-            const fn = () => {
-                activateSection(id);
-                history.pushState(null, '', '#' + id);
-            };
-
-            if (document.startViewTransition) {
-                document.startViewTransition(fn);
+    // --------------------
+    // SCROLL-SPY + BACK TO TOP
+    // --------------------
+    const handleScroll = () => {
+        if (backToTopButton) {
+            if (window.pageYOffset > 300) {
+                backToTopButton.classList.add('visible');
             } else {
-                fn();
+                backToTopButton.classList.remove('visible');
+            }
+        }
+
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (window.pageYOffset >= sectionTop - 100) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinkElements.forEach(link => {
+            link.classList.remove('active');
+            if (current && link.getAttribute('href') === '#' + current) {
+                link.classList.add('active');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // --------------------
+    // BACK/FORWARD HASH NAVIGATION WITH VIEW TRANSITION
+    // --------------------
+    window.addEventListener('popstate', () => {
+        const hash = window.location.hash.slice(1);
+        const target = hash ? document.getElementById(hash) : null;
+        if (!target) return;
+
+        runWithViewTransition((noVT) => {
+            if (noVT) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                target.scrollIntoView({ behavior: 'instant', block: 'start' });
             }
         });
     });
 
-    window.addEventListener('popstate', () => {
-        const hash = location.hash && location.hash.startsWith('#')
-            ? location.hash.slice(1)
-            : sections[0]?.id;
-        if (hash) activateSection(hash);
-    });
-
-    const handleScroll = () => {
-        if (window.pageYOffset > 300) {
-            backToTopButton.classList.add('visible');
-        } else {
-            backToTopButton.classList.remove('visible');
+    const initialHash = window.location.hash.slice(1);
+    if (initialHash) {
+        const initialSection = document.getElementById(initialHash);
+        if (initialSection) {
+            initialSection.scrollIntoView({ behavior: 'instant', block: 'start' });
         }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    }
 });
 
 function scrollToTop() {

@@ -45,6 +45,16 @@ GEMINI_REQUEST_TIMEOUT=600
 
 Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey).
 
+**⚠️ IMPORTANT:** If you published the `config/gemini.php` file from the `google-gemini-php/laravel` package, make sure the `request_timeout` is cast to an integer:
+
+```php
+// ✅ CORRECT
+'request_timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 600),
+
+// ❌ WRONG - Will cause "Configuration value must be an integer" error
+'request_timeout' => env('GEMINI_REQUEST_TIMEOUT', 600),
+```
+
 ### 3. Basic Usage
 
 ```bash
@@ -211,9 +221,24 @@ Supports all quote types: single (`'`), double (`"`), and backtick (`` ` ``).
 - Increase `--concurrency` carefully to avoid hitting rate limits
 
 ### Common Issues
+
+#### Configuration Error: "must be an integer, string given"
+If you see this error:
+```
+Configuration value for key [gemini.request_timeout] must be an integer, string given.
+```
+
+**Fix:** Edit `config/gemini.php` and cast the timeout to integer:
+```php
+'request_timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 600),
+```
+
+#### Other Issues
 - **Windows:** Use `--driver=sync` instead of fork for stability
-- **Large Projects:** Use smaller `--chunk-size` to avoid API timeouts
+- **Large Projects:** Use smaller `--chunk-size` to avoid API timeouts  
 - **Module Projects:** Ensure `nwidart/laravel-modules` is properly configured
+- **Empty Keys:** Package automatically filters empty/whitespace-only keys (v4.0.1+)
+- **Very Long Keys:** Automatic chunk size adjustment for keys >80 characters (v4.0.1+)
 
 ### Debugging
 - Use `--dry-run` to preview changes without writing
