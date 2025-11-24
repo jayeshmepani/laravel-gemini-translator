@@ -8,6 +8,7 @@ use Gemini\Laravel\Facades\Gemini;
 use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
 use Jayesh\LaravelGeminiTranslator\Utils\TextHelper;
 use JsonException;
+use Illuminate\Support\Facades\Log;
 use Spatie\Fork\Fork;
 use Throwable;
 
@@ -478,8 +479,8 @@ USER;
                     $truncatedResponse = strlen($responseText) > 500
                         ? substr($responseText, 0, 500) . '... [truncated]'
                         : $responseText;
-                    error_log("Gemini API Response Error for file {$contextualFileKey}: {$lastError}");
-                    error_log("Raw response (truncated): {$truncatedResponse}");
+                    Log::error("Gemini API Response Error for file {$contextualFileKey}: {$lastError}");
+                    Log::error("Raw response (truncated): {$truncatedResponse}");
                 }
 
                 // Check if this is a JSON parsing error
