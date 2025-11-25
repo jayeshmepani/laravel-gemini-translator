@@ -26,12 +26,26 @@
         "automation",
         "php"
     ],
+    "homepage": "https://github.com/jayeshmepani/laravel-gemini-translator",
+    "readme": "README.md",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "authors": [
         {
             "name": "Jayesh Patel",
-            "email": "jayeshmepani777@gmail.com"
+            "email": "jayeshmepani777@gmail.com",
+            "homepage": "https://github.com/jayeshmepani"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/jayeshmepani/laravel-gemini-translator/issues",
+        "source": "https://github.com/jayeshmepani/laravel-gemini-translator",
+        "docs": "https://jayeshmepani.github.io/laravel-gemini-translator/"
+    },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/jayeshmepani"
         }
     ],
     "require": {
