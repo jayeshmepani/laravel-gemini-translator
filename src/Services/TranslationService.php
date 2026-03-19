@@ -214,6 +214,12 @@ class TranslationService
                             'chunk_keys_count' => count($chunk),
                         ];
                     } catch (Throwable $e) {
+                        Log::error("Translation task failed for file: {$contextualFileKey}", [
+                            'keys' => array_slice($originalChunk, 0, 10), // Log more keys
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
+
                         return [
                             'status' => 'error',
                             'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . "... - Error: " . $e->getMessage(),
@@ -476,8 +482,9 @@ USER;
                 // Log the raw response for debugging if available
                 if (isset($responseText) && $attempt === $maxRetries) {
                     // Only log on last attempt to avoid spam
-                    $truncatedResponse = strlen($responseText) > 500
-                        ? substr($responseText, 0, 500) . '... [truncated]'
+                    // Log up to 10000 chars to ensure we see the invalid JSON
+                    $truncatedResponse = strlen($responseText) > 10000
+                        ? substr($responseText, 0, 10000) . '... [truncated]'
                         : $responseText;
                     Log::error("Gemini API Response Error for file {$contextualFileKey}: {$lastError}");
                     Log::error("Raw response (truncated): {$truncatedResponse}");
