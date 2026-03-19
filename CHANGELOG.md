@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v4.0.2] - 2026-03-19
+
+### 🐛 Fixed
+
+- **JSON-Only File Selection Integrity**
+  - Fixed unintended creation of locale directories (`lang/{locale}`) during JSON-only runs.
+  - Fixed unintended framework PHP file publication (`auth.php`, `pagination.php`, `passwords.php`, `validation.php`) when only `JSON File (*.json)` groups are selected.
+  - Framework/vendor translation keys are still loaded and available for JSON output (`en.json`, `hi.json`, etc.) without forcing PHP file creation.
+  - PHP locale directories and files are now created only when PHP file groups are actually selected for processing.
+
 ## [v4.0.1] - 2025-11-24
 
 ### 🐛 Fixed
@@ -168,3 +178,4 @@ All notable changes to this project will be documented in this file.
 
 [v4.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/3.8...4.0
 [v4.0.1]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0...4.0.1
+[v4.0.2]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0.1...4.0.2

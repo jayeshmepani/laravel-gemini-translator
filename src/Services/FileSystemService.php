@@ -171,52 +171,9 @@ class FileSystemService
             // framework provides all keys, app can override specific ones
             $mergedNested = array_replace_recursive($frameworkData, $appData);
 
-            // Only write if file is missing OR keys changed (new vendor keys)
-            $shouldWrite = false;
-
-            if (!File::exists($appFilePath)) {
-                $shouldWrite = true;
-            } else {
-                // Compare flattened versions so order doesn’t matter
-                $existingFlat = Arr::dot($appData);
-                $mergedFlat = Arr::dot($mergedNested);
-                if ($mergedFlat !== $existingFlat) {
-                    $shouldWrite = true;
-                }
-            }
-
-            if ($shouldWrite && !$dryRun) {
-                File::ensureDirectoryExists(dirname($appFilePath));
-                // Convert array() to [] syntax using a robust approach
-                $export = var_export($mergedNested, true);
-
-                // Replace all 'array(' with '[' - handling spacing properly
-                $array = preg_replace('/(\s)array\s*\(/', '$1[', $export);
-                $array = preg_replace('/^array\s*\(/m', '[', $array);
-
-                // Handle closing brackets - this is complex, need to match opening and closing properly
-                // First handle the commas followed by closing parenthesis on new lines
-                $array = preg_replace('/,\s*\n(\s*)\)/', ",\n$1]", $array);
-                // Handle closing parenthesis at the end of lines that aren't followed by commas
-                $array = preg_replace('/\s*\)\s*$/m', ']', $array);
-                // Handle inline closing like '),'
-                $array = preg_replace('/\)\s*,/', '],', $array);
-                // Handle the very last closing parenthesis
-                $array = preg_replace('/\s*\)$/', ']', $array);
-
-                $content = "<?php\n\nreturn " . $array . ";\n";
-                $this->safeFileWrite($appFilePath, $content);
-
-                if ($output) {
-                    $output->writeln("  <fg=bright-green;options=bold> ✅ Bootstrapped framework lang:</> <fg=bright-cyan>{$appFilePath}</> <fg=bright-white>(" . count(Arr::dot($mergedNested)) . " total keys)</>");
-                }
-            } else if ($shouldWrite && $dryRun) {
-                if ($output) {
-                    $output->writeln("  <fg=bright-yellow;options=bold> 📋 Would bootstrap framework lang:</> <fg=bright-cyan>{$appFilePath}</> <fg=bright-white>(" . count(Arr::dot($mergedNested)) . " total keys)</>");
-                }
-            }
-
-            // 4) Update in-memory existingTranslations using MERGED data
+            // Keep framework translations in memory so they can still be routed into
+            // JSON output when the user selects only JSON files. Actual PHP files are
+            // created later only if the matching PHP file group is selected.
             $flatMerged = Arr::dot($mergedNested);
             $canonicalEn = LocaleHelper::canonicalize('en');
 
@@ -294,12 +251,6 @@ class FileSystemService
                     $targetBaseDir = $consolidateModules ? base_path($targetDir) : $target['lang_path'];
                 }
 
-                $langDir = $targetBaseDir . DIRECTORY_SEPARATOR . $lang;
-
-                if (!$dryRun && !File::isDirectory($langDir)) {
-                    File::makeDirectory($langDir, 0755, true);
-                }
-
                 // Merge with existing data
                 $existingData = $existingTranslations[$lang][$contextualFileKey] ?? [];
                 $finalFlatData = array_merge($existingData, $newData);
@@ -322,6 +273,7 @@ class FileSystemService
                         continue;
                     }
 
+                    File::ensureDirectoryExists(dirname($jsonPath));
                     $this->safeFileWrite($jsonPath, json_encode($finalFlatData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
                     if ($output) {
                         $output->writeln("   <fg=green>-> {$jsonPath}</>");
@@ -330,6 +282,7 @@ class FileSystemService
                     // Handle PHP language files
                     // $fileKey is like "auth" or "subdir/messages"
 
+                    $langDir = $targetBaseDir . DIRECTORY_SEPARATOR . $lang;
                     $filePath = $langDir . DIRECTORY_SEPARATOR . $fileKey . '.php';
 
                     if ($dryRun) {
@@ -357,6 +310,7 @@ class FileSystemService
                     $array = preg_replace('/\s*\)$/', ']', $array);
 
                     $fileContent = "<?php\n\nreturn {$array};\n";
+                    File::ensureDirectoryExists(dirname($filePath));
                     $this->safeFileWrite($filePath, $fileContent);
 
                     if ($output) {
