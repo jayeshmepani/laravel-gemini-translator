@@ -3,12 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Laravel Gemini AI Translation Synchronization Tool - Documentation</title>
+    <title>Laravel Gemini Translator Documentation | Laravel AI Translation Tool</title>
 
     <link rel="preload" href="style.css" as="style">
     <link rel="preload" href="script.js" as="script">
@@ -22,11 +22,14 @@
         content="laravel translation, laravel localization, gemini ai, artisan command, nwidart laravel modules, php translation tool, auto translate laravel, language files sync, i18n, l10n, google gemini">
     <meta name="author" content="Jayesh Mepani">
     <meta name="robots" content="index, follow">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0c9e64">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#001316">
 
     <link rel="canonical" href="https://jayeshmepani.github.io/laravel-gemini-translator/">
 
     <link rel="icon"
-        href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E🌐%3C/text%3E%3C/svg%3E">
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f9f87' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E">
 
     <meta property="og:type" content="website">
     <meta property="og:title" content="Laravel Gemini AI Translation Synchronization Tool - Documentation">
@@ -34,21 +37,132 @@
         content="An Artisan command to extract, translate, and sync language files for Laravel and nwidart/laravel-modules projects using Google's Gemini AI.">
     <meta property="og:url" content="https://jayeshmepani.github.io/laravel-gemini-translator/">
     <meta property="og:image" content="https://jayeshmepani.github.io/laravel-gemini-translator/social-preview.png">
+    <meta property="og:image:alt" content="Laravel Gemini Translator documentation preview">
+    <meta property="og:site_name" content="Laravel Gemini Translator">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Laravel Gemini Translator Documentation">
+    <meta name="twitter:description"
+        content="Official docs for extracting, translating, and synchronizing Laravel language files with Gemini AI.">
+    <meta name="twitter:image" content="https://jayeshmepani.github.io/laravel-gemini-translator/social-preview.png">
+    <meta name="twitter:image:alt" content="Laravel Gemini Translator documentation preview">
 
-    <meta name="theme-color" content="#3b82f6">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareSourceCode",
+          "name": "Laravel Gemini Translator",
+          "codeRepository": "https://github.com/jayeshmepani/laravel-gemini-translator",
+          "url": "https://jayeshmepani.github.io/laravel-gemini-translator/",
+          "description": "Artisan command to extract, translate, and synchronize Laravel language files using Gemini AI.",
+          "runtimePlatform": "PHP 8.2+",
+          "license": "https://github.com/jayeshmepani/laravel-gemini-translator/blob/main/LICENSE.md",
+          "author": {
+            "@type": "Person",
+            "name": "Jayesh Patel",
+            "alternateName": "Jayesh Mepani",
+            "url": "https://jayeshmepani.site",
+            "sameAs": [
+              "https://github.com/jayeshmepani",
+              "https://www.linkedin.com/in/jayeshmepani/"
+            ]
+          }
+        },
+        {
+          "@type": "WebPage",
+          "name": "Laravel Gemini Translator Documentation",
+          "url": "https://jayeshmepani.github.io/laravel-gemini-translator/",
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Laravel Gemini Translator",
+            "url": "https://jayeshmepani.github.io/laravel-gemini-translator/"
+          },
+          "about": {
+            "@type": "SoftwareSourceCode",
+            "name": "Laravel Gemini Translator"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "How does this handle translations in subdirectories like lang/web/en.json?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The tool recursively scans lang directories in both the main app and modules, detects files like web/en.json as distinct file groups, and writes generated translations back to the matching subdirectories."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I use this with existing translation files?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. The tool reads existing language files to build a complete key map and, with --skip-existing, fills only missing entries while preserving existing translations."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What are the different operation modes available?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Three modes are available: normal mode for full sync, --skip-existing for missing keys only, and --refresh for re-translating existing keys only. --refresh and --skip-existing are mutually exclusive."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How accurate are the AI translations?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Gemini translations are generally high quality, and final human review is still recommended for production-critical text. Accuracy improves with the --context flag for domain-specific terminology."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is dry-run mode?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The --dry-run mode simulates the full translation process and previews changes without writing files."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What happens if AI translation fails for a chunk?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The tool applies intelligent fallback logic by using existing English source text or the key itself, and logs persistent failures to failed_translation_keys.json."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 
     <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
 
 <body>
-    <header role="banner">
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <div class="scroll-tracker" aria-hidden="true">
+    </div>
+    <header>
         <div class="container header-container">
             <div class="header-content">
-                <div class="logo" role="img" aria-label="Laravel AI Translation Synchronization Tool Logo">
-                    🌐 Laravel AI Translation Synchronization Tool
+                <div class="logo">
+                    <span class="logo-mark" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                    </span>
+                    Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges" role="group" aria-label="Project Information Badges">
-                    <span class="badge" aria-label="Version 4.0.1">v4.0.1</span>
+                    <span class="badge" aria-label="Version 4.0.3">v4.0.3</span>
                     <span class="badge" aria-label="Requires PHP 8.2 or higher">PHP 8.2+</span>
                     <span class="badge" aria-label="Requires Laravel 11 or higher">Laravel 11+</span>
                     <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
@@ -56,30 +170,24 @@
 
                 <div class="nav-controls">
                     <a href="https://github.com/jayeshmepani/laravel-gemini-translator" target="_blank"
-                        class="github-link" aria-label="View on GitHub">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="22"
-                            height="22">
+                        rel="noopener noreferrer" class="github-link" aria-label="View on GitHub">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                             <path
-                                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                                d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+                            <path d="M9 18c-4.51 2-5-2-7-2" />
                         </svg>
                     </a>
                     <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
                         <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
-                            <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" />
-                            <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" />
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" />
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" />
-                            <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" />
-                            <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" />
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" />
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" />
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="4" />
+                            <path
+                                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
                         </svg>
-                        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5"
-                            stroke="none" fill="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                        <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                         </svg>
                     </button>
                     <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle navigation menu">
@@ -92,41 +200,136 @@
         </div>
     </header>
 
-    <div class="main-content">
-        <nav role="navigation" aria-label="Main navigation">
+    <div class="main-content" id="main-content">
+        <nav aria-label="Main navigation">
             <div class="container nav-container">
-                <ul class="nav-links" id="nav-links" role="menubar" aria-label="Documentation sections">
-                    <li role="none"><a href="#overview" role="menuitem" aria-label="Go to Overview section">Overview</a>
-                    </li>
-                    <li role="none"><a href="#installation" role="menuitem"
-                            aria-label="Go to Installation section">Installation</a></li>
-                    <li role="none"><a href="#configuration" role="menuitem"
-                            aria-label="Go to Configuration section">Configuration</a></li>
-                    <li role="none"><a href="#usage" role="menuitem" aria-label="Go to Usage section">Usage</a></li>
-                    <li role="none"><a href="#modules" role="menuitem" aria-label="Go to Module Support section">Module
-                            Support</a></li>
-                    <li role="none"><a href="#advanced" role="menuitem"
-                            aria-label="Go to Advanced Usage section">Advanced
+                <ul class="nav-links" id="nav-links" aria-label="Documentation sections">
+                    <li><a href="#overview" aria-label="Go to Overview section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                            Overview</a></li>
+                    <li><a href="#installation" aria-label="Go to Installation section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" x2="12" y1="15" y2="3" />
+                            </svg>
+                            Installation</a></li>
+                    <li><a href="#configuration" aria-label="Go to Configuration section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            Configuration</a></li>
+                    <li><a href="#usage" aria-label="Go to Usage section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                                <polyline points="2 17 12 22 22 17" />
+                                <polyline points="2 12 12 17 22 12" />
+                            </svg>
                             Usage</a></li>
-                    <li role="none"><a href="#ai-first-translation" role="menuitem"
-                            aria-label="Go to AI-First Translation section">AI-First Translation</a></li>
-                    <li role="none"><a href="#options" role="menuitem" aria-label="Go to Options section">Options</a>
-                    </li>
-                    <li role="none"><a href="#examples" role="menuitem" aria-label="Go to Examples section">Examples</a>
-                    </li>
-                    <li role="none"><a href="#troubleshooting" role="menuitem"
-                            aria-label="Go to Troubleshooting section">Troubleshooting</a></li>
-                    <li role="none"><a href="#faq" role="menuitem" aria-label="Go to FAQ section">FAQ</a></li>
-                    <li role="none"><a href="#contributing" role="menuitem"
-                            aria-label="Go to Contributing section">Contributing</a></li>
+                    <li><a href="#modules" aria-label="Go to Module Support section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                <line x1="12" y1="22.08" x2="12" y2="12" />
+                            </svg>
+                            Module Support</a></li>
+                    <li><a href="#advanced" aria-label="Go to Advanced Usage section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <line x1="12" x2="12" y1="2" y2="6" />
+                                <line x1="12" x2="12" y1="18" y2="22" />
+                                <line x1="4.93" x2="7.76" y1="4.93" y2="7.76" />
+                                <line x1="16.24" x2="19.07" y1="16.24" y2="19.07" />
+                                <line x1="2" x2="6" y1="12" y2="12" />
+                                <line x1="18" x2="22" y1="12" y2="12" />
+                                <line x1="4.93" x2="7.76" y1="19.07" y2="16.24" />
+                                <line x1="16.24" x2="19.07" y1="7.76" y2="4.93" />
+                            </svg>
+                            Advanced Usage</a></li>
+                    <li><a href="#ai-first-translation" aria-label="Go to AI-First Translation section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            AI-First Translation</a></li>
+                    <li><a href="#options" aria-label="Go to Options section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            Options</a></li>
+                    <li><a href="#examples" aria-label="Go to Examples section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                            Examples</a></li>
+                    <li><a href="#troubleshooting" aria-label="Go to Troubleshooting section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg>
+                            Troubleshooting</a></li>
+                    <li><a href="#faq" aria-label="Go to FAQ section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                <line x1="12" x2="12.01" y1="17" y2="17" />
+                            </svg>
+                            FAQ</a></li>
+                    <li><a href="#contributing" aria-label="Go to Contributing section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                <path d="m15 5 4 4" />
+                            </svg>
+                            Contributing</a></li>
                 </ul>
             </div>
         </nav>
-        <main role="main" aria-label="Main content" id="main">
+        <main id="main">
             <div class="container">
-                <h1 class="sr-only">Laravel Gemini AI Translation Synchronization Tool Documentation</h1>
+                <h1 class="page-title">Laravel Gemini AI Translation Synchronization Tool Documentation</h1>
                 <section id="overview" class="section" aria-labelledby="overview-heading">
-                    <h2 id="overview-heading">📋 Overview</h2>
+                    <h2 id="overview-heading"><span class="section-icon" aria-hidden="true"><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" x2="8" y1="13" y2="13" />
+                                <line x1="16" x2="8" y1="17" y2="17" />
+                                <line x1="10" x2="8" y1="9" y2="9" />
+                            </svg></span>Overview</h2>
                     <p>
                         The Laravel Gemini AI Translation Synchronization Tool is a powerful Artisan command that
                         revolutionizes the localization workflow for modern Laravel applications, including those built
@@ -136,50 +339,96 @@
                         language files, and the framework—and then intelligently synchronizes them across all target
                         languages using Gemini AI.
                     </p>
-                    <div class="feature-grid" role="list" aria-label="Key features">
-                        <div class="feature-card" role="listitem">
-                            <div class="feature-icon" role="img" aria-label="Module icon">🧩</div>
+                    <ul class="feature-grid" aria-label="Key features">
+                        <li class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path
+                                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                                </svg>
+                            </div>
                             <h3>Full Module Support</h3>
                             <p>Scans are correctly isolated between the main app and modules. A new feature also lets
                                 you
                                 choose to keep module translations separate or consolidate them into the main `lang`
                                 directory.</p>
-                        </div>
-                        <div class="feature-card" role="listitem">
-                            <div class="feature-icon" role="img" aria-label="AI robot icon">🤖</div>
+                        </li>
+                        <li class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="11" width="18" height="10" rx="2" />
+                                    <circle cx="12" cy="5" r="2" />
+                                    <path d="M12 7v4" />
+                                    <line x1="8" y1="16" x2="8" y2="16" />
+                                    <line x1="16" y1="16" x2="16" y2="16" />
+                                </svg>
+                            </div>
                             <h3>AI-First Translation</h3>
                             <p>Trusts the AI to interpret both namespaced keys (e.g., <code
                                     class="inline-code">messages.welcome</code>) and literal strings to generate
                                 accurate,
                                 context-aware translations.</p>
-                        </div>
-                        <div class="feature-card" role="listitem">
-                            <div class="feature-icon" role="img" aria-label="Synchronization icon">🔄</div>
+                        </li>
+                        <li class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                                </svg>
+                            </div>
                             <h3>True Synchronization</h3>
                             <p>Discovers keys from your code and existing files to create a complete picture, ensuring
                                 no
                                 translation is left behind. Use <code class="inline-code">--skip-existing</code> to only
                                 add
                                 missing keys or <code class="inline-code">--refresh</code> to re-translate existing.</p>
-                        </div>
-                        <div class="feature-card" role="listitem">
-                            <div class="feature-icon" role="img" aria-label="Performance lightning icon">⚡</div>
+                        </li>
+                        <li class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                </svg>
+                            </div>
                             <h3>High Performance</h3>
                             <p>Features a <code class="inline-code">fork</code> driver for lightning-fast parallel
                                 processing with configurable <code class="inline-code">--concurrency</code>, and a
                                 stable <code class="inline-code">sync</code> driver. <strong>Now with full
                                     support for Windows and non-interactive CI/CD environments.</strong></p>
-                        </div>
-                        <div class="feature-card" role="listitem">
-                            <div class="feature-icon" role="img" aria-label="Safety shield">🛡️</div>
+                        </li>
+                        <li class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                            </div>
                             <h3>Production-Ready Safety</h3>
                             <p>Atomic file writes with path validation, framework translation bootstrapping, and <code
                                     class="inline-code">--dry-run</code> mode for safe previews.</p>
-                        </div>
-                    </div>
+                        </li>
+                    </ul>
                 </section>
                 <section id="installation" class="section" aria-labelledby="installation-heading">
-                    <h2 id="installation-heading">🚀 Installation</h2>
+                    <h2 id="installation-heading"><span class="section-icon" aria-hidden="true"><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" x2="12" y1="15" y2="3" />
+                            </svg></span>Installation</h2>
                     <h3>Step 1: Install via Composer</h3>
                     <pre><code>composer require jayesh/laravel-gemini-translator</code></pre>
                     <h3>Step 2: Publish Configuration</h3>
@@ -188,7 +437,8 @@
                     <h3>Step 3: Add API Key</h3>
                     <p>Add your Gemini API key to your <code class="inline-code">.env</code> file. You can get a key
                         from
-                        the <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
+                        the <a href="https://makersuite.google.com/app/apikey" target="_blank"
+                            rel="noopener noreferrer">Google AI Studio</a>.</p>
                     <pre><code>GEMINI_API_KEY="YOUR_GEMINI_API_KEY"</code></pre>
                     <div class="alert alert-info">
                         <strong>Offline Mode:</strong> If you run the command without a <code
@@ -197,14 +447,22 @@
                     </div>
                 </section>
                 <section id="configuration" class="section" aria-labelledby="configuration-heading">
-                    <h2 id="configuration-heading">⚙️ Configuration</h2>
+                    <h2 id="configuration-heading"><span class="section-icon" aria-hidden="true"><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg></span>Configuration</h2>
                     <h3>Environment Variables</h3>
                     <p>Add these variables to your <code class="inline-code">.env</code> file:</p>
                     <pre><code>GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 GEMINI_REQUEST_TIMEOUT=600</code></pre>
                     <h3>Getting Your API Key</h3>
                     <p>
-                        1. Visit <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI
+                        1. Visit <a href="https://makersuite.google.com/app/apikey" target="_blank"
+                            rel="noopener noreferrer">Google AI
                             Studio</a><br>
                         2. Sign in with your Google account<br>
                         3. Create a new API key<br>
@@ -226,7 +484,14 @@ GEMINI_REQUEST_TIMEOUT=600</code></pre>
                     </ul>
                 </section>
                 <section id="usage" class="section" aria-labelledby="usage-heading">
-                    <h2 id="usage-heading">🎯 Usage</h2>
+                    <h2 id="usage-heading"><span class="section-icon" aria-hidden="true"><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                                <polyline points="2 17 12 22 22 17" />
+                                <polyline points="2 12 12 17 22 12" />
+                            </svg></span>Usage</h2>
                     <h3>Basic Command</h3>
                     <p>Simply run the command to start the interactive process. It will guide you through selecting
                         which
@@ -259,7 +524,15 @@ php artisan translations:extract-and-generate --refresh --langs=es,de</code></pr
                             class="inline-code">--skip-existing</code> cannot be used together.</p>
                 </section>
                 <section id="modules" class="section">
-                    <h2>🧩 Module Support (<code class="inline-code wrap">nwidart/laravel-modules</code>)</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                <line x1="12" y1="22.08" x2="12" y2="12" />
+                            </svg></span>Module Support (<code class="inline-code wrap">nwidart/laravel-modules</code>)
+                    </h2>
                     <p>The tool is designed from the ground up to support modular applications. Scans are now correctly
                         isolated, so selecting the "Main Application" will <strong>not</strong> incorrectly scan
                         `Modules/`
@@ -287,7 +560,18 @@ php artisan translations:extract-and-generate --refresh --langs=es,de</code></pr
                             class="inline-code">--consolidate-modules</code> flag.</p>
                 </section>
                 <section id="advanced" class="section">
-                    <h2>🚀 Advanced Usage & Output</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" x2="12" y1="2" y2="6" />
+                                <line x1="12" x2="12" y1="18" y2="22" />
+                                <line x1="4.93" x2="7.76" y1="4.93" y2="7.76" />
+                                <line x1="16.24" x2="19.07" y1="16.24" y2="19.07" />
+                                <line x1="2" x2="6" y1="12" y2="12" />
+                                <line x1="18" x2="22" y1="12" y2="12" />
+                                <line x1="4.93" x2="7.76" y1="19.07" y2="16.24" />
+                                <line x1="16.24" x2="19.07" y1="7.76" y2="4.93" />
+                            </svg></span>Advanced Usage & Output</h2>
                     <h3>Fork Driver Output (Linux/macOS)</h3>
                     <p>The high-performance `fork` driver shows a real-time progress bar for all keys being processed
                         concurrently.</p>
@@ -369,8 +653,7 @@ Found missing translations needing synchronization:
                         localization functions.</p>
                     <div class="table-responsive-wrapper" role="region"
                         aria-label="Supported translation patterns table" tabindex="0">
-                        <table class="options-table" role="table"
-                            aria-label="Laravel translation patterns and examples">
+                        <table class="options-table" aria-label="Laravel translation patterns and examples">
                             <thead>
                                 <tr>
                                     <th scope="col">Pattern</th>
@@ -414,7 +697,12 @@ Found missing translations needing synchronization:
                     </ul>
                 </section>
                 <section id="ai-first-translation" class="section">
-                    <h2>💡 AI-First Translation</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg></span>AI-First Translation</h2>
                     <p>
                         This tool adopts an "AI-First" philosophy. Instead of trying to pre-process translation keys
                         into
@@ -449,7 +737,12 @@ Found missing translations needing synchronization:
                             </tbody>
                         </table>
                     </div>
-                    <h3>✨ New in v4.0.1: Intelligent Fallbacks</h3>
+                    <h3><span class="inline-heading-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                            </svg></span>Enhanced through v4.0.1 - v4.0.3: Intelligent Fallbacks</h3>
                     <p>
                         The tool no longer generates useless placeholders like <code
                             class="inline-code">"NEEDS TRANSLATION"</code>. If the AI fails to provide a translation for
@@ -465,7 +758,12 @@ Found missing translations needing synchronization:
                         that
                         needs attention, dramatically speeding up the manual review process.
                     </p>
-                    <h3>✨ New in v4.0.1: Placeholder Mismatch Detection</h3>
+                    <h3><span class="inline-heading-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                            </svg></span>Enhanced through v4.0.1 - v4.0.3: Placeholder Mismatch Detection</h3>
                     <p>Added robust placeholder validation with count checking instead of just presence. This ensures:
                     </p>
                     <ul>
@@ -485,7 +783,13 @@ php artisan translations:extract-and-generate \
 --context="A SaaS platform for financial trading. 'Position' and 'security' refer to financial assets."</code></pre>
                 </section>
                 <section id="options" class="section">
-                    <h2>🔧 Command Options</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg></span>Command Options</h2>
                     <div class="table-responsive-wrapper">
                         <table class="options-table">
                             <thead>
@@ -579,15 +883,20 @@ php artisan translations:extract-and-generate \
                     </div>
                 </section>
                 <section id="examples" class="section">
-                    <h2>💡 Usage Examples</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg></span>Usage Examples</h2>
                     <h3>Fresh Translation for a Modular Project</h3>
                     <pre><code># Generate all translations for the main app and all modules
 php artisan translations:extract-and-generate --driver=fork --langs=es,fr</code></pre>
                     <h3>Synchronize a Single Module (Separate)</h3>
-                    <pre><code></code># Interactively select only the 'Settings' module.
+                    <pre><code># Interactively select only the 'Settings' module.
 # When prompted, choose NOT to consolidate.
 # This will find and update missing keys only within Modules/Settings/lang/
-php artisan translations:extract-and-generate --driver=fork --skip-existing</pre>
+php artisan translations:extract-and-generate --driver=fork --skip-existing</code></pre>
                     <h3>Translate All Modules into Main `lang` Directory</h3>
                     <pre><code># Scan all targets (main app + all modules).
 # The --consolidate-modules flag ensures all translations land in the root lang/ dir.
@@ -618,7 +927,12 @@ php artisan translations:extract-and-generate --refresh --langs=es,fr</code></pr
 php artisan translations:extract-and-generate --driver=fork --concurrency=20</code></pre>
                 </section>
                 <section id="troubleshooting" class="section">
-                    <h2>🔧 Troubleshooting</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg></span>Troubleshooting</h2>
                     <div class="table-responsive-wrapper">
                         <table class="options-table">
                             <thead>
@@ -699,7 +1013,8 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                                 </tr>
                                 <tr>
                                     <td>All my PHP translation arrays were reordered after running the command.</td>
-                                    <td>This is an intentional, one-time change in v4.0.1</td>
+                                    <td>This is an intentional, one-time change introduced in v4.0.1 (retained in
+                                        v4.0.2 and v4.0.3)</td>
                                     <td>The tool now performs a recursive sort on all PHP arrays to ensure a stable,
                                         deterministic order. This makes future code reviews (diffs) much cleaner. You
                                         should
@@ -718,79 +1033,109 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                     </div>
                 </section>
                 <section id="faq" class="section">
-                    <h2>❓ Frequently Asked Questions</h2>
-                    <h3>Q: How does this handle translations in subdirectories like <code
-                            class="inline-code">lang/web/en.json</code>?</h3>
-                    <p><strong>A:</strong> Perfectly. The tool recursively scans your `lang` directories (in both the
-                        main
-                        app and modules). It will detect `web/en.json` and present it in the selection prompt as a
-                        distinct
-                        file group, for example: `Main Application: JSON File (web/*.json)`. When it writes the files,
-                        it
-                        will
-                        place the translated versions in the correct subdirectories (`lang/web/ru.json`, etc.),
-                        preserving
-                        your structure.</p>
-                    <h3>Q: Can I use this with existing translation files?</h3>
-                    <p><strong>A:</strong> Yes, and that's its biggest strength! The tool is designed to work with
-                        existing
-                        projects. It reads all your current language files to build a complete list of every key your
-                        application knows about. When you run it with <code class="inline-code">--skip-existing</code>,
-                        it
-                        will only translate what's missing, perfectly synchronizing your language files while preserving
-                        all
-                        your existing work.</p>
-                    <h3>Q: What are the different operation modes available?</h3>
-                    <p><strong>A:</strong> The tool offers three distinct operation modes:
-                    <ul>
-                        <li><strong>Normal Mode:</strong> Full sync - translates all keys both new and existing</li>
-                        <li><strong>Skip-Existing Mode:</strong> Only translate missing keys (<code
-                                class="inline-code">--skip-existing</code>)</li>
-                        <li><strong>Refresh Mode:</strong> Only re-translate existing keys (<code
-                                class="inline-code">--refresh</code>)</li>
-                    </ul>
-                    Note that <code class="inline-code">--refresh</code> and <code
-                        class="inline-code">--skip-existing</code> cannot be used together.</p>
-                    <h3>Q: How accurate are the AI translations?</h3>
-                    <p><strong>A:</strong> Gemini AI provides high-quality translations, but we always recommend a final
-                        review before deploying to production, especially for critical user-facing content or nuanced
-                        language. Using the <code class="inline-code">--context</code> flag dramatically improves
-                        accuracy
-                        for domain-specific projects.</p>
-                    <h3>Q: What is dry-run mode?</h3>
-                    <p><strong>A:</strong> Dry-run mode (<code class="inline-code">--dry-run</code>) allows you to
-                        preview all changes without actually writing any files to disk. It will scan, map, and process
-                        all translations but show you what would be modified without making any changes.</p>
-                    <h3>Q: What happens if the AI translation fails for a chunk?</h3>
-                    <p><strong>A:</strong> The tool is now much more resilient. Instead of leaving a useless
-                        placeholder, it
-                        uses an intelligent fallback: it will use your existing English source text for the key, or the
-                        key
-                        itself if no source text is found. Any keys that consistently fail after all retries are still
-                        logged to <code>failed_translation_keys.json</code> for your review, but your application's
-                        language
-                        files will remain functional.</p>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                <line x1="12" x2="12.01" y1="17" y2="17" />
+                            </svg></span>Frequently Asked Questions</h2>
+                    <div class="faq-list">
+                        <details name="faq">
+                            <summary>How does this handle translations in subdirectories like <code
+                                    class="inline-code">lang/web/en.json</code>?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>Perfectly. The tool recursively scans your <code class="inline-code">lang</code>
+                                    directories (in both the main app and modules). It detects <code
+                                        class="inline-code">web/en.json</code> and presents it as a distinct file group
+                                    (for example: <code class="inline-code">Main Application: JSON File
+                                        (web/*.json)</code>). Generated translations are written back to the matching
+                                    subdirectories, preserving your structure.</dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>Can I use this with existing translation files?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>Yes. The tool reads existing language files to build a complete key map. With <code
+                                        class="inline-code">--skip-existing</code>, it only fills missing entries, so
+                                    your existing translations remain intact.</dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>What are the different operation modes available?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>The tool supports three modes:
+                                    <ul>
+                                        <li><strong>Normal:</strong> translates all keys (new and existing).</li>
+                                        <li><strong>Skip Existing:</strong> translates only missing keys (<code
+                                                class="inline-code">--skip-existing</code>).</li>
+                                        <li><strong>Refresh:</strong> re-translates existing keys only (<code
+                                                class="inline-code">--refresh</code>).</li>
+                                    </ul>
+                                    <p><code class="inline-code">--refresh</code> and <code
+                                            class="inline-code">--skip-existing</code> are mutually exclusive.</p>
+                                </dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>How accurate are the AI translations?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>Gemini translations are generally high quality, but final review is still
+                                    recommended for production-critical text. Accuracy improves significantly when using
+                                    <code class="inline-code">--context</code> for domain-specific terminology.
+                                </dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>What is dry-run mode?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd><code class="inline-code">--dry-run</code> simulates the full process and previews
+                                    changes without writing files.</dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>What happens if AI translation fails for a chunk?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>The tool applies intelligent fallback logic by using existing English source text,
+                                    or the key itself if no source text exists. Persistently failing keys are logged to
+                                    <code class="inline-code">failed_translation_keys.json</code>.
+                                </dd>
+                            </dl>
+                        </details>
+                    </div>
                 </section>
                 <section id="contributing" class="section">
-                    <h2>📋 Contributing & Support</h2>
+                    <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                                <path d="m15 5 4 4" />
+                            </svg></span>Contributing & Support</h2>
                     <p>This project is open-source and maintained by <a href="https://github.com/jayeshmepani"
-                            target="_blank">Jayesh Mepani</a>. Contributions are welcome!</p>
+                            target="_blank" rel="noopener noreferrer">Jayesh Mepani</a>. Contributions are welcome!</p>
                     <h3>How to Contribute</h3>
                     <ul>
-                        <li p>Report bugs and request features on the <a
-                                href="https://github.com/jayeshmepani/laravel-gemini-translator/issues"
-                                target="_blank">GitHub Issues</a> page.</li>
-                        <li p>Submit pull requests to the <a
-                                href="https://github.com/jayeshmepani/laravel-gemini-translator"
-                                target="_blank">repository</a> for improvements.</li>
-                        <li p>Star the <a href="https://github.com/jayeshmepani/laravel-gemini-translator"
-                                target="_blank">repository on GitHub</a> if you find it useful!</li>
+                        <li>Report bugs and request features on the <a
+                                href="https://github.com/jayeshmepani/laravel-gemini-translator/issues" target="_blank"
+                                rel="noopener noreferrer">GitHub Issues</a> page.</li>
+                        <li>Submit pull requests to the <a
+                                href="https://github.com/jayeshmepani/laravel-gemini-translator" target="_blank"
+                                rel="noopener noreferrer">repository</a> for improvements.</li>
+                        <li>Star the <a href="https://github.com/jayeshmepani/laravel-gemini-translator" target="_blank"
+                                rel="noopener noreferrer">repository on GitHub</a> if you find it useful!</li>
                     </ul>
                     <h3>Support</h3>
                     <p>If you encounter issues, please check the troubleshooting section first. If the problem persists,
                         create a new issue on the <a
-                            href="https://github.com/jayeshmepani/laravel-gemini-translator/issues"
-                            target="_blank">GitHub repository</a> with detailed information, including your OS, PHP
+                            href="https://github.com/jayeshmepani/laravel-gemini-translator/issues" target="_blank"
+                            rel="noopener noreferrer">GitHub repository</a> with detailed information, including your
+                        OS, PHP
                         version,
                         and the
                         exact command used.</p>
@@ -803,9 +1148,13 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
         </main>
     </div>
 
-    <button class="back-to-top" onclick="scrollToTop()" aria-label="Back to top" title="Back to top">↑</button>
+    <a href="#overview" class="back-to-top" aria-label="Back to top" title="Back to top">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15" />
+        </svg>
+    </a>
 
-    <script src="script.js"></script>
 </body>
 
 </html>

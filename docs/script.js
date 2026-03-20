@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const backToTopButton = document.querySelector('.back-to-top');
     const hamburger = document.getElementById('hamburger-menu');
     const navLinks = document.getElementById('nav-links');
     const themeToggle = document.getElementById('theme-toggle');
@@ -13,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
             htmlElement.classList.add('dark');
         } else {
             htmlElement.classList.remove('dark');
+        }
+        if (themeToggle) {
+            themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
         }
         localStorage.setItem('theme', theme);
     };
@@ -38,9 +40,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // MOBILE NAV
     // --------------------
     if (hamburger && navLinks) {
+        hamburger.setAttribute('aria-expanded', 'false');
         hamburger.addEventListener('click', function () {
             navLinks.classList.toggle('active');
             document.body.classList.toggle('nav-open');
+            const isOpen = navLinks.classList.contains('active');
+            hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
     }
 
@@ -95,39 +100,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if (navLinks && navLinks.classList.contains('active')) {
                 navLinks.classList.remove('active');
                 document.body.classList.remove('nav-open');
+                if (hamburger) {
+                    hamburger.setAttribute('aria-expanded', 'false');
+                }
             }
         });
     });
-
-    // --------------------
-    // SCROLL-SPY + BACK TO TOP
-    // --------------------
-    const handleScroll = () => {
-        if (backToTopButton) {
-            if (window.pageYOffset > 300) {
-                backToTopButton.classList.add('visible');
-            } else {
-                backToTopButton.classList.remove('visible');
-            }
-        }
-
-        let current = '';
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            if (window.pageYOffset >= sectionTop - 100) {
-                current = section.getAttribute('id');
-            }
-        });
-
-        navLinkElements.forEach(link => {
-            link.classList.remove('active');
-            if (current && link.getAttribute('href') === '#' + current) {
-                link.classList.add('active');
-            }
-        });
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
 
     // --------------------
     // BACK/FORWARD HASH NAVIGATION WITH VIEW TRANSITION
@@ -153,6 +131,18 @@ document.addEventListener('DOMContentLoaded', function () {
             initialSection.scrollIntoView({ behavior: 'instant', block: 'start' });
         }
     }
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && navLinks?.classList.contains('active')) {
+            navLinks.classList.remove('active');
+            document.body.classList.remove('nav-open');
+            if (hamburger) {
+                hamburger.setAttribute('aria-expanded', 'false');
+                hamburger.focus();
+            }
+        }
+    });
+
 });
 
 function scrollToTop() {
