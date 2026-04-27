@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jayesh\LaravelGeminiTranslator\Services;
 
 use function Laravel\Prompts\confirm;
@@ -7,9 +9,7 @@ use function Laravel\Prompts\multiselect;
 
 class InteractionService
 {
-    /**
-     * Prompt for scan targets
-     */
+    /** Prompt for scan targets */
     public function promptForScanTargets(array $availableTargets, $command = null): array
     {
         if (count($availableTargets) <= 1) {
@@ -17,7 +17,7 @@ class InteractionService
         }
 
         $displayChoices = ['__ALL_TARGETS__' => '-- ALL TARGETS --'] +
-            collect($availableTargets)->mapWithKeys(fn($target, $key) => [$key => $target['name']])->all();
+            collect($availableTargets)->mapWithKeys(fn ($target, $key) => [$key => $target['name']])->all();
 
         $selected = $this->promptForMultiChoice(
             label: 'Which parts of the application would you like to scan and process?',
@@ -27,15 +27,13 @@ class InteractionService
             command: $command
         );
 
-        if (in_array('__ALL_TARGETS__', $selected)) {
+        if (in_array('__ALL_TARGETS__', $selected, true)) {
             return array_keys($availableTargets);
         }
         return $selected;
     }
 
-    /**
-     * Prompt for file selection
-     */
+    /** Prompt for file selection */
     public function promptForFileSelection(array $availableFiles, array $scanTargets, $command = null): array
     {
         if (count($availableFiles) <= 1) {
@@ -71,7 +69,7 @@ class InteractionService
         // 3. User selected both "-- ALL FILES --" and some individual files
         // In all cases above, return all available files
 
-        if (in_array('__ALL_FILES__', $selected)) {
+        if (in_array('__ALL_FILES__', $selected, true)) {
             // Scenario 1 & 3: "-- ALL FILES --" was selected
             return $availableFiles;
         }
@@ -93,9 +91,7 @@ class InteractionService
         return $selected;
     }
 
-    /**
-     * Prompt for consolidation
-     */
+    /** Prompt for consolidation */
     public function promptForConsolidation(bool $hasModulesSelected, bool $noInteraction = false, bool $consolidateModulesOption = false): bool
     {
         if ($hasModulesSelected && !$consolidateModulesOption && !$noInteraction) {
@@ -111,7 +107,7 @@ class InteractionService
 
     /**
      * Prompt for multi choice
-     * Accepts command context to enable Windows fallback functionality
+     * Accepts command context to enable Windows fallback functionality.
      */
     public function promptForMultiChoice(string $label, array $options, string $hint = '', ?array $default = null, $command = null): array
     {
@@ -126,7 +122,7 @@ class InteractionService
         if (PHP_OS_FAMILY === 'Windows') {
             if ($command) {
                 $command->line("<fg=yellow;options=bold>{$label}</>");
-                if ($hint) {
+                if ($hint !== '') {
                     $command->comment($hint);
                 }
 
@@ -143,19 +139,20 @@ class InteractionService
 
                 return array_values(
                     array_filter(
-                        array_map(fn($display) => $flipped[$display] ?? null, $selection)
+                        array_map(fn ($display) => $flipped[$display] ?? null, $selection),
+                        fn ($value) => $value !== null
                     )
                 );
-            } else {
-                // If no command context is provided, fall back to multiselect
-                // This maintains backward compatibility while allowing the fix when command is available
-                return multiselect(
-                    label: $label,
-                    options: $options,
-                    hint: $hint,
-                    default: $default ?? []
-                );
             }
+            // If no command context is provided, fall back to multiselect
+            // This maintains backward compatibility while allowing the fix when command is available
+            return multiselect(
+                label: $label,
+                options: $options,
+                hint: $hint,
+                default: $default ?? []
+            );
+
         }
 
         // 3️⃣ Interactive Linux/macOS → full multiselect UI

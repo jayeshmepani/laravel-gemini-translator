@@ -1,0 +1,43 @@
+parameters:
+    level: 5
+    paths:
+        - src/
+        - tests/
+    excludePaths:
+        - vendor/*
+
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # PHPUnit assertions are dynamically called - this is idiomatic
+        -
+            message: '#Dynamic call to static method PHPUnit\\Framework\\Assert::#'
+            paths:
+                - tests/
+
+        # Laravel's config() helper return type is mixed - external dependency
+        -
+            message: '#Cannot access offset .* on mixed#'
+            path: src/Services/TranslationService.php
+
+        # Gemini API facade/model dynamic calls - external dependency
+        -
+            message: '#Call to an undefined method Gemini\\Contracts\\Resources\\GenerativeModelContract::generateContent\(\)#'
+            path: src/Services/TranslationService.php
+
+        # Module facade may not exist when nwidart/laravel-modules is optional
+        -
+            message: '#Call to static method .* on an unknown class Nwidart\\Modules\\Facades\\Module#'
+            paths:
+                - src/Console/Commands/ExtractAndGenerateTranslationsCommand.php
+                - src/Services/ScannerService.php
+
+        # Laravel Prompts function signatures - external dependency
+        -
+            message: '#Function Laravel\\Prompts\\.* not found#'
+            path: src/Services/InteractionService.php
+
+        # pcntl_fork may not be available on all platforms - external function
+        -
+            message: '#Function pcntl_fork not found#'
+            path: src/Services/TranslationService.php

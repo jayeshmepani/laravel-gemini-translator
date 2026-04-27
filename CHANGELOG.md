@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v5.0.0] - 2026-04-27
+
+### ⚠ BREAKING CHANGES
+
+- **PHP 8.3 Required**: Minimum PHP version bumped from 8.2 to 8.3 (required for Laravel 13 support)
+- **Strict Typing**: Added `declare(strict_types=1)` to all PHP files for type safety
+
+### ⭐ Added
+
+- **Laravel 13 Support**: Full compatibility with Laravel 13.x
+- **Comprehensive Test Suite**: Added 37 tests with 110 assertions using Orchestra Testbench
+  - Unit tests for `LocaleHelper` and `TextHelper` utilities
+  - Feature tests for `CommandRegistration`, `ServiceProvider`, `ScannerService`, and `FileSystemService`
+- **Code Quality Tools**: Integrated PHPStan (level 5), Laravel Pint, and Rector
+- **Type Safety**: Strict type declarations and explicit type casting throughout codebase
+
+### 🔧 Changed
+
+- **Strict Comparisons**: Replaced `empty()` with explicit array/string comparisons (`=== []`, `!== []`)
+- **Strict `in_array()`**: Added `true` parameter for strict type checking
+- **Command Options**: Added explicit `(int)` casts for `chunk-size`, `retry-delay`, and `concurrency` options
+- **Removed Unused Code**: Cleaned up 3 unused class constants (`ALL_FILES_KEY`, `ALL_TARGETS_KEY`, `FILE_KEY_SEPARATOR`)
+
+### 🐛 Fixed
+
+- **Runtime Type Errors**: Fixed `usleep()` calls to use `int` instead of `float`
+- **Type Safety**: Fixed all PHPStan level 5 errors across the codebase
+
 ## [v4.0.2] - 2026-03-19
 
 ### 🐛 Fixed
@@ -55,13 +83,11 @@ All notable changes to this project will be documented in this file.
 ### ⭐ Added
 
 - **New Operational Modes**
-
   - `--refresh` flag: Re-translate only existing keys from language directories; do NOT generate translations for new/missing keys
   - `--dry-run` flag: Run full extraction + mapping but show what files would be modified without writing anything
   - `--concurrency=N` option: Configure number of concurrent processes when using fork driver (defaults to 15)
 
 - **Enhanced Locale & Translation Quality**
-
   - Added `LocaleHelper` utility class with locale canonicalization, script type detection, and humanization rules
   - Support for proper title case vs sentence case based on target language (English uses title case, other Latin languages use sentence case)
   - Script-aware placeholder validation with count checking instead of just presence
@@ -71,12 +97,10 @@ All notable changes to this project will be documented in this file.
   - Optimized `looksMachineKey()` with fast-path checks for common patterns combined with robust regex validation
 
 - **Framework Integration**
-
   - Added automatic Laravel framework translation bootstrapping that syncs vendor language files to app lang directory
   - Framework translations are merged with app overrides and updated only when new keys are added
 
 - **New Extractor Features**
-
   - Support for Vue/Alpine bound attributes (`:v-t`, `:x-text`, `v-bind:v-t`, `v-bind:x-text`)
   - Multi-line string extraction support with `/s` (PCRE_DOTALL) modifier
   - Backtick string extraction support
@@ -91,26 +115,22 @@ All notable changes to this project will be documented in this file.
 ### 🔧 Changed
 
 - **Command Signature**
-
   - Removed deprecated `--source` option
   - Removed `--no-advanced` option
   - Renamed description of `--langs` to clarify English is used as source
   - Added descriptions for new options
 
 - **Translation Flow**
-
   - Converted from 2-phase to 3-phase system (Full Sync, Missing-only, Refresh-only)
   - Mode validation: Users can no longer use `--refresh` and `--skip-existing` together
   - All language codes are now canonicalized using `LocaleHelper::canonicalize()`
 
 - **File Writing**
-
   - Modernized PHP array syntax from `array()` to `[]` in generated translation files
   - File writing is now atomic with proper temp file creation and cleanup
   - Added directory traversal protection for file writing
 
 - **Concurrency Handling**
-
   - Fork mode concurrency is now configurable via `--concurrency` option
   - Improved stop-key messaging: no longer shows misleading message in fork mode
   - Added explicit warning when running in fork mode about inability to stop mid-process
@@ -123,26 +143,22 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Fixed
 
 - **Critical Security & Safety**
-
   - Fixed directory traversal vulnerability in file writing with proper path validation
   - Fixed race condition in file writing with atomic temp file strategy
   - Fixed Windows compatibility issues with case-sensitive path validation
 
 - **Translation Logic**
-
   - Fixed pluralization detection to check source text instead of translation keys
   - Fixed placeholder validation to check counts instead of just presence
   - Fixed machine key detection logic for accurate humanization
   - Fixed key origin mapping to preserve module/app separation
 
 - **Module Support**
-
   - Fixed module directory exclusion when scanning main application (prevents double-scanning)
   - Fixed relative path calculation for module files in extraction logs
   - Added null-safe config handling for module paths to prevent basename errors
 
 - **Regex Extraction**
-
   - Fixed multi-line string extraction with proper `/s` modifier
   - Fixed attribute value extraction to handle escaped quotes properly
   - Fixed bound attribute pattern matching
@@ -156,7 +172,6 @@ All notable changes to this project will be documented in this file.
 ### 🚀 Performance
 
 - **Memory Optimization**
-
   - Reduced memory usage in concurrent mode by passing only needed subset of `$sourceTextMap` to each closure
   - Eliminated duplicate helper methods (static vs instance) to reduce code duplication
 

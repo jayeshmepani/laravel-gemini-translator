@@ -1,22 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jayesh\LaravelGeminiTranslator\Services;
 
 use Exception;
 use Gemini\Data\Content;
 use Gemini\Laravel\Facades\Gemini;
+use Illuminate\Support\Facades\Log;
 use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
 use Jayesh\LaravelGeminiTranslator\Utils\TextHelper;
 use JsonException;
-use Illuminate\Support\Facades\Log;
 use Spatie\Fork\Fork;
 use Throwable;
 
 class TranslationService
 {
-    /**
-     * Run the translation process
-     */
+    /** Run the translation process */
     public function runTranslationProcess(
         array $keysToTranslate,
         array $targetLanguages,
@@ -30,9 +30,8 @@ class TranslationService
         $totalKeysFailed = 0;
         $failedKeys = [];
 
-
         // Calculate total chunks
-        $totalChunks = $this->calculateTotalChunks($keysToTranslate, $options['chunk-size']);
+        $totalChunks = $this->calculateTotalChunks($keysToTranslate, (int) $options['chunk-size']);
 
         $driver = $options['driver'];
         $isForkMode = $driver === 'fork' && function_exists('pcntl_fork') && class_exists(Fork::class);
@@ -40,10 +39,10 @@ class TranslationService
         if (!$isForkMode) {
             $output->writeln("Press the '<fg=bright-red;options=bold>{$options['stop-key']}</>' key at any time to gracefully stop the process.");
         } else {
-            $output->writeln(" ⚠️  Fork mode: Translation cannot be stopped mid-process. Press Ctrl+C to terminate.");
+            $output->writeln(' ⚠️  Fork mode: Translation cannot be stopped mid-process. Press Ctrl+C to terminate.');
         }
 
-        $output->writeln(" 📊 Total keys needing translation: <fg=bright-yellow;options=bold>" . array_sum(array_map('count', $keysToTranslate)) . "</>");
+        $output->writeln(' 📊 Total keys needing translation: <fg=bright-yellow;options=bold>' . array_sum(array_map(count(...), $keysToTranslate)) . '</>');
         $output->writeln(" 📦 Total chunks to process: <fg=bright-yellow;options=bold>{$totalChunks}</>");
 
         $tasks = $this->buildTranslationTasks(
@@ -59,7 +58,7 @@ class TranslationService
             $concurrency = (int) ($options['concurrency'] ?? 15);
             $output->writeln("⚡ Using 'fork' driver for high-performance concurrency ({$concurrency} concurrent processes).");
 
-            $totalKeys = array_sum(array_map('count', $keysToTranslate));
+            $totalKeys = array_sum(array_map(count(...), $keysToTranslate));
             $progressBar = $output->createProgressBar($totalKeys);
             $progressBar->setFormatDefinition('custom', '🚀 %current%/%max% [%bar%] %percent:3s%% -- %message% ⏱️  %elapsed:6s%');
             $progressBar->setFormat('custom');
@@ -91,7 +90,7 @@ class TranslationService
             $progressBar->finish();
             $output->newLine();
         } else {
-            $output->writeln(" 🐌 Running in synchronous mode - this will be slower but more stable!");
+            $output->writeln(' 🐌 Running in synchronous mode - this will be slower but more stable!');
             $output->newLine();
 
             foreach ($tasks as $task) {
@@ -109,10 +108,10 @@ class TranslationService
                 if ($result['status'] === 'success') {
                     $this->mergeTranslations($translations, $result['data'], $options['skip-existing'] ?? false, $options['existing_translations'] ?? []);
                     $totalKeysSuccessfullyProcessed += $chunkCount;
-                    $output->writeln("<fg=green;options=bold>✓ Done</>");
+                    $output->writeln('<fg=green;options=bold>✓ Done</>');
                 } else {
-                    $output->writeln("<fg=red;options=bold>✗ Failed</>");
-                    $output->writeln("     Error: " . $result['message']);
+                    $output->writeln('<fg=red;options=bold>✗ Failed</>');
+                    $output->writeln('     Error: ' . $result['message']);
                     $totalKeysFailed += $chunkCount;
                     if (isset($result['failed_keys'], $result['filename'])) {
                         $failedKeys[$result['filename']] = array_merge(
@@ -129,159 +128,21 @@ class TranslationService
             'success_count' => $totalKeysSuccessfullyProcessed,
             'fail_count' => $totalKeysFailed,
             'failed_keys' => $failedKeys,
-            'processed_chunks' => $processedChunks
+            'processed_chunks' => $processedChunks,
         ];
     }
 
-    /**
-     * Build translation tasks
-     */
-    private function buildTranslationTasks(array $structuredKeys, array $languages, array $sourceTextMap, array $options): array
-    {
-        $chunkSize = (int) $options['chunk-size'];
-        $maxRetries = (int) ($options['max-retries'] ?? 5);
-        $retryDelay = (int) ($options['retry-delay'] ?? 3);
-        $projectContext = $options['context'] ?? null;
-        $tasks = [];
-
-        foreach ($structuredKeys as $contextualFileKey => $keys) {
-            if (empty($keys))
-                continue;
-
-            // Filter out empty or whitespace-only keys
-            $keys = array_filter($keys, function ($key) {
-                return is_string($key) && trim($key) !== '';
-            });
-            $keys = array_values($keys); // Re-index
-
-            // Skip if all keys were filtered out
-            if (empty($keys))
-                continue;
-
-            [, $fileKey] = explode('::', $contextualFileKey, 2);
-            $isJsonFile = str_ends_with($fileKey, '__JSON__');
-            $prefix = $isJsonFile ? '' : str_replace('/', '.', $fileKey) . '.';
-
-            $fullKeysForAI = $isJsonFile ? $keys : array_map(fn($key) => $prefix . $key, $keys);
-
-            // Intelligent chunk size adjustment based on key complexity
-            $effectiveChunkSize = $chunkSize;
-            $avgKeyLength = array_sum(array_map('strlen', $fullKeysForAI)) / count($fullKeysForAI);
-
-            // If average key length is very long (>80 chars), reduce chunk size significantly
-            if ($avgKeyLength > 80) {
-                $effectiveChunkSize = max(1, min(3, $chunkSize)); // Limit to max 3 keys per chunk
-            } elseif ($avgKeyLength > 60) {
-                $effectiveChunkSize = max(1, min(5, $chunkSize)); // Limit to max 5 keys per chunk
-            }
-
-            $keyChunks = array_chunk($fullKeysForAI, $effectiveChunkSize);
-            $originalKeyChunks = array_chunk($keys, $effectiveChunkSize);
-
-            foreach ($keyChunks as $index => $chunk) {
-                $originalChunk = $originalKeyChunks[$index];
-
-                // capture only the subset of sourceTextMap needed for the current chunk
-                $chunkSourceTextMap = [];
-                foreach ($chunk as $fullKey) {
-                    if (isset($sourceTextMap[$fullKey])) {
-                        $chunkSourceTextMap[$fullKey] = $sourceTextMap[$fullKey];
-                    }
-                }
-
-                $tasks[] = static function () use ($chunk, $originalChunk, $languages, $contextualFileKey, $maxRetries, $retryDelay, $projectContext, $chunkSourceTextMap) {
-                    try {
-                        $geminiResponse = self::staticTranslateKeysWithGemini(
-                            $chunk,
-                            $languages,
-                            $contextualFileKey,
-                            $maxRetries,
-                            $retryDelay,
-                            $projectContext
-                        );
-
-                        $structured = self::staticStructureTranslationsFromGemini(
-                            $geminiResponse,
-                            $originalChunk,
-                            $contextualFileKey,
-                            $languages,
-                            $chunkSourceTextMap
-                        );
-
-                        return [
-                            'status' => 'success',
-                            'data' => $structured,
-                            'chunk_keys_count' => count($chunk),
-                        ];
-                    } catch (Throwable $e) {
-                        Log::error("Translation task failed for file: {$contextualFileKey}", [
-                            'keys' => array_slice($originalChunk, 0, 10), // Log more keys
-                            'error' => $e->getMessage(),
-                            'trace' => $e->getTraceAsString()
-                        ]);
-
-                        return [
-                            'status' => 'error',
-                            'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . "... - Error: " . $e->getMessage(),
-                            'chunk_keys_count' => count($chunk),
-                            'failed_keys' => $originalChunk,
-                            'filename' => $contextualFileKey
-                        ];
-                    }
-                };
-            }
-        }
-        return $tasks;
-    }
-
-    /**
-     * Merge translations
-     */
-    private function mergeTranslations(array &$translations, array $chunkTranslations, bool $skipExisting, array $existingTranslations): void
-    {
-        foreach ($chunkTranslations as $lang => $files) {
-            foreach ($files as $filename => $data) {
-                $currentTranslations = $translations[$lang][$filename] ?? [];
-
-                // If skip-existing is enabled, we should also consider the initially loaded translations
-                if ($skipExisting) {
-                    // Get the originally existing translations for this file/language
-                    $alreadyExisting = $existingTranslations[$lang][$filename] ?? [];
-
-                    // Combine already existing + currently built translations
-                    $allExisting = array_merge($alreadyExisting, $currentTranslations);
-
-                    // Only add new translations for keys that don't exist anywhere
-                    foreach ($data as $key => $value) {
-                        if (!isset($allExisting[$key])) {
-                            $currentTranslations[$key] = $value;
-                        }
-                    }
-                } else {
-                    // Normal merge - all new data overwrites existing (or adds to it)
-                    $currentTranslations = array_merge($currentTranslations, $data);
-                }
-
-                $translations[$lang][$filename] = $currentTranslations;
-            }
-        }
-    }
-
-    /**
-     * Static method to translate keys with Gemini
-     */
+    /** Static method to translate keys with Gemini */
     public static function staticTranslateKeysWithGemini(array $keys, array $languages, string $contextualFileKey, int $maxRetries, int $baseRetryDelay, ?string $projectContext = null): array
     {
         // Filter out empty or whitespace-only keys to prevent syntax errors
-        $keys = array_filter($keys, function ($key) {
-            return is_string($key) && trim($key) !== '';
-        });
+        $keys = array_filter($keys, fn ($key) => is_string($key) && trim($key) !== '');
 
         // Re-index array after filtering
         $keys = array_values($keys);
 
         // If all keys were filtered out, return empty array
-        if (empty($keys)) {
+        if ($keys === []) {
             return [];
         }
 
@@ -296,7 +157,7 @@ class TranslationService
             ? 'a main JSON file (e.g., en.json)'
             : "'{$fileKey}.php'";
         $projectContextString = '';
-        if (!empty($projectContext)) {
+        if ($projectContext !== null && $projectContext !== '') {
             $sanitizedContext = trim(str_replace(["\n", "\r"], ' ', $projectContext));
             $projectContextString = "- **Project-Specific Context**: Your translations should be tailored for the following context: {$sanitizedContext}\n";
         }
@@ -473,8 +334,9 @@ USER;
                 }
 
                 $decoded = json_decode(trim($cleanedResponseText), true, 512, JSON_THROW_ON_ERROR);
-                if (is_array($decoded))
+                if (is_array($decoded)) {
                     return $decoded;
+                }
             } catch (Throwable $e) {
                 // Track the last error with more details for debugging
                 $lastError = $e->getMessage();
@@ -496,22 +358,22 @@ USER;
                 if (str_contains($e->getMessage(), 'quota') || str_contains($e->getMessage(), 'rate limit') || str_contains($e->getMessage(), 'exceeded')) {
                     // API quota/rate limit errors - always retry with exponential backoff
                     if ($attempt < $maxRetries) {
-                        $delay = ($baseRetryDelay * pow(2, $attempt) + mt_rand(500, 1500) / 1000);
-                        usleep($delay * 1000000);
+                        $delay = (int) (($baseRetryDelay * 2 ** $attempt + mt_rand(500, 1500) / 1000) * 1000000);
+                        usleep($delay);
                         continue;
                     }
-                } else if ($isJsonError) {
+                } elseif ($isJsonError) {
                     // JSON parsing errors - still worth retrying as the model might return properly formatted JSON on retry
                     if ($attempt < $maxRetries) {
-                        $delay = ($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000);
-                        usleep($delay * 1000000);
+                        $delay = (int) (($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000) * 1000000);
+                        usleep($delay);
                         continue;
                     }
                 } else {
                     // Other errors (network, etc.) - retry with linear backoff
                     if ($attempt < $maxRetries) {
-                        $delay = ($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000);
-                        usleep($delay * 1000000);
+                        $delay = (int) (($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000) * 1000000);
+                        usleep($delay);
                         continue;
                     }
                 }
@@ -522,14 +384,12 @@ USER;
         }
         throw new Exception(
             "Failed to translate keys after {$maxRetries} attempts. " .
-                "File: {$fileKey}, Keys: " . implode(', ', array_slice($keys, 0, 5)) . "... " .
-                "Last error: " . ($lastError ?? 'unknown')
+            "File: {$fileKey}, Keys: " . implode(', ', array_slice($keys, 0, 5)) . '... ' .
+            'Last error: ' . ($lastError ?? 'unknown')
         );
     }
 
-    /**
-     * Structure translations from Gemini response
-     */
+    /** Structure translations from Gemini response */
     public static function staticStructureTranslationsFromGemini(
         array $geminiData,
         array $originalKeys,
@@ -598,9 +458,7 @@ USER;
                 $sourceText = $sourceTextMap[$keyToLookup] ?? null;
                 if ($sourceText === null && TextHelper::looksMachineKey($keyToLookup)) {
                     $displayText = TextHelper::extractDisplayTextFromNamespacedKey($keyToLookup);
-                    if (empty($sourceText)) {
-                        $sourceText = LocaleHelper::humanizeForLang($displayText, 'en');
-                    }
+                    $sourceText = LocaleHelper::humanizeForLang($displayText, 'en');
                 } elseif ($sourceText === null) {
                     $sourceText = $keyToLookup;
                 }
@@ -616,23 +474,19 @@ USER;
         return $chunkTranslations;
     }
 
-    /**
-     * Calculate total chunks
-     */
+    /** Calculate total chunks */
     public function calculateTotalChunks(array $keysToTranslate, int $chunkSize): int
     {
         $total = 0;
         foreach ($keysToTranslate as $keys) {
-            if (!empty($keys)) {
+            if ($keys !== []) {
                 $total += count(array_chunk($keys, $chunkSize));
             }
         }
         return $total;
     }
 
-    /**
-     * Perform cross-check and report
-     */
+    /** Perform cross-check and report */
     public function performCrossCheckAndReport(array $structuredKeys, array $existingTranslations, array $languages, array $scanTargets, $output = null): void
     {
         $missingStats = [];
@@ -646,44 +500,36 @@ USER;
             }
         }
 
-        if (empty($missingStats)) {
+        if ($missingStats === []) {
             if ($output) {
-                $output->writeln("<fg=bright-green;options=bold> ✅ All selected keys are fully translated and synchronized across all target languages!</>");
+                $output->writeln('<fg=bright-green;options=bold> ✅ All selected keys are fully translated and synchronized across all target languages!</>');
             }
             return;
         }
 
         if ($output) {
-            $output->writeln("<fg=yellow>Found missing translations needing synchronization:</>");
+            $output->writeln('<fg=yellow>Found missing translations needing synchronization:</>');
             foreach ($missingStats as $contextualFileKey => $langData) {
-                [$targetKey, $fileKey] = explode('::', $contextualFileKey, 2);
+                [$targetKey, $fileKey] = explode('::', (string) $contextualFileKey, 2);
                 $targetName = $scanTargets[$targetKey]['name'] ?? $targetKey;
 
                 $fileNameDisplay = str_ends_with($fileKey, '__JSON__')
-                    ? "JSON File (" . str_replace('__JSON__', '*.json', $fileKey) . ")"
+                    ? 'JSON File (' . str_replace('__JSON__', '*.json', $fileKey) . ')'
                     : "{$fileKey}.php";
 
-                if ($output) {
-                    $output->writeln("  <fg=bright-yellow;options=bold>File: {$targetName} -> {$fileNameDisplay}</>");
-                }
+                $output->writeln("  <fg=bright-yellow;options=bold>File: {$targetName} -> {$fileNameDisplay}</>");
 
                 foreach ($langData as $lang => $keys) {
                     $count = count($keys);
-                    if ($output) {
-                        $output->writeln("    <fg=bright-white>-> Language '<fg=bright-cyan>{$lang}</>' is missing <fg=bright-red;options=bold>{$count}</> keys.</>");
-                    }
+                    $output->writeln("    <fg=bright-white>-> Language '<fg=bright-cyan>{$lang}</>' is missing <fg=bright-red;options=bold>{$count}</> keys.</>");
                 }
             }
 
-            if ($output) {
-                $output->writeln("");
-            }
+            $output->writeln('');
         }
     }
 
-    /**
-     * Filter out existing keys
-     */
+    /** Filter out existing keys */
     public function filterOutExistingKeys(array $keysForProcessing, array $existingTranslations, array $targetLanguages): array
     {
         $filteredKeys = [];
@@ -708,7 +554,7 @@ USER;
             }
 
             // If no keys remain for this file, remove the file entry
-            if (empty($filteredKeys[$fileKey])) {
+            if ($filteredKeys[$fileKey] === []) {
                 unset($filteredKeys[$fileKey]);
             }
         }
@@ -720,9 +566,7 @@ USER;
         return $filteredKeys;
     }
 
-    /**
-     * Filter for refresh only
-     */
+    /** Filter for refresh only */
     public function filterForRefreshOnly(array $keysForProcessing, array $existingTranslations, array $targetLanguages): array
     {
         $filteredKeys = [];
@@ -747,7 +591,7 @@ USER;
             }
 
             // If no keys remain for this file, remove the file entry
-            if (empty($filteredKeys[$fileKey])) {
+            if ($filteredKeys[$fileKey] === []) {
                 unset($filteredKeys[$fileKey]);
             }
         }
@@ -758,5 +602,135 @@ USER;
         }
 
         return $filteredKeys;
+    }
+
+    /** Build translation tasks */
+    private function buildTranslationTasks(array $structuredKeys, array $languages, array $sourceTextMap, array $options): array
+    {
+        $chunkSize = (int) $options['chunk-size'];
+        $maxRetries = (int) ($options['max-retries'] ?? 5);
+        $retryDelay = (int) ($options['retry-delay'] ?? 3);
+        $projectContext = $options['context'] ?? null;
+        $tasks = [];
+
+        foreach ($structuredKeys as $contextualFileKey => $keys) {
+            if ($keys === []) {
+                continue;
+            }
+
+            // Filter out empty or whitespace-only keys
+            $keys = array_filter($keys, fn ($key) => is_string($key) && trim($key) !== '');
+            $keys = array_values($keys); // Re-index
+
+            // Skip if all keys were filtered out
+            if ($keys === []) {
+                continue;
+            }
+
+            [, $fileKey] = explode('::', (string) $contextualFileKey, 2);
+            $isJsonFile = str_ends_with($fileKey, '__JSON__');
+            $prefix = $isJsonFile ? '' : str_replace('/', '.', $fileKey) . '.';
+
+            $fullKeysForAI = $isJsonFile ? $keys : array_map(fn ($key) => $prefix . $key, $keys);
+
+            // Intelligent chunk size adjustment based on key complexity
+            $effectiveChunkSize = $chunkSize;
+            $avgKeyLength = array_sum(array_map(strlen(...), $fullKeysForAI)) / count($fullKeysForAI);
+
+            // If average key length is very long (>80 chars), reduce chunk size significantly
+            if ($avgKeyLength > 80) {
+                $effectiveChunkSize = max(1, min(3, $chunkSize)); // Limit to max 3 keys per chunk
+            } elseif ($avgKeyLength > 60) {
+                $effectiveChunkSize = max(1, min(5, $chunkSize)); // Limit to max 5 keys per chunk
+            }
+
+            $keyChunks = array_chunk($fullKeysForAI, $effectiveChunkSize);
+            $originalKeyChunks = array_chunk($keys, $effectiveChunkSize);
+
+            foreach ($keyChunks as $index => $chunk) {
+                $originalChunk = $originalKeyChunks[$index];
+
+                // capture only the subset of sourceTextMap needed for the current chunk
+                $chunkSourceTextMap = [];
+                foreach ($chunk as $fullKey) {
+                    if (isset($sourceTextMap[$fullKey])) {
+                        $chunkSourceTextMap[$fullKey] = $sourceTextMap[$fullKey];
+                    }
+                }
+
+                $tasks[] = static function () use ($chunk, $originalChunk, $languages, $contextualFileKey, $maxRetries, $retryDelay, $projectContext, $chunkSourceTextMap) {
+                    try {
+                        $geminiResponse = self::staticTranslateKeysWithGemini(
+                            $chunk,
+                            $languages,
+                            $contextualFileKey,
+                            $maxRetries,
+                            $retryDelay,
+                            $projectContext
+                        );
+
+                        $structured = self::staticStructureTranslationsFromGemini(
+                            $geminiResponse,
+                            $originalChunk,
+                            $contextualFileKey,
+                            $languages,
+                            $chunkSourceTextMap
+                        );
+
+                        return [
+                            'status' => 'success',
+                            'data' => $structured,
+                            'chunk_keys_count' => count($chunk),
+                        ];
+                    } catch (Throwable $e) {
+                        Log::error("Translation task failed for file: {$contextualFileKey}", [
+                            'keys' => array_slice($originalChunk, 0, 10), // Log more keys
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+
+                        return [
+                            'status' => 'error',
+                            'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . '... - Error: ' . $e->getMessage(),
+                            'chunk_keys_count' => count($chunk),
+                            'failed_keys' => $originalChunk,
+                            'filename' => $contextualFileKey,
+                        ];
+                    }
+                };
+            }
+        }
+        return $tasks;
+    }
+
+    /** Merge translations */
+    private function mergeTranslations(array &$translations, array $chunkTranslations, bool $skipExisting, array $existingTranslations): void
+    {
+        foreach ($chunkTranslations as $lang => $files) {
+            foreach ($files as $filename => $data) {
+                $currentTranslations = $translations[$lang][$filename] ?? [];
+
+                // If skip-existing is enabled, we should also consider the initially loaded translations
+                if ($skipExisting) {
+                    // Get the originally existing translations for this file/language
+                    $alreadyExisting = $existingTranslations[$lang][$filename] ?? [];
+
+                    // Combine already existing + currently built translations
+                    $allExisting = array_merge($alreadyExisting, $currentTranslations);
+
+                    // Only add new translations for keys that don't exist anywhere
+                    foreach ($data as $key => $value) {
+                        if (!isset($allExisting[$key])) {
+                            $currentTranslations[$key] = $value;
+                        }
+                    }
+                } else {
+                    // Normal merge - all new data overwrites existing (or adds to it)
+                    $currentTranslations = array_merge($currentTranslations, $data);
+                }
+
+                $translations[$lang][$filename] = $currentTranslations;
+            }
+        }
     }
 }

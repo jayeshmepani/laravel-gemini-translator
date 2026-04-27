@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jayesh\LaravelGeminiTranslator\Services;
 
 use Exception;
@@ -12,12 +14,13 @@ use Symfony\Component\Finder\Finder;
 class FileSystemService
 {
     /**
-     * Load existing translations from all specified targets
+     * Load existing translations from all specified targets.
      *
      * @param array $targets Array of scan targets
      * @param array $langs Target languages
      * @param bool $consolidateModules Whether to consolidate modules
      * @param mixed $output Output object for displaying messages
+     *
      * @return array Array containing [existingTranslations, fileTargetMap, sourceTextMap, keyOriginMap]
      */
     public function loadExistingTranslations(array $targets, array $langs, bool $consolidateModules, $output = null): array
@@ -27,8 +30,8 @@ class FileSystemService
         $sourceTextMap = [];
         $keyOriginMap = [];
 
-        if ($output) {
-            $output->writeln("Reading existing language files from selected targets...");
+        if ($output !== null) {
+            $output->writeln('Reading existing language files from selected targets...');
         }
 
         // Only load the specified target languages plus 'en' as source
@@ -44,11 +47,11 @@ class FileSystemService
             $origin = $consolidateModules ? '__MAIN__' : $targetKey;
 
             foreach (File::directories($baseLangPath) as $langDirPath) {
-                $dirName = basename($langDirPath);
+                $dirName = basename((string) $langDirPath);
                 $canonicalLang = LocaleHelper::canonicalize($dirName);
 
                 // FIXED: Only load directories for languages we're actually targeting
-                if (!in_array($canonicalLang, $languagesToLoad)) {
+                if (!in_array($canonicalLang, $languagesToLoad, true)) {
                     continue;
                 }
                 foreach (File::allFiles($langDirPath) as $file) {
@@ -80,7 +83,7 @@ class FileSystemService
                     }
                 }
             }
-            $jsonFinder = new Finder();
+            $jsonFinder = new Finder;
             $jsonFinder->files()->in($baseLangPath)->name('*.json');
 
             foreach ($jsonFinder as $jsonFile) {
@@ -88,11 +91,11 @@ class FileSystemService
                 $canonicalLang = LocaleHelper::canonicalize($dirName);
 
                 // FIXED: Only load JSON files for languages we're actually targeting
-                if (!in_array($canonicalLang, $languagesToLoad)) {
+                if (!in_array($canonicalLang, $languagesToLoad, true)) {
                     continue;
                 }
                 $relativePath = $jsonFile->getRelativePath();
-                $fileKey = !empty($relativePath) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $relativePath), '/') . '/' . '__JSON__' : '__JSON__';
+                $fileKey = $relativePath !== '' ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $relativePath), '/') . '/' . '__JSON__' : '__JSON__';
                 $contextualFileKey = $origin . '::' . $fileKey;
 
                 $jsonContent = json_decode($jsonFile->getContents(), true);
@@ -115,9 +118,7 @@ class FileSystemService
         return [$existingTranslations, $fileTargetMap, $sourceTextMap, $keyOriginMap];
     }
 
-    /**
-     * Load Laravel framework translations
-     */
+    /** Load Laravel framework translations */
     public function loadFrameworkTranslations(array $currentData, string $targetDir, array $targetLanguages, bool $dryRun = false, $output = null): array
     {
         $existingTranslations = $currentData[0] ?? [];
@@ -126,14 +127,14 @@ class FileSystemService
         $keyOriginMap = $currentData[3] ?? [];
 
         if ($output) {
-            $output->writeln("Reading Laravel framework default language files...");
+            $output->writeln('Reading Laravel framework default language files...');
         }
 
         $frameworkLangPath = base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en');
 
         if (!File::isDirectory($frameworkLangPath)) {
             if ($output) {
-                $output->writeln("<fg=yellow>Could not find Laravel framework language directory. Skipping.</>");
+                $output->writeln('<fg=yellow>Could not find Laravel framework language directory. Skipping.</>');
             }
             return [$existingTranslations, $fileTargetMap, $sourceTextMap, $keyOriginMap];
         }
@@ -200,9 +201,7 @@ class FileSystemService
         return [$existingTranslations, $fileTargetMap, $sourceTextMap, $keyOriginMap];
     }
 
-    /**
-     * Write translation files to disk
-     */
+    /** Write translation files to disk */
     public function writeTranslationFiles(array $translations, array $scanTargets, bool $consolidateModules, bool $dryRun = false, string $targetDir = 'lang', array $existingTranslations = [], $output = null, bool $isOffline = false, bool $skipExisting = false): void
     {
         $actionVerb = $isOffline ? 'Generated placeholder' : ($skipExisting ? 'Updated' : 'Wrote');
@@ -210,28 +209,28 @@ class FileSystemService
             $actionVerb = 'Would write';
         }
 
-        if (empty($translations)) {
-            if ($output) {
-                $output->writeln("No new translations were generated, so no files were written.");
+        if ($translations === []) {
+            if ($output !== null) {
+                $output->writeln('No new translations were generated, so no files were written.');
             }
             return;
         }
 
         if ($dryRun) {
             if ($output) {
-                $output->writeln(" 📋 DRY RUN MODE: Would write the following translation files:");
+                $output->writeln(' 📋 DRY RUN MODE: Would write the following translation files:');
             }
         } else {
-            if ($output) {
-                $output->writeln(" 💾 Writing translation files to disk:");
+            if ($output !== null) {
+                $output->writeln(' 💾 Writing translation files to disk:');
             }
         }
 
         foreach ($translations as $lang => $processedFiles) {
             foreach ($processedFiles as $contextualFileKey => $newData) {
                 // If fileKey contains a separator, it's in format "target::file"
-                if (strpos($contextualFileKey, '::') !== false) {
-                    [$targetKey, $fileKey] = explode('::', $contextualFileKey, 2);
+                if (str_contains((string) $contextualFileKey, '::')) {
+                    [$targetKey, $fileKey] = explode('::', (string) $contextualFileKey, 2);
                 } else {
                     // Fallback if something is wrong with the key format
                     $targetKey = '__MAIN__';
@@ -255,16 +254,16 @@ class FileSystemService
                 $existingData = $existingTranslations[$lang][$contextualFileKey] ?? [];
                 $finalFlatData = array_merge($existingData, $newData);
 
-                if (empty($finalFlatData)) {
+                if ($finalFlatData === []) {
                     continue;
                 }
 
                 ksort($finalFlatData);
 
                 // Check if fileKey is for JSON files
-                if ($fileKey === '__JSON__' || str_ends_with($fileKey, '/__JSON__')) {
+                if ($fileKey === '__JSON__' || str_ends_with((string) $fileKey, '/__JSON__')) {
                     $relativePath = str_replace('__JSON__', '', $fileKey);
-                    $jsonPath = rtrim($targetBaseDir, '/') . '/' . $relativePath . $lang . '.json';
+                    $jsonPath = rtrim((string) $targetBaseDir, '/') . '/' . $relativePath . $lang . '.json';
 
                     if ($dryRun) {
                         if ($output) {
@@ -301,13 +300,13 @@ class FileSystemService
 
                     // Replace all 'array(' with '[' - handling spacing properly
                     $array = preg_replace('/(\s)array\s*\(/', '$1[', $export);
-                    $array = preg_replace('/^array\s*\(/m', '[', $array);
+                    $array = preg_replace('/^array\s*\(/m', '[', (string) $array);
 
                     // Handle closing brackets
-                    $array = preg_replace('/,\s*\n(\s*)\)/', ",\n$1]", $array);
-                    $array = preg_replace('/\s*\)\s*$/m', ']', $array);
-                    $array = preg_replace('/\)\s*,/', '],', $array);
-                    $array = preg_replace('/\s*\)$/', ']', $array);
+                    $array = preg_replace('/,\s*\n(\s*)\)/', ",\n$1]", (string) $array);
+                    $array = preg_replace('/\s*\)\s*$/m', ']', (string) $array);
+                    $array = preg_replace('/\)\s*,/', '],', (string) $array);
+                    $array = preg_replace('/\s*\)$/', ']', (string) $array);
 
                     $fileContent = "<?php\n\nreturn {$array};\n";
                     File::ensureDirectoryExists(dirname($filePath));
@@ -321,9 +320,7 @@ class FileSystemService
         }
     }
 
-    /**
-     * Save failed keys log
-     */
+    /** Save failed keys log */
     public function saveFailedKeysLog(array $failedKeys, bool $dryRun = false, $output = null): void
     {
         if ($dryRun) {
@@ -336,16 +333,14 @@ class FileSystemService
         $logData = [
             'timestamp' => date('Y-m-d H:i:s'),
             'failed_keys_by_file' => $failedKeys,
-            'total_failed_count' => array_sum(array_map('count', $failedKeys))
+            'total_failed_count' => array_sum(array_map(count(...), $failedKeys)),
         ];
 
         $logContent = json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $this->safeFileWrite(base_path('failed_translation_keys.json'), $logContent);
     }
 
-    /**
-     * Save extraction log
-     */
+    /** Save extraction log */
     public function saveExtractionLog(array $keysWithSources, bool $dryRun = false, $output = null): void
     {
         if ($dryRun) {
@@ -360,16 +355,14 @@ class FileSystemService
         $logData = [
             'scan_timestamp' => date('Y-m-d H:i:s'),
             'total_unique_keys_found_in_code' => count($keysWithSources),
-            'keys' => $keysWithSources
+            'keys' => $keysWithSources,
         ];
 
         $logContent = json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $this->safeFileWrite(base_path('translation_extraction_log.json'), $logContent);
     }
 
-    /**
-     * Safely write content to file using atomic write
-     */
+    /** Safely write content to file using atomic write */
     private function safeFileWrite(string $filePath, string $content): void
     {
         // Validate file path to prevent directory traversal
@@ -377,7 +370,7 @@ class FileSystemService
         $baseDir = realpath(base_path());
 
         if ($realPath === false || $baseDir === false) {
-            throw new RuntimeException("Invalid base or target path.");
+            throw new RuntimeException('Invalid base or target path.');
         }
 
         // Handle case sensitivity on Windows
@@ -386,7 +379,7 @@ class FileSystemService
             $baseDir = strtolower($baseDir);
         }
 
-        if (strpos($realPath, $baseDir) !== 0) {
+        if (!str_starts_with($realPath, $baseDir)) {
             throw new RuntimeException("Invalid file path: {$filePath}");
         }
 
@@ -415,9 +408,7 @@ class FileSystemService
         }
     }
 
-    /**
-     * Recursively sort an array by keys
-     */
+    /** Recursively sort an array by keys */
     private function ksortRecursive(array &$a): void
     {
         ksort($a);

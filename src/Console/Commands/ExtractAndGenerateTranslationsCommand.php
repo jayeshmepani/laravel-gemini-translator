@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jayesh\LaravelGeminiTranslator\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -14,12 +16,8 @@ use Spatie\Fork\Fork;
 
 class ExtractAndGenerateTranslationsCommand extends Command
 {
-    private const JSON_FILE_KEY = '__JSON__';
-    private const ALL_FILES_KEY = '__ALL_FILES__';
-    private const MAIN_APP_KEY = '__MAIN__';
-    private const ALL_TARGETS_KEY = '__ALL_TARGETS__';
-    private const FILE_KEY_SEPARATOR = '::';
-
+    private const string JSON_FILE_KEY = '__JSON__';
+    private const string MAIN_APP_KEY = '__MAIN__';
 
     protected $signature = 'translations:extract-and-generate
                             {--target-dir=lang : Root directory for final Laravel translation files}
@@ -37,7 +35,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--stop-key=q : The key to press to gracefully stop the translation process}
                             {--context= : Provide project-specific context to Gemini for better translations}
                             {--dry-run : Run full extraction + mapping but show what files would be modified without writing anything}';
-
 
     protected $description = ' 🌐 Extracts, cross-checks, translates, and synchronizes language files via Gemini AI, with full module support.';
 
@@ -68,17 +65,15 @@ class ExtractAndGenerateTranslationsCommand extends Command
     private int $processedChunks = 0;
 
     public function __construct(
-        private FileSystemService $fileSystemService,
-        private ScannerService $scannerService,
-        private TranslationService $translationService,
-        private InteractionService $interactionService
+        private readonly FileSystemService $fileSystemService,
+        private readonly ScannerService $scannerService,
+        private readonly TranslationService $translationService,
+        private readonly InteractionService $interactionService
     ) {
         parent::__construct();
     }
 
-    /**
-     * Check if the input is interactive (for CI/CD detection)
-     */
+    /** Check if the input is interactive (for CI/CD detection) */
     public function isInteractive(): bool
     {
         return $this->input->isInteractive();
@@ -96,15 +91,16 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         // Get target languages
         $langsOption = $this->option('langs');
-        $languages = array_filter(array_map('trim', explode(',', $langsOption)));
+        $languages = array_filter(array_map(trim(...), explode(',', $langsOption)), fn ($v) => $v !== '');
 
-        $this->targetLanguages = array_map([$this, 'canonicalizeLocale'], $languages);
+        $this->targetLanguages = array_map($this->canonicalizeLocale(...), $languages);
 
         if ($this->option('dry-run')) {
             $this->info(' 📋 Dry run mode enabled - no files will be written to disk.');
         }
 
-        if (!config('gemini.api_key') || config('gemini.api_key') === 'YOUR_API_KEY') {
+        $apiKey = config('gemini.api_key');
+        if (!is_string($apiKey) || $apiKey === '' || $apiKey === 'YOUR_API_KEY') {
             $this->isOffline = true;
             $this->warn(' ⚠️  Gemini API key is not configured. Running in OFFLINE mode.');
             $this->comment('   New translation files will be generated with keys as placeholder values.');
@@ -114,12 +110,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         $this->availableScanTargets = $this->getScanTargets($this->option('target-dir'));
         $selectedTargets = $this->interactionService->promptForScanTargets($this->availableScanTargets, $this);
-        if (empty($selectedTargets)) {
+        if ($selectedTargets === []) {
             $this->warn('No application or module targets were selected for scanning. Exiting.');
             return Command::SUCCESS;
         }
         $this->scanTargets = array_intersect_key($this->availableScanTargets, array_flip($selectedTargets));
-        $this->info("Scanning " . count($this->scanTargets) . " target(s): " . implode(', ', array_column($this->scanTargets, 'name')));
+        $this->info('Scanning ' . count($this->scanTargets) . ' target(s): ' . implode(', ', array_column($this->scanTargets, 'name')));
 
         $this->consolidateModules = $this->interactionService->promptForConsolidation(
             count(array_diff(array_keys($this->scanTargets), [self::MAIN_APP_KEY])) > 0,
@@ -154,7 +150,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 [
                     'exclude' => $this->option('exclude'),
                     'extensions' => $this->option('extensions'),
-                    'consolidate-modules' => $this->consolidateModules
+                    'consolidate-modules' => $this->consolidateModules,
                 ],
                 $this->output
             );
@@ -163,37 +159,37 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->keyOriginMap = array_merge($this->keyOriginMap, $keyOriginUpdates);
 
         $this->fileSystemService->saveExtractionLog($keysWithSources, $this->option('dry-run'), $this->output);
-        $this->info("Detailed code extraction log saved to <fg=bright-cyan>translation_extraction_log.json</>");
+        $this->info('Detailed code extraction log saved to <fg=bright-cyan>translation_extraction_log.json</>');
 
         $allPossibleKeys = $this->scannerService->getAllKeySources($scannedKeys, $this->existingTranslations, $this->sourceTextMap);
-        if (empty($allPossibleKeys)) {
+        if ($allPossibleKeys === []) {
             $this->alert('No translation keys were found from any source. Exiting.');
             return Command::SUCCESS;
         }
 
         $this->sourceTextMap = $this->scannerService->populateSourceTextForNewKeys($allPossibleKeys, $this->sourceTextMap, $this->isOffline);
 
-        $this->success("Key discovery complete! Found " . count($allPossibleKeys) . " unique keys from all sources combined.");
+        $this->success('Key discovery complete! Found ' . count($allPossibleKeys) . ' unique keys from all sources combined.');
         $this->line('');
 
         $availableFiles = $this->scannerService->determineAvailableFiles($allPossibleKeys, $this->fileTargetMap, $this->scanTargets, $this->keyOriginMap);
         $selectedFiles = $this->interactionService->promptForFileSelection($availableFiles, $this->scanTargets, $this);
 
-        if (empty($selectedFiles)) {
+        if ($selectedFiles === []) {
             $this->warn('No files were selected for processing. Exiting.');
             return Command::SUCCESS;
         }
 
         $keysForProcessing = $this->scannerService->mapKeysToSelectedFiles($allPossibleKeys, $selectedFiles, $this->keyOriginMap);
-        $this->uniqueKeysForProcessing = array_sum(array_map('count', $keysForProcessing));
-        $this->info(" ✅ Selected " . count($keysForProcessing) . " file groups containing {$this->uniqueKeysForProcessing} unique keys for processing.");
+        $this->uniqueKeysForProcessing = array_sum(array_map(count(...), $keysForProcessing));
+        $this->info(' ✅ Selected ' . count($keysForProcessing) . " file groups containing {$this->uniqueKeysForProcessing} unique keys for processing.");
 
         $refreshOnly = $this->option('refresh');
         $skipExisting = $this->option('skip-existing');
 
         if ($refreshOnly) {
             // MODE C: refresh only – do NOT look for missing/new
-            $this->info("Refreshing existing translations only (no new keys will be generated).");
+            $this->info('Refreshing existing translations only (no new keys will be generated).');
             $keysToTranslate = $this->translationService->filterForRefreshOnly($keysForProcessing, $this->existingTranslations, $this->targetLanguages);
 
             // no Phase 1.5 cross-check, because we explicitly ignore "missing"
@@ -217,7 +213,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
             }
         }
 
-        $this->totalKeysToTranslate = array_sum(array_map('count', $keysToTranslate));
+        $this->totalKeysToTranslate = array_sum(array_map(count(...), $keysToTranslate));
 
         if ($this->totalKeysToTranslate === 0) {
             if ($refreshOnly) {
@@ -238,9 +234,9 @@ class ExtractAndGenerateTranslationsCommand extends Command
         } else {
             $this->phaseTitle(' 🤖 Phase 2: Translating with Gemini AI', 'magenta');
             if ($this->option('context')) {
-                $this->info("💡 Applying project-specific context for enhanced translation accuracy.");
+                $this->info('💡 Applying project-specific context for enhanced translation accuracy.');
             }
-            $this->totalChunks = $this->translationService->calculateTotalChunks($keysToTranslate, $this->option('chunk-size'));
+            $this->totalChunks = $this->translationService->calculateTotalChunks($keysToTranslate, (int) $this->option('chunk-size'));
             if ($this->totalChunks === 0) {
                 $this->warn('No tasks to run for translation.');
             } else {
@@ -250,7 +246,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 if (!$isForkMode) {
                     $this->line("Press the '<fg=bright-red;options=bold>{$this->option('stop-key')}</>' key at any time to gracefully stop the process.");
                 } else {
-                    $this->info(" ⚠️  Fork mode: Translation cannot be stopped mid-process. Press Ctrl+C to terminate.");
+                    $this->info(' ⚠️  Fork mode: Translation cannot be stopped mid-process. Press Ctrl+C to terminate.');
                 }
 
                 $this->info(" 📊 Total keys needing translation: <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
@@ -269,11 +265,9 @@ class ExtractAndGenerateTranslationsCommand extends Command
                         'skip-existing' => $this->option('skip-existing'),
                         'existing_translations' => $this->existingTranslations,
                         'max-retries' => $this->option('max-retries'),
-                        'retry-delay' => $this->option('retry-delay')
+                        'retry-delay' => $this->option('retry-delay'),
                     ],
-                    function () {
-                        return $this->checkForExitSignal();
-                    },
+                    fn () => $this->checkForExitSignal(),
                     $this->output
                 );
 
@@ -298,9 +292,9 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->option('skip-existing')
         );
 
-        if (!empty($this->failedKeys)) {
+        if ($this->failedKeys !== []) {
             $this->fileSystemService->saveFailedKeysLog($this->failedKeys, $this->option('dry-run'), $this->output);
-            $this->warn("Some translations failed. Failed keys have been saved to: <fg=bright-red>failed_translation_keys.json</>");
+            $this->warn('Some translations failed. Failed keys have been saved to: <fg=bright-red>failed_translation_keys.json</>');
         }
         $this->displayFinalSummary();
         return Command::SUCCESS;
@@ -336,17 +330,17 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
     private function generateOfflinePlaceholders(array $keysToTranslate): void
     {
-        $this->info("Generating placeholder values for new keys...");
+        $this->info('Generating placeholder values for new keys...');
 
         foreach ($keysToTranslate as $contextualFileKey => $keys) {
             // Parse the contextual key
-            if (strpos($contextualFileKey, '::') !== false) {
-                [$targetKey, $fileKey] = explode('::', $contextualFileKey, 2);
+            if (str_contains((string) $contextualFileKey, '::')) {
+                [$targetKey, $fileKey] = explode('::', (string) $contextualFileKey, 2);
             } else {
                 $fileKey = $contextualFileKey;
             }
 
-            $isJsonFile = str_ends_with($fileKey, self::JSON_FILE_KEY);
+            $isJsonFile = str_ends_with((string) $fileKey, self::JSON_FILE_KEY);
             $prefix = $isJsonFile ? '' : str_replace('/', '.', $fileKey) . '.';
 
             foreach ($keys as $key) {
@@ -370,14 +364,14 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
 
         $this->totalKeysSuccessfullyProcessed = $this->totalKeysToTranslate;
-        $this->success("Placeholder generation complete.");
+        $this->success('Placeholder generation complete.');
     }
 
     private function showWelcome(): void
     {
         $this->line('');
         $this->line('<fg=bright-magenta;options=bold>╔═══════════════════════════════════════════════════════════════════════════════╗</>');
-        $this->line('<fg=bright-magenta;options=bold></> <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v4.0.1)</> <fg=bright-magenta;options=bold></>');
+        $this->line('<fg=bright-magenta;options=bold></> <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v5.0.0)</> <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold></> <fg=bright-white>Powered by Gemini AI • Built for Modern Laravel Applications</> <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold>╚═══════════════════════════════════════════════════════════════════════════════╝</>');
         $this->line('');
@@ -423,14 +417,14 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->line('  <fg=bright-yellow;options=bold> ⚙️  GENERAL INFO</>');
         $this->line("    <fg=bright-white>Total Execution Time:</>         <fg=bright-yellow;options=bold>{$executionTime} seconds</>");
         if ($this->isOffline) {
-            $this->line("    <fg=bright-white>Mode:</>                        <fg=yellow;options=bold>Offline (Placeholders Generated)</>");
+            $this->line('    <fg=bright-white>Mode:</>                        <fg=yellow;options=bold>Offline (Placeholders Generated)</>');
         }
-        $this->line("    <fg=bright-white>Extraction Log:</>               <fg=bright-cyan>translation_extraction_log.json</>");
-        if (!empty($this->failedKeys)) {
-            $this->line("    <fg=bright-white>Failure Log:</>                  <fg=bright-red>failed_translation_keys.json</>");
+        $this->line('    <fg=bright-white>Extraction Log:</>               <fg=bright-cyan>translation_extraction_log.json</>');
+        if ($this->failedKeys !== []) {
+            $this->line('    <fg=bright-white>Failure Log:</>                  <fg=bright-red>failed_translation_keys.json</>');
         }
         if ($this->option('context')) {
-            $this->line("    <fg=bright-white>Project Context:</>              <fg=bright-cyan>Provided</>");
+            $this->line('    <fg=bright-white>Project Context:</>              <fg=bright-cyan>Provided</>');
         }
         $this->line('');
         if ($this->shouldExit) {
@@ -440,9 +434,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->line('');
     }
 
-    /**
-     * Get scan targets
-     */
+    /** Get scan targets */
     private function getScanTargets(string $targetDir = 'lang'): array
     {
         $targets = [];

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jayesh\LaravelGeminiTranslator\Services;
 
 use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
@@ -10,10 +12,11 @@ use Symfony\Component\Finder\Finder;
 class ScannerService
 {
     /**
-     * Extract raw keys from all specified targets
-     * 
+     * Extract raw keys from all specified targets.
+     *
      * @param array $targets Array of scan targets
      * @param array $options Command options
+     *
      * @return array Array containing [scannedKeys, keysWithSources, filesScannedCount, keyOriginMapUpdate]
      */
     public function extractRawKeys(array $targets, array $options, $output): array
@@ -26,7 +29,7 @@ class ScannerService
         $moduleDirectoryToExclude = [];
         if (class_exists(Module::class)) {
             $modulesPath = config('modules.paths.modules');
-            if ($modulesPath && is_string($modulesPath) && file_exists($modulesPath)) {
+            if (is_string($modulesPath) && $modulesPath !== '' && file_exists($modulesPath)) {
                 $moduleDirectoryToExclude = [basename($modulesPath)];
             } else {
                 $moduleDirectoryToExclude = [];
@@ -36,7 +39,7 @@ class ScannerService
         $totalFiles = 0;
         foreach ($targets as $targetKey => $target) {
             // Use same logic for counting total files as actual scanning
-            $extraExcludes = ($targetKey === '__MAIN__' && !empty($moduleDirectoryToExclude)) ? $moduleDirectoryToExclude : [];
+            $extraExcludes = ($targetKey === '__MAIN__' && $moduleDirectoryToExclude !== []) ? $moduleDirectoryToExclude : [];
             $totalFiles += $this->configureFinder([$target['path']], $options['exclude'], $options['extensions'], $extraExcludes)->count();
         }
 
@@ -47,7 +50,7 @@ class ScannerService
 
         foreach ($targets as $targetKey => $target) {
             // If scanning the main app, add the modules directory name to the exclusion list.
-            $extraExcludes = ($targetKey === '__MAIN__' && !empty($moduleDirectoryToExclude)) ? $moduleDirectoryToExclude : [];
+            $extraExcludes = ($targetKey === '__MAIN__' && $moduleDirectoryToExclude !== []) ? $moduleDirectoryToExclude : [];
             $finder = $this->configureFinder([$target['path']], $options['exclude'], $options['extensions'], $extraExcludes);
             $allPatterns = TextHelper::getExtractionPatterns();
 
@@ -65,14 +68,15 @@ class ScannerService
                             // and 4, 5, 6 (for attribute patterns)
                             $foundKey = '';
                             for ($i = 1; $i < count($match); $i++) {
-                                if (isset($match[$i]) && !empty($match[$i])) {
+                                if (isset($match[$i]) && $match[$i] !== '') {
                                     $foundKey = $match[$i];
                                     break;
                                 }
                             }
 
-                            if (empty($foundKey))
+                            if ($foundKey === '') {
                                 continue;
+                            }
 
                             // Unescape escaped quotes if necessary
                             $foundKey = stripcslashes($foundKey);
@@ -80,8 +84,9 @@ class ScannerService
                             // Extract actual key from function calls inside attribute values, e.g., x-text="__('messages.hello')"
                             $foundKey = TextHelper::extractKeyFromAttribute($foundKey);
 
-                            if (empty($foundKey))
+                            if ($foundKey === '' || $foundKey === '0') {
                                 continue;
+                            }
 
                             $foundKey = str_replace('/', '.', $foundKey);
                             if (!isset($keysWithSources[$foundKey])) {
@@ -100,7 +105,7 @@ class ScannerService
                                 $fullRelativePath = $relativePath;
                             }
 
-                            if (!in_array($fullRelativePath, $keysWithSources[$foundKey])) {
+                            if (!in_array($fullRelativePath, $keysWithSources[$foundKey], true)) {
                                 $keysWithSources[$foundKey][] = $fullRelativePath;
                             }
                             if (!isset($keyOriginMap[$foundKey])) {
@@ -119,12 +124,10 @@ class ScannerService
         return [array_keys($keysWithSources), $keysWithSources, $filesScanned, $keyOriginMap];
     }
 
-    /**
-     * Configure Finder with options
-     */
+    /** Configure Finder with options */
     public function configureFinder(array $scanPaths, string $excludeOption, string $extensionsOption, array $extraExcludes = []): Finder
     {
-        $finder = new Finder();
+        $finder = new Finder;
         $defaultExcludes = explode(',', $excludeOption);
         $filesToExclude = ['artisan', 'composer.json', 'composer.lock', 'failed_translation_keys.json', 'translation_extraction_log.json', 'laravel-translation-extractor.sh', 'package.json', 'package-lock.json', 'phpunit.xml', 'README.md', 'vite.config.js', '.env*', '.phpactor.json', '.phpunit.result.cache', 'Homestead.*', 'auth.json',];
 
@@ -143,13 +146,11 @@ class ScannerService
         return $finder;
     }
 
-    /**
-     * Get relative path between two paths
-     */
+    /** Get relative path between two paths */
     public function getRelativePath(string $from, string $to): string
     {
-        $from = realpath($from) ?: $from;
-        $to = realpath($to) ?: $to;
+        $from = realpath($from) !== false ? realpath($from) : $from;
+        $to = realpath($to) !== false ? realpath($to) : $to;
 
         // Normalize paths
         $from = str_replace('\\', '/', $from);
@@ -171,23 +172,20 @@ class ScannerService
         $relativePath .= implode('/', $toParts);
 
         // Clean up the relative path - if $to is a subdirectory of $from
-        if (empty($fromParts) && strpos($to, $from . '/') === 0) {
+        if ($fromParts === [] && str_starts_with($to, $from . '/')) {
             $relativePath = substr($to, strlen($from) + 1);
         }
 
         return $relativePath;
     }
 
-
-    /**
-     * Get all key sources
-     */
+    /** Get all key sources */
     public function getAllKeySources(array $scannedKeys, array $existingTranslations, array $sourceTextMap): array
     {
         $allKeys = $scannedKeys;
-        foreach ($existingTranslations as $lang => $files) {
+        foreach ($existingTranslations as $files) {
             foreach ($files as $contextualFileKey => $data) {
-                [, $fileKey] = explode('::', $contextualFileKey, 2);
+                [, $fileKey] = explode('::', (string) $contextualFileKey, 2);
                 if (str_ends_with($fileKey, '__JSON__')) {
                     $allKeys = array_merge($allKeys, array_keys($data));
                 } else {
@@ -202,9 +200,7 @@ class ScannerService
         return array_values(array_unique($allKeys));
     }
 
-    /**
-     * Determine available files
-     */
+    /** Determine available files */
     public function determineAvailableFiles(array $allPossibleKeys, array $fileTargetMap, array $scanTargets, array $keyOriginMap): array
     {
         $fileGroups = [];
@@ -224,8 +220,8 @@ class ScannerService
                 continue;
             }
 
-            if (str_contains($key, '.')) {
-                $prefix = explode('.', $key, 2)[0];
+            if (str_contains((string) $key, '.')) {
+                $prefix = explode('.', (string) $key, 2)[0];
                 if (preg_match('/^[a-zA-Z0-9_-]+$/', $prefix)) {
                     $contextualFileKey = $origin . '::' . $prefix;
                     $fileGroups[$contextualFileKey] = true;
@@ -246,9 +242,7 @@ class ScannerService
         return $uniqueFiles;
     }
 
-    /**
-     * Map keys to selected files
-     */
+    /** Map keys to selected files */
     public function mapKeysToSelectedFiles(array $allPossibleKeys, array $selectedFiles, array $keyOriginMap): array
     {
         $structured = [];
@@ -261,14 +255,14 @@ class ScannerService
             $isPhpKey = false;
 
             // Determine if the key is a PHP-style key (`file.key`)
-            if (str_contains($rawKey, '.')) {
-                $prefix = explode('.', $rawKey, 2)[0];
+            if (str_contains((string) $rawKey, '.')) {
+                $prefix = explode('.', (string) $rawKey, 2)[0];
                 if (preg_match('/^[a-zA-Z0-9_-]+$/', $prefix)) {
                     $contextualFileKey = $origin . '::' . $prefix;
 
                     // If this file group was selected, map the key
                     if (isset($selectedFileMap[$contextualFileKey])) {
-                        $keySuffix = substr($rawKey, strlen($prefix) + 1);
+                        $keySuffix = substr((string) $rawKey, strlen($prefix) + 1);
                         $structured[$contextualFileKey][] = $keySuffix;
                         $isPhpKey = true;
                     }
@@ -280,7 +274,7 @@ class ScannerService
                 // Find all possible JSON files for the key's origin that were selected
                 $possibleJsonFiles = array_filter(
                     $selectedFiles,
-                    fn($file) => str_starts_with($file, $origin . '::') && str_ends_with($file, '__JSON__')
+                    fn ($file) => str_starts_with((string) $file, $origin . '::') && str_ends_with((string) $file, '__JSON__')
                 );
 
                 // Add the key to all matching selected JSON files
@@ -297,9 +291,7 @@ class ScannerService
         return $structured;
     }
 
-    /**
-     * Populate source text for new keys
-     */
+    /** Populate source text for new keys */
     public function populateSourceTextForNewKeys(array $allPossibleKeys, array $sourceTextMap, bool $isOffline): array
     {
         $newSourceTextMap = $sourceTextMap;

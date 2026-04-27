@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Jayesh\LaravelGeminiTranslator;
 
 use Illuminate\Support\ServiceProvider;
@@ -7,9 +9,7 @@ use Jayesh\LaravelGeminiTranslator\Console\Commands\ExtractAndGenerateTranslatio
 
 class TranslationServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap any application services.
-     */
+    /** Bootstrap any application services. */
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
