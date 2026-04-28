@@ -63,12 +63,15 @@ class LocaleHelper
         if (preg_match_all('/:([a-zA-Z_]\w*)/', $source, $matches)) {
             $allPlaceholders = array_merge($allPlaceholders, $matches[0]);
         }
+
         if (preg_match_all('/\{[a-zA-Z_]\w*\}/', $source, $matches)) {
             $allPlaceholders = array_merge($allPlaceholders, $matches[0]);
         }
+
         if (preg_match_all('/%(?:\d+\$)?[sdxXoeEfFgGaAcpn%]/', $source, $matches)) {
             $allPlaceholders = array_merge($allPlaceholders, $matches[0]);
         }
+
         if (preg_match_all('/\{\d+\}/', $source, $matches)) {
             $allPlaceholders = array_merge($allPlaceholders, $matches[0]);
         }
@@ -84,6 +87,7 @@ class LocaleHelper
                 $missing = array_merge($missing, array_fill(0, $count - $translatedCount, $placeholder));
             }
         }
+
         return $missing;
     }
 
@@ -117,8 +121,10 @@ class LocaleHelper
                         $s = mb_strtoupper(mb_substr((string) $s, 0, 1)) . mb_substr((string) $s, 1);
                     }
                 }
+
                 break;
         }
+
         return $s;
     }
 
@@ -129,6 +135,7 @@ class LocaleHelper
                 return true;
             }
         }
+
         return false;
     }
 }

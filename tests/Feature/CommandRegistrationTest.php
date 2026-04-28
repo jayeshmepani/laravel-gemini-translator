@@ -16,7 +16,7 @@ class CommandRegistrationTest extends TestCase
 {
     public function test_command_is_registered(): void
     {
-        $this->artisan('translations:extract-and-generate')
+        $this->artisan('translations:extract-and-generate', ['--no-interaction' => true])
             ->assertSuccessful();
     }
 

@@ -17,6 +17,7 @@ use Spatie\Fork\Fork;
 class ExtractAndGenerateTranslationsCommand extends Command
 {
     private const string JSON_FILE_KEY = '__JSON__';
+
     private const string MAIN_APP_KEY = '__MAIN__';
 
     protected $signature = 'translations:extract-and-generate
@@ -40,28 +41,45 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
     // --- State Properties ---
     private array $translations = [];
+
     private array $existingTranslations = [];
+
     private array $sourceTextMap = [];
+
     private array $failedKeys = [];
+
     private float $startTime;
+
     private bool $shouldExit = false;
+
     private bool $isOffline = false;
+
     private bool $consolidateModules = false;
+
     private array $targetLanguages = [];
 
     /** @var array<string, array{name: string, path: string, lang_path: string}> */
     private array $scanTargets = [];
+
     private array $availableScanTargets = [];
+
     private array $fileTargetMap = [];
+
     private array $keyOriginMap = [];
 
     // --- Statistics ---
     private int $filesScanned = 0;
+
     private int $uniqueKeysForProcessing = 0;
+
     private int $totalKeysToTranslate = 0;
+
     private int $totalKeysSuccessfullyProcessed = 0;
+
     private int $totalKeysFailed = 0;
+
     private int $totalChunks = 0;
+
     private int $processedChunks = 0;
 
     public function __construct(
@@ -114,11 +132,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->warn('No application or module targets were selected for scanning. Exiting.');
             return Command::SUCCESS;
         }
+
         $this->scanTargets = array_intersect_key($this->availableScanTargets, array_flip($selectedTargets));
         $this->info('Scanning ' . count($this->scanTargets) . ' target(s): ' . implode(', ', array_column($this->scanTargets, 'name')));
 
         $this->consolidateModules = $this->interactionService->promptForConsolidation(
-            count(array_diff(array_keys($this->scanTargets), [self::MAIN_APP_KEY])) > 0,
+            array_diff(array_keys($this->scanTargets), [self::MAIN_APP_KEY]) !== [],
             $this->option('no-interaction'),
             $this->option('consolidate-modules')
         );
@@ -236,6 +255,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
             if ($this->option('context')) {
                 $this->info('💡 Applying project-specific context for enhanced translation accuracy.');
             }
+
             $this->totalChunks = $this->translationService->calculateTotalChunks($keysToTranslate, (int) $this->option('chunk-size'));
             if ($this->totalChunks === 0) {
                 $this->warn('No tasks to run for translation.');
@@ -277,6 +297,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 $this->failedKeys = $results['failed_keys'];
             }
         }
+
         $this->line('');
 
         $this->phaseTitle(' 💾 Phase 3: Writing Language Files', 'green');
@@ -296,6 +317,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->fileSystemService->saveFailedKeysLog($this->failedKeys, $this->option('dry-run'), $this->output);
             $this->warn('Some translations failed. Failed keys have been saved to: <fg=bright-red>failed_translation_keys.json</>');
         }
+
         $this->displayFinalSummary();
         return Command::SUCCESS;
     }
@@ -400,8 +422,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->line('<fg=bright-blue;options=bold>╚══════════════════════════════════════════════════════════════════════════════════════╝</>');
         $this->line('');
         $this->line('  <fg=bright-cyan;options=bold>🔍 DISCOVERY & ANALYSIS STATS</>');
-        $this->line("    <fg=bright-white>Code Files Scanned:</>           <fg=bright-cyan;options=bold>{$this->filesScanned}</>");
-        $this->line("    <fg=bright-white>Unique Keys Selected:</>         <fg=bright-cyan;options=bold>{$this->uniqueKeysForProcessing}</>");
+        $this->line("<fg=bright-white>Code Files Scanned:</>           <fg=bright-cyan;options=bold>{$this->filesScanned}</>");
+        $this->line("<fg=bright-white>Unique Keys Selected:</>         <fg=bright-cyan;options=bold>{$this->uniqueKeysForProcessing}</>");
         $this->line('');
         $this->line('  <fg=bright-magenta;options=bold> 🤖 TRANSLATION STATS</>');
         $this->line("    <fg=bright-white>Total Keys Targeted:</>          <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
@@ -413,23 +435,28 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $rateColor = $successRate >= 95 ? 'bright-green' : ($successRate >= 75 ? 'bright-yellow' : 'bright-red');
             $this->line("    <fg=bright-white>Success Rate:</>                 <fg={$rateColor};options=bold>{$successRate}%</>");
         }
+
         $this->line('');
         $this->line('  <fg=bright-yellow;options=bold> ⚙️  GENERAL INFO</>');
         $this->line("    <fg=bright-white>Total Execution Time:</>         <fg=bright-yellow;options=bold>{$executionTime} seconds</>");
         if ($this->isOffline) {
             $this->line('    <fg=bright-white>Mode:</>                        <fg=yellow;options=bold>Offline (Placeholders Generated)</>');
         }
+
         $this->line('    <fg=bright-white>Extraction Log:</>               <fg=bright-cyan>translation_extraction_log.json</>');
         if ($this->failedKeys !== []) {
             $this->line('    <fg=bright-white>Failure Log:</>                  <fg=bright-red>failed_translation_keys.json</>');
         }
+
         if ($this->option('context')) {
             $this->line('    <fg=bright-white>Project Context:</>              <fg=bright-cyan>Provided</>');
         }
+
         $this->line('');
         if ($this->shouldExit) {
             $this->line('<fg=bright-yellow;options=bold> ⚠️  Process was stopped by the user.</>');
         }
+
         $this->line('<fg=bright-green;options=bold> 🎉 All tasks completed!</>');
         $this->line('');
     }
@@ -457,6 +484,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 }
             }
         }
+
         return $targets;
     }
 

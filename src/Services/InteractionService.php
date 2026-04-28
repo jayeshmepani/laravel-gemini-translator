@@ -30,6 +30,7 @@ class InteractionService
         if (in_array('__ALL_TARGETS__', $selected, true)) {
             return array_keys($availableTargets);
         }
+
         return $selected;
     }
 
@@ -52,6 +53,7 @@ class InteractionService
                 } else {
                     $displayName = "{$targetName}: {$fileKey}.php";
                 }
+
                 return [$contextualFileKey => $displayName];
             })->all();
 
@@ -96,7 +98,7 @@ class InteractionService
     {
         if ($hasModulesSelected && !$consolidateModulesOption && !$noInteraction) {
             return confirm(
-                label: 'Consolidate all module translations into the main application\'s `lang` directory?',
+                label: "Consolidate all module translations into the main application's `lang` directory?",
                 default: false,
                 hint: 'No: Keep translations inside each module (e.g., Modules/Settings/lang). Yes: Put all translations in the root `lang/`.'
             );
@@ -144,6 +146,7 @@ class InteractionService
                     )
                 );
             }
+
             // If no command context is provided, fall back to multiselect
             // This maintains backward compatibility while allowing the fix when command is available
             return multiselect(

@@ -55,17 +55,18 @@
         "spatie/fork": "^1.2"
     },
     "require-dev": {
+        "driftingly/rector-laravel": "^2.3",
         "laravel/pint": "^1.29",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.0",
+        "nunomaduro/collision": "^8.9",
         "orchestra/testbench": "^9.0 || ^10.0",
-        "phpstan/extension-installer": "^1.3",
-        "phpstan/phpstan": "^2.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-mockery": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
-        "phpunit/phpunit": "^11.0",
-        "rector/rector": "^2.0"
+        "phpunit/phpunit": "^11.5",
+        "rector/rector": "^2.4"
     },
     "autoload": {
         "psr-4": {
@@ -95,15 +96,17 @@
     "scripts": {
         "test": "phpunit --do-not-fail-on-warning --do-not-fail-on-phpunit-warning --do-not-fail-on-incomplete --do-not-fail-on-deprecation --do-not-fail-on-phpunit-deprecation",
         "rector": "vendor/bin/rector process",
+        "rector:dry": "vendor/bin/rector process --dry-run --ansi",
+        "rector:debug": "vendor/bin/rector process --dry-run --debug --ansi",
         "lint": "pint",
         "lint:fix": "pint",
         "lint:check": "pint --test",
         "test:lint": "@lint:check",
         "phpstan": "phpstan analyse --memory-limit=2G",
-        "rector:dry": "rector process --dry-run",
         "quality": [
             "@lint:check",
             "@phpstan",
+            "@rector:dry",
             "@test"
         ]
     }

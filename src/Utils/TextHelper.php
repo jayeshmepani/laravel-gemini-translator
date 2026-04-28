@@ -15,23 +15,23 @@ class TextHelper
         $boundAttributes = implode('|', [':v-t', ':x-text', 'v-bind:v-t', 'v-bind:x-text']);
 
         // Pattern for function calls with single quotes (with /s modifier for multi-line support)
-        $patternSingle = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$functions})\s*\(\s*'((?:[^'\\\\]|\\\\.)*)'" . '/s';
+        $patternSingle = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf("(?:%s)\\s*\\(\\s*'((?:[^'\\\\]|\\\\.)*)'", $functions) . '/s';
         // Pattern for function calls with double quotes (with /s modifier for multi-line support)
-        $patternDouble = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$functions})\s*\(\s*\"((?:[^\"\\\\]|\\\\.)*)\"" . '/s';
+        $patternDouble = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf('(?:%s)\s*\(\s*"((?:[^"\\\\]|\\\\.)*)"', $functions) . '/s';
         // Pattern for function calls with backticks (with /s modifier for multi-line support)
-        $patternBacktick = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$functions})\s*\(\s*`((?:[^`\\\\]|\\\\.)*)`" . '/s';
+        $patternBacktick = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf('(?:%s)\s*\(\s*`((?:[^`\\\\]|\\\\.)*)`', $functions) . '/s';
         // Pattern for regular attribute assignments with single quotes (with /s modifier)
-        $patternAttrSingle = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$attributes})='((?:[^'\\\\]|\\\\.)*)'" . '/s';
+        $patternAttrSingle = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf("(?:%s)='((?:[^'\\\\]|\\\\.)*)'", $attributes) . '/s';
         // Pattern for regular attribute assignments with double quotes (with /s modifier)
-        $patternAttrDouble = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$attributes})=\"((?:[^\"\\\\]|\\\\.)*)\"" . '/s';
+        $patternAttrDouble = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf('(?:%s)="((?:[^"\\\\]|\\\\.)*)"', $attributes) . '/s';
         // Pattern for regular attribute assignments with backticks (with /s modifier)
-        $patternAttrBacktick = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$attributes})=`((?:[^`\\\\]|\\\\.)*)`" . '/s';
+        $patternAttrBacktick = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf('(?:%s)=`((?:[^`\\\\]|\\\\.)*)`', $attributes) . '/s';
         // Pattern for bound attribute assignments with single quotes (e.g., :v-t="'messages.hello'") (with /s modifier)
-        $patternBoundAttrSingle = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$boundAttributes})='((?:[^'\\\\]|\\\\.)*)'" . '/s';
+        $patternBoundAttrSingle = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf("(?:%s)='((?:[^'\\\\]|\\\\.)*)'", $boundAttributes) . '/s';
         // Pattern for bound attribute assignments with double quotes (e.g., :v-t="'messages.hello'") (with /s modifier)
-        $patternBoundAttrDouble = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$boundAttributes})=\"((?:[^\"\\\\]|\\\\.)*)\"" . '/s';
+        $patternBoundAttrDouble = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf('(?:%s)="((?:[^"\\\\]|\\\\.)*)"', $boundAttributes) . '/s';
         // Pattern for bound attribute assignments with backticks (with /s modifier)
-        $patternBoundAttrBacktick = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . "(?:{$boundAttributes})=`((?:[^`\\\\]|\\\\.)*)`" . '/s';
+        $patternBoundAttrBacktick = '/' . "(?:route|config|asset|url|mix|old)\s*\([^\)]+\)(*SKIP)(*FAIL)" . '|' . sprintf('(?:%s)=`((?:[^`\\\\]|\\\\.)*)`', $boundAttributes) . '/s';
         $patterns = [$patternSingle, $patternDouble, $patternBacktick, $patternAttrSingle, $patternAttrDouble, $patternAttrBacktick, $patternBoundAttrSingle, $patternBoundAttrDouble, $patternBoundAttrBacktick];
 
         // Removed advanced patterns as they were extracting incorrect values
@@ -170,6 +170,7 @@ class TextHelper
                 $finalPart = substr($messagePart, strrpos($messagePart, '.') + 1);
                 return $finalPart;
             }
+
             return $messagePart;
         }
 

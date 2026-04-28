@@ -8,6 +8,7 @@ use Exception;
 use Gemini\Data\Content;
 use Gemini\Laravel\Facades\Gemini;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
 use Jayesh\LaravelGeminiTranslator\Utils\TextHelper;
 use JsonException;
@@ -83,10 +84,13 @@ class TranslationService
                             $result['failed_keys']
                         );
                     }
+
                     $progressBar->setMessage(" ❌ Chunk {$processedChunks}/{$totalChunks} - FAILED ({$chunkCount} keys)");
                 }
+
                 $progressBar->advance($chunkCount);
             }
+
             $progressBar->finish();
             $output->newLine();
         } else {
@@ -159,7 +163,7 @@ class TranslationService
         $projectContextString = '';
         if ($projectContext !== null && $projectContext !== '') {
             $sanitizedContext = trim(str_replace(["\n", "\r"], ' ', $projectContext));
-            $projectContextString = "- **Project-Specific Context**: Your translations should be tailored for the following context: {$sanitizedContext}\n";
+            $projectContextString = "- **Project-Specific Context**: Your translations should be tailored for the following context: {$sanitizedContext}" . PHP_EOL;
         }
 
         // Static system instructions (rules, format, etc.) - no variables here!
@@ -348,8 +352,8 @@ USER;
                     $truncatedResponse = strlen($responseText) > 10000
                         ? substr($responseText, 0, 10000) . '... [truncated]'
                         : $responseText;
-                    Log::error("Gemini API Response Error for file {$contextualFileKey}: {$lastError}");
-                    Log::error("Raw response (truncated): {$truncatedResponse}");
+                    Log::error(sprintf('Gemini API Response Error for file %s: %s', $contextualFileKey, $lastError));
+                    Log::error('Raw response (truncated): ' . $truncatedResponse);
                 }
 
                 // Check if this is a JSON parsing error
@@ -359,21 +363,21 @@ USER;
                     // API quota/rate limit errors - always retry with exponential backoff
                     if ($attempt < $maxRetries) {
                         $delay = (int) (($baseRetryDelay * 2 ** $attempt + mt_rand(500, 1500) / 1000) * 1000000);
-                        usleep($delay);
+                        Sleep::usleep($delay);
                         continue;
                     }
                 } elseif ($isJsonError) {
                     // JSON parsing errors - still worth retrying as the model might return properly formatted JSON on retry
                     if ($attempt < $maxRetries) {
                         $delay = (int) (($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000) * 1000000);
-                        usleep($delay);
+                        Sleep::usleep($delay);
                         continue;
                     }
                 } else {
                     // Other errors (network, etc.) - retry with linear backoff
                     if ($attempt < $maxRetries) {
                         $delay = (int) (($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000) * 1000000);
-                        usleep($delay);
+                        Sleep::usleep($delay);
                         continue;
                     }
                 }
@@ -382,9 +386,10 @@ USER;
                 throw $e;
             }
         }
+
         throw new Exception(
-            "Failed to translate keys after {$maxRetries} attempts. " .
-            "File: {$fileKey}, Keys: " . implode(', ', array_slice($keys, 0, 5)) . '... ' .
+            sprintf('Failed to translate keys after %d attempts. ', $maxRetries) .
+            sprintf('File: %s, Keys: ', $fileKey) . implode(', ', array_slice($keys, 0, 5)) . '... ' .
             'Last error: ' . ($lastError ?? 'unknown')
         );
     }
@@ -450,6 +455,7 @@ USER;
                                 $fallbackText = $keyToLookup;
                             }
                         }
+
                         $text = $fallbackText;
                     }
                 }
@@ -471,6 +477,7 @@ USER;
                 $chunkTranslations[$lang][$contextualFileKey][$originalKey] = $text;
             }
         }
+
         return $chunkTranslations;
     }
 
@@ -483,6 +490,7 @@ USER;
                 $total += count(array_chunk($keys, $chunkSize));
             }
         }
+
         return $total;
     }
 
@@ -504,6 +512,7 @@ USER;
             if ($output) {
                 $output->writeln('<fg=bright-green;options=bold> ✅ All selected keys are fully translated and synchronized across all target languages!</>');
             }
+
             return;
         }
 
@@ -515,7 +524,7 @@ USER;
 
                 $fileNameDisplay = str_ends_with($fileKey, '__JSON__')
                     ? 'JSON File (' . str_replace('__JSON__', '*.json', $fileKey) . ')'
-                    : "{$fileKey}.php";
+                    : $fileKey . '.php';
 
                 $output->writeln("  <fg=bright-yellow;options=bold>File: {$targetName} -> {$fileNameDisplay}</>");
 
@@ -682,16 +691,16 @@ USER;
                             'data' => $structured,
                             'chunk_keys_count' => count($chunk),
                         ];
-                    } catch (Throwable $e) {
-                        Log::error("Translation task failed for file: {$contextualFileKey}", [
+                    } catch (Throwable $throwable) {
+                        Log::error('Translation task failed for file: ' . $contextualFileKey, [
                             'keys' => array_slice($originalChunk, 0, 10), // Log more keys
-                            'error' => $e->getMessage(),
-                            'trace' => $e->getTraceAsString(),
+                            'error' => $throwable->getMessage(),
+                            'trace' => $throwable->getTraceAsString(),
                         ]);
 
                         return [
                             'status' => 'error',
-                            'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . '... - Error: ' . $e->getMessage(),
+                            'message' => "File: {$contextualFileKey}, Keys: " . implode(',', array_slice($originalChunk, 0, 3)) . '... - Error: ' . $throwable->getMessage(),
                             'chunk_keys_count' => count($chunk),
                             'failed_keys' => $originalChunk,
                             'filename' => $contextualFileKey,
@@ -700,6 +709,7 @@ USER;
                 };
             }
         }
+
         return $tasks;
     }
 

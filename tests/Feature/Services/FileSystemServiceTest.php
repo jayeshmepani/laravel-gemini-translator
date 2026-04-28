@@ -16,7 +16,7 @@ class FileSystemServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->fileSystem = app(FileSystemService::class);
+        $this->fileSystem = resolve(FileSystemService::class);
     }
 
     public function test_service_is_accessible(): void

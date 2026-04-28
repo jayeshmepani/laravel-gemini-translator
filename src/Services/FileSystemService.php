@@ -54,10 +54,12 @@ class FileSystemService
                 if (!in_array($canonicalLang, $languagesToLoad, true)) {
                     continue;
                 }
+
                 foreach (File::allFiles($langDirPath) as $file) {
                     if ($file->getExtension() !== 'php') {
                         continue;
                     }
+
                     $relativePath = $file->getRelativePathname();
                     $fileKey = str_replace(['.php', DIRECTORY_SEPARATOR], ['', '/'], $relativePath);
                     $contextualFileKey = $origin . '::' . $fileKey;
@@ -74,6 +76,7 @@ class FileSystemService
                                 if ($canonicalLang === 'en' || !isset($sourceTextMap[$fullKey])) {
                                     $sourceTextMap[$fullKey] = $text;
                                 }
+
                                 // NEW: record origin for this key
                                 if (!isset($keyOriginMap[$fullKey])) {
                                     $keyOriginMap[$fullKey] = $origin;
@@ -83,6 +86,7 @@ class FileSystemService
                     }
                 }
             }
+
             $jsonFinder = new Finder;
             $jsonFinder->files()->in($baseLangPath)->name('*.json');
 
@@ -94,6 +98,7 @@ class FileSystemService
                 if (!in_array($canonicalLang, $languagesToLoad, true)) {
                     continue;
                 }
+
                 $relativePath = $jsonFile->getRelativePath();
                 $fileKey = $relativePath !== '' ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $relativePath), '/') . '/' . '__JSON__' : '__JSON__';
                 $contextualFileKey = $origin . '::' . $fileKey;
@@ -106,6 +111,7 @@ class FileSystemService
                         if (is_string($text) && ($canonicalLang === 'en' || !isset($sourceTextMap[$key]))) {
                             $sourceTextMap[$key] = $text;
                         }
+
                         // NEW: record origin for this JSON key
                         if (!isset($keyOriginMap[$key])) {
                             $keyOriginMap[$key] = $origin;
@@ -136,6 +142,7 @@ class FileSystemService
             if ($output) {
                 $output->writeln('<fg=yellow>Could not find Laravel framework language directory. Skipping.</>');
             }
+
             return [$existingTranslations, $fileTargetMap, $sourceTextMap, $keyOriginMap];
         }
 
@@ -213,6 +220,7 @@ class FileSystemService
             if ($output !== null) {
                 $output->writeln('No new translations were generated, so no files were written.');
             }
+
             return;
         }
 
@@ -288,6 +296,7 @@ class FileSystemService
                         if ($output) {
                             $output->writeln("   <fg=yellow>-> {$filePath}</>");
                         }
+
                         continue;
                     }
 
@@ -327,6 +336,7 @@ class FileSystemService
             if ($output) {
                 $output->writeln(' 📋 DRY RUN: Would save failed keys log to failed_translation_keys.json');
             }
+
             return;
         }
 
@@ -347,6 +357,7 @@ class FileSystemService
             if ($output) {
                 $output->writeln(' 📋 DRY RUN: Would save extraction log to translation_extraction_log.json');
             }
+
             return;
         }
 
@@ -369,9 +380,7 @@ class FileSystemService
         $realPath = realpath(dirname($filePath));
         $baseDir = realpath(base_path());
 
-        if ($realPath === false || $baseDir === false) {
-            throw new RuntimeException('Invalid base or target path.');
-        }
+        throw_if($realPath === false || $baseDir === false, RuntimeException::class, 'Invalid base or target path.');
 
         // Handle case sensitivity on Windows
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -379,9 +388,7 @@ class FileSystemService
             $baseDir = strtolower($baseDir);
         }
 
-        if (!str_starts_with($realPath, $baseDir)) {
-            throw new RuntimeException("Invalid file path: {$filePath}");
-        }
+        throw_unless(str_starts_with($realPath, $baseDir), RuntimeException::class, 'Invalid file path: ' . $filePath);
 
         // Use LOCK_EX to prevent concurrent writes
         $tempPath = $filePath . '.tmp';
@@ -396,15 +403,14 @@ class FileSystemService
             }
 
             // Atomic rename to prevent corruption if process is interrupted
-            if (!rename($tempPath, $filePath)) {
-                throw new RuntimeException("Failed to rename temp file to {$filePath}");
-            }
-        } catch (Exception $e) {
+            throw_unless(rename($tempPath, $filePath), RuntimeException::class, 'Failed to rename temp file to ' . $filePath);
+        } catch (Exception $exception) {
             // Clean up temp file if something goes wrong
             if (file_exists($tempPath)) {
                 @unlink($tempPath);
             }
-            throw $e;
+
+            throw $exception;
         }
     }
 

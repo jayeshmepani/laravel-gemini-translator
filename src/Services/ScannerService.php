@@ -92,6 +92,7 @@ class ScannerService
                             if (!isset($keysWithSources[$foundKey])) {
                                 $keysWithSources[$foundKey] = [];
                             }
+
                             // Calculate the full relative path for the log (include target directory structure)
                             $targetBasePath = $targets[$targetKey]['path'];
 
@@ -108,12 +109,14 @@ class ScannerService
                             if (!in_array($fullRelativePath, $keysWithSources[$foundKey], true)) {
                                 $keysWithSources[$foundKey][] = $fullRelativePath;
                             }
+
                             if (!isset($keyOriginMap[$foundKey])) {
                                 $keyOriginMap[$foundKey] = $origin;
                             }
                         }
                     }
                 }
+
                 $extractionBar->advance();
             }
         }
@@ -143,6 +146,7 @@ class ScannerService
         foreach ($extensions as $ext) {
             $finder->name('*.' . trim($ext));
         }
+
         return $finder;
     }
 
@@ -160,7 +164,7 @@ class ScannerService
         $toParts = explode('/', trim($to, '/'));
 
         // Remove common path elements from the beginning
-        while (count($fromParts) > 0 && count($toParts) > 0 && $fromParts[0] === $toParts[0]) {
+        while ($fromParts !== [] && $toParts !== [] && $fromParts[0] === $toParts[0]) {
             array_shift($fromParts);
             array_shift($toParts);
         }
@@ -196,6 +200,7 @@ class ScannerService
                 }
             }
         }
+
         $allKeys = array_merge($allKeys, array_keys($sourceTextMap));
         return array_values(array_unique($allKeys));
     }

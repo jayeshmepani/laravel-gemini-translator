@@ -15,7 +15,7 @@ class ScannerServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->scanner = app(ScannerService::class);
+        $this->scanner = resolve(ScannerService::class);
     }
 
     public function test_service_is_accessible(): void
