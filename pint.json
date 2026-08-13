@@ -1,8 +1,8 @@
 {
-    "preset": "empty",
+    "preset": "per",
     "rules": {
-        "@PSR12": true,
-        "declare_strict_types": true,
+        "@PER-CS": true,
+        "declare_strict_types": false,
         "yoda_style": false,
         "new_with_parentheses": {
             "anonymous_class": false,
@@ -18,11 +18,7 @@
         "no_unused_imports": true,
         "ordered_imports": {
             "sort_algorithm": "alpha",
-            "imports_order": [
-                "class",
-                "function",
-                "const"
-            ]
+            "imports_order": ["class", "function", "const"]
         },
         "no_leading_import_slash": true,
         "single_line_after_imports": true,
@@ -32,9 +28,7 @@
             "phpdoc_tags": []
         },
         "no_extra_blank_lines": {
-            "tokens": [
-                "extra"
-            ]
+            "tokens": ["extra"]
         },
         "global_namespace_import": {
             "import_classes": true,
@@ -96,10 +90,7 @@
         "phpdoc_to_comment": false,
         "phpdoc_trim": true,
         "phpdoc_types": {
-            "groups": [
-                "simple",
-                "alias"
-            ]
+            "groups": ["simple", "alias"]
         },
         "phpdoc_types_order": {
             "null_adjustment": "always_last",
@@ -124,16 +115,13 @@
         "no_useless_return": true,
         "single_quote": true,
         "trailing_comma_in_multiline": {
-            "elements": [
-                "arrays"
-            ]
+            "elements": ["arrays"]
         },
         "ordered_types": {
             "null_adjustment": "always_last",
             "sort_algorithm": "alpha"
         }
     },
-    "indentation_type": true,
     "exclude": [
         "vendor",
         "node_modules",

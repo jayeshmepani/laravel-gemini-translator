@@ -46,12 +46,16 @@ class CommandRegistrationTest extends TestCase
         $this->assertTrue($definition->hasOption('concurrency'));
         $this->assertTrue($definition->hasOption('skip-existing'));
         $this->assertTrue($definition->hasOption('refresh'));
+        $this->assertTrue($definition->hasOption('refresh-clean'));
         $this->assertTrue($definition->hasOption('consolidate-modules'));
         $this->assertTrue($definition->hasOption('max-retries'));
         $this->assertTrue($definition->hasOption('retry-delay'));
         $this->assertTrue($definition->hasOption('stop-key'));
         $this->assertTrue($definition->hasOption('context'));
         $this->assertTrue($definition->hasOption('dry-run'));
+        $this->assertTrue($definition->hasOption('model'));
+        $this->assertArrayHasKey('translations:run-payload', Artisan::all());
+        $this->assertTrue(Artisan::all()['translations:run-payload']->isHidden());
     }
 
     public function test_command_default_values(): void

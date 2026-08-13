@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Jayesh\LaravelGeminiTranslator\Tests\Feature;
 
 use Jayesh\LaravelGeminiTranslator\Console\Commands\ExtractAndGenerateTranslationsCommand;
+use Jayesh\LaravelGeminiTranslator\Contracts\PromptInterface;
+use Jayesh\LaravelGeminiTranslator\Contracts\TaskRunnerInterface;
+use Jayesh\LaravelGeminiTranslator\Gemini\FreeTierQuotaCatalog;
+use Jayesh\LaravelGeminiTranslator\Platform\OperatingSystem;
+use Jayesh\LaravelGeminiTranslator\Platform\PlatformFactory;
 use Jayesh\LaravelGeminiTranslator\Services\FileSystemService;
 use Jayesh\LaravelGeminiTranslator\Services\InteractionService;
 use Jayesh\LaravelGeminiTranslator\Services\ScannerService;
@@ -20,6 +25,11 @@ class ServiceProviderTest extends TestCase
         $this->assertInstanceOf(ScannerService::class, resolve(ScannerService::class));
         $this->assertInstanceOf(TranslationService::class, resolve(TranslationService::class));
         $this->assertInstanceOf(InteractionService::class, resolve(InteractionService::class));
+        $this->assertInstanceOf(OperatingSystem::class, resolve(OperatingSystem::class));
+        $this->assertInstanceOf(PlatformFactory::class, resolve(PlatformFactory::class));
+        $this->assertInstanceOf(PromptInterface::class, resolve(PromptInterface::class));
+        $this->assertInstanceOf(TaskRunnerInterface::class, resolve(TaskRunnerInterface::class));
+        $this->assertInstanceOf(FreeTierQuotaCatalog::class, resolve(FreeTierQuotaCatalog::class));
     }
 
     public function test_services_are_resolvable(): void

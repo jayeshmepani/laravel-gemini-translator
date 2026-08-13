@@ -259,13 +259,11 @@ class ScannerService
             $origin = $keyOriginMap[$rawKey] ?? '__MAIN__';
             $isPhpKey = false;
 
-            // Determine if the key is a PHP-style key (`file.key`)
             if (str_contains((string) $rawKey, '.')) {
                 $prefix = explode('.', (string) $rawKey, 2)[0];
                 if (preg_match('/^[a-zA-Z0-9_-]+$/', $prefix)) {
                     $contextualFileKey = $origin . '::' . $prefix;
 
-                    // If this file group was selected, map the key
                     if (isset($selectedFileMap[$contextualFileKey])) {
                         $keySuffix = substr((string) $rawKey, strlen($prefix) + 1);
                         $structured[$contextualFileKey][] = $keySuffix;
@@ -274,15 +272,14 @@ class ScannerService
                 }
             }
 
-            // If it wasn't mapped as a PHP key, treat it as a JSON key
+            // Dotted keys also belong in JSON when that group is selected
+            // (Laravel JSON files may store "messages.welcome" as a flat key).
             if (!$isPhpKey) {
-                // Find all possible JSON files for the key's origin that were selected
                 $possibleJsonFiles = array_filter(
                     $selectedFiles,
-                    fn ($file) => str_starts_with((string) $file, $origin . '::') && str_ends_with((string) $file, '__JSON__')
+                    fn($file) => str_starts_with((string) $file, $origin . '::') && str_ends_with((string) $file, '__JSON__')
                 );
 
-                // Add the key to all matching selected JSON files
                 foreach ($possibleJsonFiles as $contextualJsonFileKey) {
                     $structured[$contextualJsonFileKey][] = $rawKey;
                 }

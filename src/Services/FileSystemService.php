@@ -261,6 +261,7 @@ class FileSystemService
                 // Merge with existing data
                 $existingData = $existingTranslations[$lang][$contextualFileKey] ?? [];
                 $finalFlatData = array_merge($existingData, $newData);
+                $finalFlatData = $this->normalizeTranslationValues($finalFlatData);
 
                 if ($finalFlatData === []) {
                     continue;
@@ -329,6 +330,30 @@ class FileSystemService
         }
     }
 
+    /**
+     * @param array<int|string, mixed> $flat
+     *
+     * @return array<int|string, mixed>
+     */
+    public function normalizeTranslationValues(array $flat): array
+    {
+        foreach ($flat as $key => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $trimmed = trim($value);
+            if ($trimmed === '' && is_string($key) && $this->isLiteralJsonKey($key)) {
+                $flat[$key] = $key;
+                continue;
+            }
+
+            $flat[$key] = $trimmed;
+        }
+
+        return $flat;
+    }
+
     /** Save failed keys log */
     public function saveFailedKeysLog(array $failedKeys, bool $dryRun = false, $output = null): void
     {
@@ -371,6 +396,11 @@ class FileSystemService
 
         $logContent = json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $this->safeFileWrite(base_path('translation_extraction_log.json'), $logContent);
+    }
+
+    private function isLiteralJsonKey(string $key): bool
+    {
+        return str_contains($key, ' ') || str_starts_with($key, '{') || str_contains($key, '|');
     }
 
     /** Safely write content to file using atomic write */

@@ -5,6 +5,7 @@ parameters:
         - tests/
     excludePaths:
         - vendor/*
+        - src/Windows/Kernel32Console.php
 
     reportUnmatchedIgnoredErrors: false
 
@@ -35,9 +36,12 @@ parameters:
         # Laravel Prompts function signatures - external dependency
         -
             message: '#Function Laravel\\Prompts\\.* not found#'
-            path: src/Services/InteractionService.php
+            path: src/Prompts/UnixPrompt.php
 
         # pcntl_fork may not be available on all platforms - external function
         -
             message: '#Function pcntl_fork not found#'
-            path: src/Services/TranslationService.php
+            paths:
+                - src/Platform/OperatingSystem.php
+                - src/Tasks/UnixForkTaskRunner.php
+

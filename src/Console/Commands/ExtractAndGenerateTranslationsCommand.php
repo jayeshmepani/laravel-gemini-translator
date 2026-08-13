@@ -12,7 +12,6 @@ use Jayesh\LaravelGeminiTranslator\Services\TranslationService;
 use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
 use Jayesh\LaravelGeminiTranslator\Utils\TextHelper;
 use Nwidart\Modules\Facades\Module;
-use Spatie\Fork\Fork;
 
 class ExtractAndGenerateTranslationsCommand extends Command
 {
@@ -26,15 +25,17 @@ class ExtractAndGenerateTranslationsCommand extends Command
                             {--exclude=vendor,node_modules,storage,public,bootstrap,tests,lang,config,database,routes,app/Console,.phpunit.cache,lang-output,.fleet,.idea,.nova,.vscode,.zed : Comma-separated directories to exclude from scanning}
                             {--extensions=php,blade.php,vue,js,jsx,ts,tsx : Comma-separated file extensions to search}
                             {--chunk-size=25 : Number of keys to send to Gemini in a single request}
-                            {--driver=default : Concurrency driver (default, fork, sync)}
-                            {--concurrency=15 : Number of concurrent processes when using fork driver}
+                            {--driver=default : Concurrency driver (default, fork, process, sync)}
+                            {--concurrency=15 : Number of concurrent processes when using fork or process driver}
                             {--skip-existing : Only translate keys that are missing from one or more language files, then append them.}
-                            {--refresh : Re-translate only existing keys from lang directories; do NOT generate translations for new/missing keys.}
+                            {--refresh : Re-translate existing keys only, using current file wording as source. Do NOT add new keys.}
+                            {--refresh-clean : Like --refresh, but ignore current file wording so stale/faulty values cannot leak. Do NOT add new keys.}
                             {--consolidate-modules : Consolidate all module translations into the main application\'s lang directory.}
                             {--max-retries=5 : Maximum number of retries for failed API calls}
                             {--retry-delay=3 : Base delay in seconds between retries (exponential backoff)}
                             {--stop-key=q : The key to press to gracefully stop the translation process}
                             {--context= : Provide project-specific context to Gemini for better translations}
+                            {--model= : Gemini model id (overrides GEMINI_MODEL / config). Any ListModels id, including paid models}
                             {--dry-run : Run full extraction + mapping but show what files would be modified without writing anything}';
 
     protected $description = ' 🌐 Extracts, cross-checks, translates, and synchronizes language files via Gemini AI, with full module support.';
@@ -107,9 +108,19 @@ class ExtractAndGenerateTranslationsCommand extends Command
             return Command::FAILURE;
         }
 
+        if ($this->option('refresh-clean') && $this->option('skip-existing')) {
+            $this->error('You cannot use --refresh-clean and --skip-existing together. Choose one.');
+            return Command::FAILURE;
+        }
+
+        if ($this->option('refresh') && $this->option('refresh-clean')) {
+            $this->error('You cannot use --refresh and --refresh-clean together. Choose one.');
+            return Command::FAILURE;
+        }
+
         // Get target languages
         $langsOption = $this->option('langs');
-        $languages = array_filter(array_map(trim(...), explode(',', $langsOption)), fn ($v) => $v !== '');
+        $languages = array_filter(array_map(trim(...), explode(',', $langsOption)), fn($v) => $v !== '');
 
         $this->targetLanguages = array_map($this->canonicalizeLocale(...), $languages);
 
@@ -139,12 +150,13 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->consolidateModules = $this->interactionService->promptForConsolidation(
             array_diff(array_keys($this->scanTargets), [self::MAIN_APP_KEY]) !== [],
             $this->option('no-interaction'),
-            $this->option('consolidate-modules')
+            $this->option('consolidate-modules'),
+            $this,
         );
 
         // Load existing translations using the service
-        [$this->existingTranslations, $this->fileTargetMap, $this->sourceTextMap, $this->keyOriginMap] =
-            $this->fileSystemService->loadExistingTranslations(
+        [$this->existingTranslations, $this->fileTargetMap, $this->sourceTextMap, $this->keyOriginMap]
+            = $this->fileSystemService->loadExistingTranslations(
                 $this->scanTargets,
                 $this->targetLanguages,
                 $this->consolidateModules,
@@ -153,8 +165,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         // Only load framework translations for main application
         if (isset($this->scanTargets[self::MAIN_APP_KEY])) {
-            [$this->existingTranslations, $this->fileTargetMap, $this->sourceTextMap, $this->keyOriginMap] =
-                $this->fileSystemService->loadFrameworkTranslations(
+            [$this->existingTranslations, $this->fileTargetMap, $this->sourceTextMap, $this->keyOriginMap]
+                = $this->fileSystemService->loadFrameworkTranslations(
                     [$this->existingTranslations, $this->fileTargetMap, $this->sourceTextMap, $this->keyOriginMap],
                     $this->option('target-dir'),
                     $this->targetLanguages,
@@ -163,8 +175,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 );
         }
 
-        [$scannedKeys, $keysWithSources, $this->filesScanned, $keyOriginUpdates] =
-            $this->scannerService->extractRawKeys(
+        [$scannedKeys, $keysWithSources, $this->filesScanned, $keyOriginUpdates]
+            = $this->scannerService->extractRawKeys(
                 $this->scanTargets,
                 [
                     'exclude' => $this->option('exclude'),
@@ -203,12 +215,16 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->uniqueKeysForProcessing = array_sum(array_map(count(...), $keysForProcessing));
         $this->info(' ✅ Selected ' . count($keysForProcessing) . " file groups containing {$this->uniqueKeysForProcessing} unique keys for processing.");
 
-        $refreshOnly = $this->option('refresh');
+        $refreshOnly = $this->option('refresh') || $this->option('refresh-clean');
+        $refreshClean = (bool) $this->option('refresh-clean');
         $skipExisting = $this->option('skip-existing');
 
         if ($refreshOnly) {
-            // MODE C: refresh only – do NOT look for missing/new
-            $this->info('Refreshing existing translations only (no new keys will be generated).');
+            if ($refreshClean) {
+                $this->info('Clean-refreshing existing translations from keys only (existing file wording is ignored).');
+            } else {
+                $this->info('Refreshing existing translations only (current file wording is used as source; no new keys).');
+            }
             $keysToTranslate = $this->translationService->filterForRefreshOnly($keysForProcessing, $this->existingTranslations, $this->targetLanguages);
 
             // no Phase 1.5 cross-check, because we explicitly ignore "missing"
@@ -260,18 +276,6 @@ class ExtractAndGenerateTranslationsCommand extends Command
             if ($this->totalChunks === 0) {
                 $this->warn('No tasks to run for translation.');
             } else {
-                $driver = $this->option('driver');
-                $isForkMode = $driver === 'fork' && function_exists('pcntl_fork') && class_exists(Fork::class);
-
-                if (!$isForkMode) {
-                    $this->line("Press the '<fg=bright-red;options=bold>{$this->option('stop-key')}</>' key at any time to gracefully stop the process.");
-                } else {
-                    $this->info(' ⚠️  Fork mode: Translation cannot be stopped mid-process. Press Ctrl+C to terminate.');
-                }
-
-                $this->info(" 📊 Total keys needing translation: <fg=bright-yellow;options=bold>{$this->totalKeysToTranslate}</>");
-                $this->info(" 📦 Total chunks to process: <fg=bright-yellow;options=bold>{$this->totalChunks}</>");
-
                 $results = $this->translationService->runTranslationProcess(
                     $keysToTranslate,
                     $this->targetLanguages,
@@ -282,12 +286,16 @@ class ExtractAndGenerateTranslationsCommand extends Command
                         'stop-key' => $this->option('stop-key'),
                         'context' => $this->option('context'),
                         'concurrency' => $this->option('concurrency'),
+                        'concurrency_explicit' => $this->input->hasParameterOption('--concurrency'),
                         'skip-existing' => $this->option('skip-existing'),
                         'existing_translations' => $this->existingTranslations,
                         'max-retries' => $this->option('max-retries'),
                         'retry-delay' => $this->option('retry-delay'),
+                        'model' => $this->option('model'),
+                        'refresh' => $refreshOnly,
+                        'refresh_clean' => $refreshClean,
                     ],
-                    fn () => $this->checkForExitSignal(),
+                    fn() => $this->checkForExitSignal(),
                     $this->output
                 );
 
@@ -295,6 +303,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 $this->totalKeysSuccessfullyProcessed = $results['success_count'];
                 $this->totalKeysFailed = $results['fail_count'];
                 $this->failedKeys = $results['failed_keys'];
+                $this->processedChunks = $results['processed_chunks'] ?? 0;
             }
         }
 
@@ -393,7 +402,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
     {
         $this->line('');
         $this->line('<fg=bright-magenta;options=bold>╔═══════════════════════════════════════════════════════════════════════════════╗</>');
-        $this->line('<fg=bright-magenta;options=bold></> <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v5.0.0)</> <fg=bright-magenta;options=bold></>');
+        $this->line('<fg=bright-magenta;options=bold></> <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v5.1.0)</> <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold></> <fg=bright-white>Powered by Gemini AI • Built for Modern Laravel Applications</> <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold>╚═══════════════════════════════════════════════════════════════════════════════╝</>');
         $this->line('');

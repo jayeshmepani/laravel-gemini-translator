@@ -3,7 +3,11 @@
 declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
+use Rector\Php71\Rector\TryCatch\MultiExceptionCatchRector;
+use Rector\TypeDeclaration\Rector\Closure\AddClosureVoidReturnTypeWhereNoReturnRector;
+use Rector\TypeDeclaration\Rector\Function_\AddFunctionVoidReturnTypeWhereNoReturnRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
+use RectorLaravel\Rector\StaticCall\CarbonToDateFacadeRector;
 use RectorLaravel\Set\LaravelSetList;
 use RectorLaravel\Set\LaravelSetProvider;
 
@@ -14,6 +18,10 @@ return RectorConfig::configure()
     ])
 
     ->withSkip([
+        AddClosureVoidReturnTypeWhereNoReturnRector::class,
+        AddFunctionVoidReturnTypeWhereNoReturnRector::class,
+        CarbonToDateFacadeRector::class,
+        MultiExceptionCatchRector::class,
         __DIR__ . '/vendor',
         __DIR__ . '/node_modules',
         __DIR__ . '/storage',
@@ -25,32 +33,12 @@ return RectorConfig::configure()
         __DIR__ . '/tests/Fixtures',
         __DIR__ . '/tests/fixtures',
     ])
-
-    /*
-     * Reads PHP target from composer.json.
-     * Your composer.json already requires PHP ^8.3.
-     */
     ->withPhpSets()
-
-    /*
-     * Laravel-aware upgrade rules based on installed composer versions.
-     */
     ->withSetProviders(LaravelSetProvider::class)
     ->withComposerBased(
         laravel: true,
         phpunit: true,
     )
-
-    /*
-     * Package-safe Laravel modernization.
-     *
-     * Removed:
-     * - LARAVEL_ARRAY_STR_FUNCTION_TO_STATIC_CALL
-     *   because you asked to avoid changes that may affect fast/simple code paths.
-     *
-     * Kept:
-     * - container/class-name/test/type/code-quality improvements.
-     */
     ->withSets([
         LaravelSetList::LARAVEL_CODE_QUALITY,
         LaravelSetList::LARAVEL_COLLECTION,
@@ -60,24 +48,16 @@ return RectorConfig::configure()
         LaravelSetList::LARAVEL_TESTING,
         LaravelSetList::LARAVEL_TYPE_DECLARATIONS,
     ])
-
-    /*
-     * Gradual levels only.
-     * Do not jump to aggressive max levels.
-     */
     ->withTypeCoverageLevel(1)
     ->withTypeCoverageDocblockLevel(0)
     ->withDeadCodeLevel(1)
-    ->withCodeQualityLevel(1)
-
+    ->withCodeQualityLevel(10)
     ->withConfiguredRule(RemoveDumpDataDeadCodeRector::class, [
         'dd',
         'dump',
         'var_dump',
     ])
-
     ->withParallel()
-
     ->withImportNames(
         importNames: true,
         removeUnusedImports: true,

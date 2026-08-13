@@ -76,7 +76,7 @@ php artisan translations:extract-and-generate --chunk-size=3
 GEMINI_API_KEY=your-api-key-here
 
 # Model selection (optional)
-GEMINI_MODEL=gemini-2.0-flash-exp
+GEMINI_MODEL=gemini-3.5-flash-lite
 
 # Request timeout in seconds (optional)
 GEMINI_REQUEST_TIMEOUT=600
@@ -133,6 +133,11 @@ return [
 
 # Debug mode (sequential processing)
 --driver=sync
+
+# Windows parallel (Symfony Process workers)
+--driver=fork --concurrency=10
+# or explicitly:
+--driver=process --concurrency=10
 ```
 
 ---
@@ -144,9 +149,28 @@ return [
 **Error:** `429 Too Many Requests`
 
 **Solution:**
-- Reduce concurrency: `--concurrency=5`
+- Match `--concurrency` to the model's free-tier RPM (see table below)
 - Use sync mode: `--driver=sync`
-- Wait a few minutes and retry
+- Wait a minute and retry; 429s already use exponential backoff
+
+#### Free-tier request limits (snapshot, not a constant)
+
+Google can change these at any time. The package ships a snapshot dated **2026-08-13** in `config/gemini-translator.php`. Publish that file and edit `quotas.models` when limits move, a model goes to 0, or a new model appears:
+
+```bash
+php artisan vendor:publish --tag=gemini-translator-config
+```
+
+| Model | RPM | RPD |
+| :--- | ---: | ---: |
+| `gemini-3.5-flash-lite` (package default) | 15 | 500 |
+| `gemini-3.1-flash-lite` | 15 | 500 |
+| `gemini-2.5-flash-lite` | 10 | 20 |
+| `gemini-2.5-flash` | 5 | 20 |
+| `gemini-3.5-flash` | 5 | 20 |
+| `gemini-3.6-flash` | 5 | 20 |
+
+Default `--concurrency` is capped only to a **recorded** positive RPM. `0` RPM/RPD means “no free-tier budget” in the snapshot. Unknown models are left uncapped until you add them. Set `GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS=false` to disable capping.
 
 ### Quota Exceeded
 

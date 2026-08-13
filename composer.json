@@ -54,6 +54,10 @@
         "google-gemini-php/laravel": "^2.0",
         "spatie/fork": "^1.2"
     },
+    "suggest": {
+        "ext-pcntl": "Required for the fork concurrency driver on Linux/macOS.",
+        "ext-ffi": "Required for native Windows interactive menus via kernel32.dll."
+    },
     "require-dev": {
         "driftingly/rector-laravel": "^2.3",
         "laravel/pint": "^1.29",

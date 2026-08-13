@@ -70,6 +70,19 @@ class FileSystemServiceTest extends TestCase
         $reflection->invoke($this->fileSystem, '/invalid/path/test.txt', 'content');
     }
 
+    public function test_normalize_translation_values_trims_and_fills_empty_literals(): void
+    {
+        $normalized = $this->fileSystem->normalizeTranslationValues([
+            'A key from a JSX file.' => '   ',
+            'messages.welcome' => '  Welcome  ',
+            'validation.required' => '  The :attribute field is required.  ',
+        ]);
+
+        $this->assertSame('A key from a JSX file.', $normalized['A key from a JSX file.']);
+        $this->assertSame('Welcome', $normalized['messages.welcome']);
+        $this->assertSame('The :attribute field is required.', $normalized['validation.required']);
+    }
+
     public function test_write_translation_files_creates_php_files(): void
     {
         $tempLangDir = base_path('tests/temp/lang_test_' . uniqid());

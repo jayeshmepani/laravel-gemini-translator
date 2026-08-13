@@ -97,6 +97,39 @@ class ScannerServiceTest extends TestCase
         $this->assertArrayHasKey('Welcome to the app', $result);
     }
 
+    public function test_map_keys_puts_dotted_keys_in_json_when_json_group_is_selected(): void
+    {
+        $mapped = $this->scanner->mapKeysToSelectedFiles(
+            ['messages.welcome', 'validation.required', 'Save Changes'],
+            ['__MAIN__::__JSON__'],
+            [
+                'messages.welcome' => '__MAIN__',
+                'validation.required' => '__MAIN__',
+                'Save Changes' => '__MAIN__',
+            ],
+        );
+
+        $this->assertSame(
+            ['messages.welcome', 'validation.required', 'Save Changes'],
+            $mapped['__MAIN__::__JSON__'],
+        );
+    }
+
+    public function test_map_keys_sends_php_keys_to_php_file_when_that_group_is_selected(): void
+    {
+        $mapped = $this->scanner->mapKeysToSelectedFiles(
+            ['messages.welcome', 'Save Changes'],
+            ['__MAIN__::messages', '__MAIN__::__JSON__'],
+            [
+                'messages.welcome' => '__MAIN__',
+                'Save Changes' => '__MAIN__',
+            ],
+        );
+
+        $this->assertSame(['welcome'], $mapped['__MAIN__::messages']);
+        $this->assertSame(['Save Changes'], $mapped['__MAIN__::__JSON__']);
+    }
+
     public function test_populate_source_text_for_new_keys_online_mode(): void
     {
         $allPossibleKeys = ['messages.hello', 'auth.failed'];

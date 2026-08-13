@@ -140,8 +140,8 @@ class TextHelper
     {
         // Check if string looks like a Laravel pluralization string
         // Pattern: contains pipe character, and bracket numbers like {0}, {1}, [2,*]
-        return preg_match('/\{[0-9]+\}.*\|.*\[\d+,.*\]/', $text) ||
-            preg_match('/\{[0-9]+\}.*\|.*\{[0-9]+\}.*\|/', $text);
+        return preg_match('/\{[0-9]+\}.*\|.*\[\d+,.*\]/', $text)
+            || preg_match('/\{[0-9]+\}.*\|.*\{[0-9]+\}.*\|/', $text);
     }
 
     public static function translatePluralizationString(string $text, string $lang): string

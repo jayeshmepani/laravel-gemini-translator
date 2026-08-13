@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### ⭐ Added
+
+- **Multi-OS adapter layer:** `PromptInterface` and `TaskRunnerInterface` with a `PlatformFactory` that routes on `PHP_OS_FAMILY`
+  - Unix: Laravel Prompts + `spatie/fork` (`pcntl`)
+  - Windows: isolated `kernel32.dll` FFI console binder + Symfony Process workers
+  - Sequential `sync` runner on every OS, with cooperative stop
+- **`--driver=process`:** Concurrent Symfony Process workers (used automatically when `--driver=fork` is selected on Windows)
+- Hidden `translations:run-payload` worker command for Windows/process child jobs
+- Suggested extensions: `ext-pcntl` (fork) and `ext-ffi` (native Windows menus)
+- **Dated Gemini quota snapshot** in publishable `config/gemini-translator.php` (as of 2026-08-13). Rows can be raised, lowered, zeroed, removed, or extended when Google changes RPM/RPD or ships a new model. `0` RPM/RPD is a first-class “no free-tier budget” state, not a crash.
+
+### 🔧 Changed
+
+- Interactive prompts and parallel execution no longer branch on `PHP_OS_FAMILY` inside the command/services; they go through the factory
+- `--driver=fork` on Windows now runs Process workers instead of silently falling back to sync
+- Windows FFI menus use the same boxed UI, checkboxes, and keybindings as Laravel Prompts (arrows, space, enter). Symfony Process workers match fork: ordered results, inherited env, no cooperative mid-flight stop, same progress UX
+- Command summary now records `processed_chunks` from the translation runner
+- `--refresh` is the original refresh again (existing keys only, current file wording is the source). New `--refresh-clean` is the key-only rebuild that ignores stale/faulty file text. Clean source for `auth`/`pagination`/`passwords`/`validation` is Laravel's official English, not `ucwords(str_replace('_', ' ', $key))`
+- JSON writes keep dotted PHP-style keys (`messages.welcome`, `validation.required`) when that is the selected group. Blank literal JSON values are filled from the key; empty/whitespace source is treated as missing
+- Gemini model is user-configurable: `--model=`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, then `config/gemini-translator.php`. Paid/ListModels ids are allowed and are not free-tier capped unless listed in the snapshot
+- Default Gemini model is `gemini-3.5-flash-lite` (highest free-tier RPM/RPD that appears in ListModels: 15 RPM / 500 RPD). Snapshot rows for models missing from ListModels (`gemini-2.5-flash-exp`, `gemini-3-flash`) were removed.
+- JSON-only selection no longer re-translates `file.subkey` keys that belong to PHP lang files
+- Translation prompts now include source text and reject mixed-script / placeholder / plural-token drift
+
 ## [v5.0.0] - 2026-04-27
 
 ### ⚠ BREAKING CHANGES

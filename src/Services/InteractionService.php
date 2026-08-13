@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace Jayesh\LaravelGeminiTranslator\Services;
 
-use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\multiselect;
+use Illuminate\Console\Command;
+use Jayesh\LaravelGeminiTranslator\Contracts\PromptInterface;
 
 class InteractionService
 {
+    public function __construct(
+        private readonly PromptInterface $prompt,
+    ) {}
+
     /** Prompt for scan targets */
-    public function promptForScanTargets(array $availableTargets, $command = null): array
+    public function promptForScanTargets(array $availableTargets, ?Command $command = null): array
     {
         if (count($availableTargets) <= 1) {
             return array_keys($availableTargets);
         }
 
-        $displayChoices = ['__ALL_TARGETS__' => '-- ALL TARGETS --'] +
-            collect($availableTargets)->mapWithKeys(fn ($target, $key) => [$key => $target['name']])->all();
+        $displayChoices = ['__ALL_TARGETS__' => '-- ALL TARGETS --']
+            + collect($availableTargets)->mapWithKeys(fn($target, $key) => [$key => $target['name']])->all();
 
         $selected = $this->promptForMultiChoice(
             label: 'Which parts of the application would you like to scan and process?',
@@ -35,14 +39,14 @@ class InteractionService
     }
 
     /** Prompt for file selection */
-    public function promptForFileSelection(array $availableFiles, array $scanTargets, $command = null): array
+    public function promptForFileSelection(array $availableFiles, array $scanTargets, ?Command $command = null): array
     {
         if (count($availableFiles) <= 1) {
             return array_keys($availableFiles);
         }
 
-        $displayChoices = ['__ALL_FILES__' => '-- ALL FILES --'] +
-            collect($availableFiles)->mapWithKeys(function ($contextualFileKey) use ($scanTargets) {
+        $displayChoices = ['__ALL_FILES__' => '-- ALL FILES --']
+            + collect($availableFiles)->mapWithKeys(function ($contextualFileKey) use ($scanTargets) {
                 [$targetKey, $fileKey] = explode('::', $contextualFileKey, 2);
 
                 $targetName = $scanTargets[$targetKey]['name'] ?? $targetKey;
@@ -60,7 +64,7 @@ class InteractionService
         $selected = $this->promptForMultiChoice(
             label: 'Which translation files would you like to process?',
             options: $displayChoices,
-            hint: 'Use comma-separated numbers (e.g., "1,3") on Windows/simple terminals. Use <space> to select, <enter> to confirm on other systems.',
+            hint: 'Use the space bar to select options.',
             default: ['__ALL_FILES__'],
             command: $command
         );
@@ -94,13 +98,14 @@ class InteractionService
     }
 
     /** Prompt for consolidation */
-    public function promptForConsolidation(bool $hasModulesSelected, bool $noInteraction = false, bool $consolidateModulesOption = false): bool
+    public function promptForConsolidation(bool $hasModulesSelected, bool $noInteraction = false, bool $consolidateModulesOption = false, ?Command $command = null): bool
     {
         if ($hasModulesSelected && !$consolidateModulesOption && !$noInteraction) {
-            return confirm(
+            return $this->prompt->confirm(
                 label: "Consolidate all module translations into the main application's `lang` directory?",
                 default: false,
-                hint: 'No: Keep translations inside each module (e.g., Modules/Settings/lang). Yes: Put all translations in the root `lang/`.'
+                hint: 'No: Keep translations inside each module (e.g., Modules/Settings/lang). Yes: Put all translations in the root `lang/`.',
+                command: $command,
             );
         }
 
@@ -111,59 +116,20 @@ class InteractionService
      * Prompt for multi choice
      * Accepts command context to enable Windows fallback functionality.
      */
-    public function promptForMultiChoice(string $label, array $options, string $hint = '', ?array $default = null, $command = null): array
+    public function promptForMultiChoice(string $label, array $options, string $hint = '', ?array $default = null, ?Command $command = null): array
     {
         // 1️⃣ Non-interactive environment (CI, cron, supervisor)
         // Do not prompt. Just return defaults or everything.
-        if ($command && method_exists($command, 'isInteractive') && !$command->isInteractive()) {
+        if ($command !== null && method_exists($command, 'isInteractive') && !$command->isInteractive()) {
             return $default ?? array_keys($options);
         }
 
-        // 2️⃣ Windows interactive terminal fallback
-        // Laravel Prompts multiselect does NOT work properly on Windows cmd/powershell
-        if (PHP_OS_FAMILY === 'Windows') {
-            if ($command) {
-                $command->line("<fg=yellow;options=bold>{$label}</>");
-                if ($hint !== '') {
-                    $command->comment($hint);
-                }
-
-                // Basic numbered list selection using the command's choice method (the original approach)
-                $selection = $command->choice(
-                    question: $label,
-                    choices: array_values($options),
-                    default: null,
-                    attempts: null,
-                    multiple: true
-                );
-
-                $flipped = array_flip($options);
-
-                return array_values(
-                    array_filter(
-                        array_map(fn ($display) => $flipped[$display] ?? null, $selection),
-                        fn ($value) => $value !== null
-                    )
-                );
-            }
-
-            // If no command context is provided, fall back to multiselect
-            // This maintains backward compatibility while allowing the fix when command is available
-            return multiselect(
-                label: $label,
-                options: $options,
-                hint: $hint,
-                default: $default ?? []
-            );
-
-        }
-
-        // 3️⃣ Interactive Linux/macOS → full multiselect UI
-        return multiselect(
+        return $this->prompt->multiselect(
             label: $label,
             options: $options,
             hint: $hint,
-            default: $default ?? []
+            default: $default,
+            command: $command,
         );
     }
 }
