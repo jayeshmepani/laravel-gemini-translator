@@ -15,7 +15,7 @@ final class LanguageCatalog
      *
      * @var array<string, string>
      */
-    private const FALLBACKS = [
+    private const array FALLBACKS = [
         'zh' => 'zh_CN',
         'pt' => 'pt_BR',
         'pa' => 'pa_GURU',
