@@ -26,7 +26,7 @@ class CommandRegistrationTest extends TestCase
             app()->make(FileSystemService::class),
             app()->make(ScannerService::class),
             app()->make(TranslationService::class),
-            app()->make(InteractionService::class)
+            app()->make(InteractionService::class),
         );
 
         $this->assertSame('translations:extract-and-generate', $command->getName());

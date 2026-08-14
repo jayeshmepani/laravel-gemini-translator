@@ -33,7 +33,7 @@ final readonly class OperatingSystem
 
     public function isUnix(): bool
     {
-        return !$this->isWindows();
+        return ! $this->isWindows();
     }
 
     public function supportsFork(): bool

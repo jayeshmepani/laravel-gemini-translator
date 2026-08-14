@@ -75,11 +75,16 @@ php artisan translations:extract-and-generate --chunk-size=3
 # Gemini API Key (required)
 GEMINI_API_KEY=your-api-key-here
 
-# Model selection (optional)
+# Model selection (optional). Default in 5.1.0: gemini-3.5-flash-lite
 GEMINI_MODEL=gemini-3.5-flash-lite
+# or: GEMINI_TRANSLATOR_MODEL=gemini-3.5-flash-lite
 
 # Request timeout in seconds (optional)
 GEMINI_REQUEST_TIMEOUT=600
+
+# Translation Manager (optional)
+# GEMINI_TRANSLATOR_MANAGER=true
+# GEMINI_TRANSLATOR_MANAGER_PREFIX=translations-manager
 
 # Base URL (optional, only if using proxy)
 # GEMINI_BASE_URL=https://your-proxy.com
@@ -118,6 +123,15 @@ return [
 # For debugging - process one at a time
 --chunk-size=1
 ```
+
+---
+
+## 5.1.0 notes
+
+- **Translation Manager:** open `/translations-manager`. If the app has a login route, sign in first. If a published Blade looks stale, republish `--tag=gemini-translator-manager` or delete `resources/views/vendor/gemini-translator`.
+- **Packs:** extra folders such as `lang/app3/` and `lang/web/` are a separate CLI prompt after you pick a module. The manager Pack filter appears only when that module (or non-module) has more than `lang/`.
+- **`--refresh` vs `--refresh-clean`:** `--refresh` uses the current file text. `--refresh-clean` ignores that text. Do not combine either with `--skip-existing`.
+- **Windows:** `--driver=fork` runs Symfony Process workers. Native menus need `ext-ffi`. Without FFI the command uses Symfony `choice()` / `confirm()`.
 
 ### Concurrency settings
 

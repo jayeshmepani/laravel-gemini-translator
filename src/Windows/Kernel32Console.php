@@ -67,7 +67,7 @@ final class Kernel32Console implements InteractiveConsole
 
     public function __construct()
     {
-        if (!self::isSupported()) {
+        if (! self::isSupported()) {
             throw new RuntimeException('Kernel32Console requires Windows and the FFI extension.');
         }
 
@@ -122,7 +122,7 @@ final class Kernel32Console implements InteractiveConsole
     public function write(string $text): void
     {
         $handle = $this->stdHandle(self::STD_OUTPUT_HANDLE);
-        if ($handle === null || !$this->isConsole($handle)) {
+        if ($handle === null || ! $this->isConsole($handle)) {
             fwrite(STDOUT, $text);
 
             return;
@@ -139,7 +139,7 @@ final class Kernel32Console implements InteractiveConsole
         $written = $this->kernel32->new('DWORD');
         $ok = $this->kernel32->WriteConsoleW($handle, $buffer, $charCount, FFI::addr($written), null);
 
-        if (!$ok) {
+        if (! $ok) {
             fwrite(STDOUT, $text);
         }
     }
@@ -183,7 +183,7 @@ final class Kernel32Console implements InteractiveConsole
         }
 
         $info = $this->kernel32->new('CONSOLE_SCREEN_BUFFER_INFO');
-        if (!$this->kernel32->GetConsoleScreenBufferInfo($handle, FFI::addr($info))) {
+        if (! $this->kernel32->GetConsoleScreenBufferInfo($handle, FFI::addr($info))) {
             return 80;
         }
 
@@ -196,7 +196,7 @@ final class Kernel32Console implements InteractiveConsole
     {
         $maxChars = max(1, $maxChars);
         $handle = $this->stdHandle(self::STD_INPUT_HANDLE);
-        if ($handle === null || !$this->isConsole($handle)) {
+        if ($handle === null || ! $this->isConsole($handle)) {
             return $this->readLineFallback();
         }
 
@@ -204,7 +204,7 @@ final class Kernel32Console implements InteractiveConsole
         $read = $this->kernel32->new('DWORD');
         $ok = $this->kernel32->ReadConsoleW($handle, $buffer, $maxChars, FFI::addr($read), null);
 
-        if (!$ok || $read->cdata < 1) {
+        if (! $ok || $read->cdata < 1) {
             return $this->readLineFallback();
         }
 

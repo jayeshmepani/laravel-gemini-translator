@@ -23,7 +23,7 @@ class FileSystemService
      *
      * @return array Array containing [existingTranslations, fileTargetMap, sourceTextMap, keyOriginMap]
      */
-    public function loadExistingTranslations(array $targets, array $langs, bool $consolidateModules, $output = null): array
+    public function loadExistingTranslations(array $targets, array $langs, bool $consolidateModules, $output = null, ?array $selectedPacks = null): array
     {
         $existingTranslations = [];
         $fileTargetMap = [];
@@ -40,46 +40,50 @@ class FileSystemService
 
         foreach ($targets as $targetKey => $target) {
             $baseLangPath = $target['lang_path'];
-            if (!File::isDirectory($baseLangPath)) {
+            if (! File::isDirectory($baseLangPath)) {
                 continue;
             }
 
             $origin = $consolidateModules ? '__MAIN__' : $targetKey;
+            $phpTrees = $this->phpTreesFor($baseLangPath, $selectedPacks);
 
-            foreach (File::directories($baseLangPath) as $langDirPath) {
-                $dirName = basename((string) $langDirPath);
-                $canonicalLang = LocaleHelper::canonicalize($dirName);
+            foreach ($phpTrees as $pack => $treeBase) {
+                foreach (File::directories($treeBase) as $langDirPath) {
+                    if (! $this->isLocaleDirectory($langDirPath)) {
+                        continue;
+                    }
+                    $canonicalLang = LocaleHelper::canonicalize(basename((string) $langDirPath));
 
-                // FIXED: Only load directories for languages we're actually targeting
-                if (!in_array($canonicalLang, $languagesToLoad, true)) {
-                    continue;
-                }
-
-                foreach (File::allFiles($langDirPath) as $file) {
-                    if ($file->getExtension() !== 'php') {
+                    if (! in_array($canonicalLang, $languagesToLoad, true)) {
                         continue;
                     }
 
-                    $relativePath = $file->getRelativePathname();
-                    $fileKey = str_replace(['.php', DIRECTORY_SEPARATOR], ['', '/'], $relativePath);
-                    $contextualFileKey = $origin . '::' . $fileKey;
+                    foreach (File::allFiles($langDirPath) as $file) {
+                        if ($file->getExtension() !== 'php') {
+                            continue;
+                        }
 
-                    $includedData = @include $file->getPathname();
-                    if (is_array($includedData)) {
-                        $flatData = Arr::dot($includedData);
-                        $existingTranslations[$canonicalLang][$contextualFileKey] = $flatData;
-                        $fileTargetMap[$contextualFileKey] = $origin;
+                        $relativePath = str_replace(['.php', DIRECTORY_SEPARATOR], ['', '/'], $file->getRelativePathname());
+                        $fileKey = $pack === '' ? $relativePath : $pack . '/' . $relativePath;
+                        $contextualFileKey = $origin . '::' . $fileKey;
+                        $group = basename($relativePath);
 
-                        foreach ($flatData as $keySuffix => $text) {
-                            if (is_string($text)) {
-                                $fullKey = "{$fileKey}.{$keySuffix}";
-                                if ($canonicalLang === 'en' || !isset($sourceTextMap[$fullKey])) {
-                                    $sourceTextMap[$fullKey] = $text;
-                                }
+                        $includedData = @include $file->getPathname();
+                        if (is_array($includedData)) {
+                            $flatData = Arr::dot($includedData);
+                            $existingTranslations[$canonicalLang][$contextualFileKey] = $flatData;
+                            $fileTargetMap[$contextualFileKey] = $origin;
 
-                                // NEW: record origin for this key
-                                if (!isset($keyOriginMap[$fullKey])) {
-                                    $keyOriginMap[$fullKey] = $origin;
+                            foreach ($flatData as $keySuffix => $text) {
+                                if (is_string($text)) {
+                                    $fullKey = "{$group}.{$keySuffix}";
+                                    if ($canonicalLang === 'en' || ! isset($sourceTextMap[$fullKey])) {
+                                        $sourceTextMap[$fullKey] = $text;
+                                    }
+
+                                    if (! isset($keyOriginMap[$fullKey])) {
+                                        $keyOriginMap[$fullKey] = $origin;
+                                    }
                                 }
                             }
                         }
@@ -94,12 +98,15 @@ class FileSystemService
                 $dirName = $jsonFile->getFilenameWithoutExtension();
                 $canonicalLang = LocaleHelper::canonicalize($dirName);
 
-                // FIXED: Only load JSON files for languages we're actually targeting
-                if (!in_array($canonicalLang, $languagesToLoad, true)) {
+                if (! in_array($canonicalLang, $languagesToLoad, true)) {
                     continue;
                 }
 
                 $relativePath = $jsonFile->getRelativePath();
+                $pack = $relativePath === '' ? '' : explode('/', str_replace(DIRECTORY_SEPARATOR, '/', $relativePath))[0];
+                if ($selectedPacks !== null && ! in_array($pack, $selectedPacks, true)) {
+                    continue;
+                }
                 $fileKey = $relativePath !== '' ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $relativePath), '/') . '/' . '__JSON__' : '__JSON__';
                 $contextualFileKey = $origin . '::' . $fileKey;
 
@@ -108,12 +115,11 @@ class FileSystemService
                     $existingTranslations[$canonicalLang][$contextualFileKey] = $jsonContent;
                     $fileTargetMap[$contextualFileKey] = $origin;
                     foreach ($jsonContent as $key => $text) {
-                        if (is_string($text) && ($canonicalLang === 'en' || !isset($sourceTextMap[$key]))) {
+                        if (is_string($text) && ($canonicalLang === 'en' || ! isset($sourceTextMap[$key]))) {
                             $sourceTextMap[$key] = $text;
                         }
 
-                        // NEW: record origin for this JSON key
-                        if (!isset($keyOriginMap[$key])) {
+                        if (! isset($keyOriginMap[$key])) {
                             $keyOriginMap[$key] = $origin;
                         }
                     }
@@ -122,6 +128,47 @@ class FileSystemService
         }
 
         return [$existingTranslations, $fileTargetMap, $sourceTextMap, $keyOriginMap];
+    }
+
+    /**
+     * Packs found under the selected lang trees ('' is lang/).
+     *
+     * @param array<string, array{lang_path?: string}> $targets
+     *
+     * @return array<string, string> pack id => label
+     */
+    public function discoverPacks(array $targets): array
+    {
+        $packs = [];
+        foreach ($targets as $target) {
+            $base = $target['lang_path'] ?? '';
+            if ($base === '' || ! File::isDirectory($base)) {
+                continue;
+            }
+            if ($this->hasRootLangContent($base)) {
+                $packs[''] = 'lang/';
+            }
+            foreach (File::directories($base) as $dir) {
+                if (! $this->isPackDirectory($dir)) {
+                    continue;
+                }
+                $name = basename($dir);
+                $packs[$name] = 'lang/' . $name . '/';
+            }
+        }
+
+        uksort($packs, static function (string $left, string $right): int {
+            if ($left === '') {
+                return -1;
+            }
+            if ($right === '') {
+                return 1;
+            }
+
+            return strcasecmp($left, $right);
+        });
+
+        return $packs;
     }
 
     /** Load Laravel framework translations */
@@ -138,7 +185,7 @@ class FileSystemService
 
         $frameworkLangPath = base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en');
 
-        if (!File::isDirectory($frameworkLangPath)) {
+        if (! File::isDirectory($frameworkLangPath)) {
             if ($output) {
                 $output->writeln('<fg=yellow>Could not find Laravel framework language directory. Skipping.</>');
             }
@@ -160,7 +207,7 @@ class FileSystemService
 
             // 1) Load framework (vendor) nested array
             $frameworkData = @include $file->getPathname();
-            if (!is_array($frameworkData)) {
+            if (! is_array($frameworkData)) {
                 continue;
             }
 
@@ -189,14 +236,14 @@ class FileSystemService
 
             // Maintain origin + sourceTextMap for translation
             foreach ($flatMerged as $keySuffix => $text) {
-                if (!is_string($text)) {
+                if (! is_string($text)) {
                     continue;
                 }
 
                 $fullKey = "{$filename}.{$keySuffix}";
                 $keyOriginMap[$fullKey] = '__MAIN__';
 
-                if (!isset($sourceTextMap[$fullKey])) {
+                if (! isset($sourceTextMap[$fullKey])) {
                     $sourceTextMap[$fullKey] = $text;
                 }
             }
@@ -251,7 +298,7 @@ class FileSystemService
                 // Find the correct target to get the path
                 $target = $scanTargets[$writeTargetKey] ?? null;
 
-                if (!$target) {
+                if (! $target) {
                     // Fallback to main app if target not found
                     $targetBaseDir = base_path($targetDir);
                 } else {
@@ -278,6 +325,7 @@ class FileSystemService
                         if ($output) {
                             $output->writeln("   <fg=yellow>-> {$jsonPath}</>");
                         }
+
                         continue;
                     }
 
@@ -287,11 +335,7 @@ class FileSystemService
                         $output->writeln("   <fg=green>-> {$jsonPath}</>");
                     }
                 } else {
-                    // Handle PHP language files
-                    // $fileKey is like "auth" or "subdir/messages"
-
-                    $langDir = $targetBaseDir . DIRECTORY_SEPARATOR . $lang;
-                    $filePath = $langDir . DIRECTORY_SEPARATOR . $fileKey . '.php';
+                    $filePath = $this->resolvePhpFilePath((string) $targetBaseDir, (string) $fileKey, (string) $lang);
 
                     if ($dryRun) {
                         if ($output) {
@@ -338,13 +382,14 @@ class FileSystemService
     public function normalizeTranslationValues(array $flat): array
     {
         foreach ($flat as $key => $value) {
-            if (!is_string($value)) {
+            if (! is_string($value)) {
                 continue;
             }
 
             $trimmed = trim($value);
             if ($trimmed === '' && is_string($key) && $this->isLiteralJsonKey($key)) {
                 $flat[$key] = $key;
+
                 continue;
             }
 
@@ -444,6 +489,110 @@ class FileSystemService
         }
     }
 
+    /**
+     * @param list<string>|null $selectedPacks
+     *
+     * @return array<string, string> pack => path
+     */
+    private function phpTreesFor(string $baseLangPath, ?array $selectedPacks): array
+    {
+        $trees = [];
+        if ($selectedPacks === null || in_array('', $selectedPacks, true)) {
+            $trees[''] = $baseLangPath;
+        }
+        foreach (File::directories($baseLangPath) as $dir) {
+            if (! $this->isPackDirectory($dir)) {
+                continue;
+            }
+            $pack = basename($dir);
+            if ($selectedPacks !== null && ! in_array($pack, $selectedPacks, true)) {
+                continue;
+            }
+            $trees[$pack] = $dir;
+        }
+
+        return $trees;
+    }
+
+    private function resolvePhpFilePath(string $targetBaseDir, string $fileKey, string $lang): string
+    {
+        $normalized = str_replace('\\', '/', $fileKey);
+        $parts = explode('/', $normalized);
+        $pack = '';
+        if (count($parts) > 1 && $this->isPackDirectory($targetBaseDir . DIRECTORY_SEPARATOR . $parts[0])) {
+            $pack = array_shift($parts);
+        }
+        $groupPath = implode(DIRECTORY_SEPARATOR, $parts);
+        $base = $pack === ''
+            ? $targetBaseDir
+            : $targetBaseDir . DIRECTORY_SEPARATOR . $pack;
+
+        return $base . DIRECTORY_SEPARATOR . $lang . DIRECTORY_SEPARATOR . $groupPath . '.php';
+    }
+
+    private function hasRootLangContent(string $path): bool
+    {
+        if (! File::isDirectory($path)) {
+            return false;
+        }
+        foreach (File::files($path) as $file) {
+            if ($file->getExtension() === 'json') {
+                return true;
+            }
+        }
+        foreach (File::directories($path) as $dir) {
+            if ($this->isLocaleDirectory($dir)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isPackDirectory(string $path): bool
+    {
+        $name = basename($path);
+        if (in_array($name, ['vendor', 'node_modules', 'storage', '.git'], true) || $this->isLocaleDirectory($path)) {
+            return false;
+        }
+
+        return $this->hasLangContent($path);
+    }
+
+    private function isLocaleDirectory(string $path): bool
+    {
+        $name = basename($path);
+        if (! $this->looksLikeLocale($name) || ! File::isDirectory($path)) {
+            return false;
+        }
+
+        return ! $this->hasLangContent($path);
+    }
+
+    private function hasLangContent(string $path): bool
+    {
+        if (! File::isDirectory($path)) {
+            return false;
+        }
+        foreach (File::files($path) as $file) {
+            if ($file->getExtension() === 'json') {
+                return true;
+            }
+        }
+        foreach (File::directories($path) as $dir) {
+            if ($this->looksLikeLocale(basename($dir))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function looksLikeLocale(string $name): bool
+    {
+        return (bool) preg_match('/^[a-z]{2,3}(?:[_-][A-Za-z0-9]+)?$/', $name);
+    }
+
     /** Recursively sort an array by keys */
     private function ksortRecursive(array &$a): void
     {
@@ -454,5 +603,4 @@ class FileSystemService
             }
         }
     }
-
 }

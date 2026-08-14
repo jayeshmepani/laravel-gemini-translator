@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Jayesh\LaravelGeminiTranslator\Tests\Feature\Services;
 
+use Illuminate\Support\Facades\File;
 use Jayesh\LaravelGeminiTranslator\Services\FileSystemService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use ReflectionMethod;
@@ -114,7 +115,7 @@ class FileSystemServiceTest extends TestCase
             [],
             null,
             false,
-            false
+            false,
         );
 
         $expectedFile = $tempLangDir . '/en/messages.php';
@@ -131,6 +132,68 @@ class FileSystemServiceTest extends TestCase
         rmdir($tempLangDir);
         @rmdir(dirname($tempLangDir));
         @rmdir(dirname($tempLangDir, 2));
+    }
+
+    public function test_discover_packs_finds_root_and_named_packs(): void
+    {
+        $lang = base_path('tests/temp/packs_' . uniqid());
+        File::ensureDirectoryExists($lang);
+        File::put($lang . '/en.json', '{"Hello":"Hello"}');
+        File::ensureDirectoryExists($lang . '/app3');
+        File::put($lang . '/app3/en.json', '{"Hello":"App3"}');
+        File::ensureDirectoryExists($lang . '/web/en');
+        File::put($lang . '/web/en/messages.php', "<?php\n\nreturn ['title' => 'Web'];\n");
+
+        try {
+            $packs = $this->fileSystem->discoverPacks([
+                'Post' => ['lang_path' => $lang],
+            ]);
+
+            $this->assertSame([
+                '' => 'lang/',
+                'app3' => 'lang/app3/',
+                'web' => 'lang/web/',
+            ], $packs);
+        } finally {
+            File::deleteDirectory($lang);
+        }
+    }
+
+    public function test_load_and_write_pack_php_files(): void
+    {
+        $lang = base_path('tests/temp/pack_php_' . uniqid());
+        File::ensureDirectoryExists($lang . '/app3/en');
+        File::put($lang . '/app3/en/messages.php', "<?php\n\nreturn ['title' => 'App3'];\n");
+
+        $targets = [
+            'Post' => [
+                'name' => 'Module: Post',
+                'path' => dirname($lang),
+                'lang_path' => $lang,
+            ],
+        ];
+
+        try {
+            [$existing, $fileTargetMap] = $this->fileSystem->loadExistingTranslations($targets, ['en'], false);
+
+            $this->assertArrayHasKey('Post::app3/messages', $fileTargetMap);
+            $this->assertSame('App3', $existing['en']['Post::app3/messages']['title'] ?? null);
+
+            $this->fileSystem->writeTranslationFiles(
+                ['gu' => ['Post::app3/messages' => ['title' => 'એપ3']]],
+                $targets,
+                false,
+                false,
+                'lang',
+                $existing,
+            );
+
+            $written = $lang . '/app3/gu/messages.php';
+            $this->assertFileExists($written);
+            $this->assertStringContainsString('એપ3', (string) File::get($written));
+        } finally {
+            File::deleteDirectory($lang);
+        }
     }
 
     public function test_save_failed_keys_log_creates_json(): void

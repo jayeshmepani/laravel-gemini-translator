@@ -87,7 +87,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         private readonly FileSystemService $fileSystemService,
         private readonly ScannerService $scannerService,
         private readonly TranslationService $translationService,
-        private readonly InteractionService $interactionService
+        private readonly InteractionService $interactionService,
     ) {
         parent::__construct();
     }
@@ -105,16 +105,19 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         if ($this->option('refresh') && $this->option('skip-existing')) {
             $this->error('You cannot use --refresh and --skip-existing together. Choose one.');
+
             return Command::FAILURE;
         }
 
         if ($this->option('refresh-clean') && $this->option('skip-existing')) {
             $this->error('You cannot use --refresh-clean and --skip-existing together. Choose one.');
+
             return Command::FAILURE;
         }
 
         if ($this->option('refresh') && $this->option('refresh-clean')) {
             $this->error('You cannot use --refresh and --refresh-clean together. Choose one.');
+
             return Command::FAILURE;
         }
 
@@ -129,7 +132,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
 
         $apiKey = config('gemini.api_key');
-        if (!is_string($apiKey) || $apiKey === '' || $apiKey === 'YOUR_API_KEY') {
+        if (! is_string($apiKey) || $apiKey === '' || $apiKey === 'YOUR_API_KEY') {
             $this->isOffline = true;
             $this->warn(' ⚠️  Gemini API key is not configured. Running in OFFLINE mode.');
             $this->comment('   New translation files will be generated with keys as placeholder values.');
@@ -141,11 +144,27 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $selectedTargets = $this->interactionService->promptForScanTargets($this->availableScanTargets, $this);
         if ($selectedTargets === []) {
             $this->warn('No application or module targets were selected for scanning. Exiting.');
+
             return Command::SUCCESS;
         }
 
         $this->scanTargets = array_intersect_key($this->availableScanTargets, array_flip($selectedTargets));
         $this->info('Scanning ' . count($this->scanTargets) . ' target(s): ' . implode(', ', array_column($this->scanTargets, 'name')));
+
+        $availablePacks = $this->fileSystemService->discoverPacks($this->scanTargets);
+        $selectedPacks = $this->interactionService->promptForPackSelection($availablePacks, $this);
+        if ($selectedPacks === []) {
+            $this->warn('No language packs were selected. Exiting.');
+
+            return Command::SUCCESS;
+        }
+        if (count($availablePacks) > 1) {
+            $labels = [];
+            foreach ($selectedPacks as $pack) {
+                $labels[] = $availablePacks[$pack] ?? ($pack === '' ? 'lang/' : 'lang/' . $pack . '/');
+            }
+            $this->info('Using pack(s): ' . implode(', ', $labels));
+        }
 
         $this->consolidateModules = $this->interactionService->promptForConsolidation(
             array_diff(array_keys($this->scanTargets), [self::MAIN_APP_KEY]) !== [],
@@ -160,7 +179,8 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 $this->scanTargets,
                 $this->targetLanguages,
                 $this->consolidateModules,
-                $this->output
+                $this->output,
+                $selectedPacks,
             );
 
         // Only load framework translations for main application
@@ -171,7 +191,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                     $this->option('target-dir'),
                     $this->targetLanguages,
                     $this->option('dry-run'),
-                    $this->output
+                    $this->output,
                 );
         }
 
@@ -183,7 +203,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                     'extensions' => $this->option('extensions'),
                     'consolidate-modules' => $this->consolidateModules,
                 ],
-                $this->output
+                $this->output,
             );
 
         // Update key origin map with new values
@@ -195,6 +215,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $allPossibleKeys = $this->scannerService->getAllKeySources($scannedKeys, $this->existingTranslations, $this->sourceTextMap);
         if ($allPossibleKeys === []) {
             $this->alert('No translation keys were found from any source. Exiting.');
+
             return Command::SUCCESS;
         }
 
@@ -204,10 +225,12 @@ class ExtractAndGenerateTranslationsCommand extends Command
         $this->line('');
 
         $availableFiles = $this->scannerService->determineAvailableFiles($allPossibleKeys, $this->fileTargetMap, $this->scanTargets, $this->keyOriginMap);
+        $availableFiles = $this->scannerService->filterFilesByPacks($availableFiles, $selectedPacks, array_keys($availablePacks));
         $selectedFiles = $this->interactionService->promptForFileSelection($availableFiles, $this->scanTargets, $this);
 
         if ($selectedFiles === []) {
             $this->warn('No files were selected for processing. Exiting.');
+
             return Command::SUCCESS;
         }
 
@@ -236,7 +259,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                 $this->existingTranslations,
                 $this->targetLanguages,
                 $this->scanTargets,
-                $this->output
+                $this->output,
             );
 
             if ($skipExisting) {
@@ -260,6 +283,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
             }
 
             $this->displayFinalSummary();
+
             return Command::SUCCESS;
         }
 
@@ -296,7 +320,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
                         'refresh_clean' => $refreshClean,
                     ],
                     fn() => $this->checkForExitSignal(),
-                    $this->output
+                    $this->output,
                 );
 
                 $this->translations = $results['translations'];
@@ -319,7 +343,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
             $this->existingTranslations,
             $this->output,
             $this->isOffline,
-            $this->option('skip-existing')
+            $this->option('skip-existing'),
         );
 
         if ($this->failedKeys !== []) {
@@ -328,6 +352,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
 
         $this->displayFinalSummary();
+
         return Command::SUCCESS;
     }
 
@@ -338,7 +363,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
         }
 
         // Check if STDIN is a TTY (interactive terminal)
-        if (!stream_isatty(STDIN)) {
+        if (! stream_isatty(STDIN)) {
             return false;
         }
 
@@ -353,6 +378,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
 
         if ($char === $this->option('stop-key')) {
             $this->shouldExit = true;
+
             return true;
         }
 

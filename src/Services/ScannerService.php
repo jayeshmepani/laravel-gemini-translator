@@ -89,7 +89,7 @@ class ScannerService
                             }
 
                             $foundKey = str_replace('/', '.', $foundKey);
-                            if (!isset($keysWithSources[$foundKey])) {
+                            if (! isset($keysWithSources[$foundKey])) {
                                 $keysWithSources[$foundKey] = [];
                             }
 
@@ -106,11 +106,11 @@ class ScannerService
                                 $fullRelativePath = $relativePath;
                             }
 
-                            if (!in_array($fullRelativePath, $keysWithSources[$foundKey], true)) {
+                            if (! in_array($fullRelativePath, $keysWithSources[$foundKey], true)) {
                                 $keysWithSources[$foundKey][] = $fullRelativePath;
                             }
 
-                            if (!isset($keyOriginMap[$foundKey])) {
+                            if (! isset($keyOriginMap[$foundKey])) {
                                 $keyOriginMap[$foundKey] = $origin;
                             }
                         }
@@ -132,7 +132,7 @@ class ScannerService
     {
         $finder = new Finder;
         $defaultExcludes = explode(',', $excludeOption);
-        $filesToExclude = ['artisan', 'composer.json', 'composer.lock', 'failed_translation_keys.json', 'translation_extraction_log.json', 'laravel-translation-extractor.sh', 'package.json', 'package-lock.json', 'phpunit.xml', 'README.md', 'vite.config.js', '.env*', '.phpactor.json', '.phpunit.result.cache', 'Homestead.*', 'auth.json',];
+        $filesToExclude = ['artisan', 'composer.json', 'composer.lock', 'failed_translation_keys.json', 'translation_extraction_log.json', 'laravel-translation-extractor.sh', 'package.json', 'package-lock.json', 'phpunit.xml', 'README.md', 'vite.config.js', '.env*', '.phpactor.json', '.phpunit.result.cache', 'Homestead.*', 'auth.json'];
 
         $finder->files()
             ->in($scanPaths)
@@ -193,7 +193,7 @@ class ScannerService
                 if (str_ends_with($fileKey, '__JSON__')) {
                     $allKeys = array_merge($allKeys, array_keys($data));
                 } else {
-                    $prefix = str_replace('/', '.', $fileKey);
+                    $prefix = $this->phpGroupFromFileKey($fileKey);
                     foreach (array_keys($data) as $keySuffix) {
                         $allKeys[] = "{$prefix}.{$keySuffix}";
                     }
@@ -202,6 +202,7 @@ class ScannerService
         }
 
         $allKeys = array_merge($allKeys, array_keys($sourceTextMap));
+
         return array_values(array_unique($allKeys));
     }
 
@@ -221,7 +222,7 @@ class ScannerService
             $origin = $keyOriginMap[$key] ?? '__MAIN__';
 
             // Only add keys that belong to currently selected targets
-            if (!isset($scanTargets[$origin])) {
+            if (! isset($scanTargets[$origin])) {
                 continue;
             }
 
@@ -244,16 +245,36 @@ class ScannerService
 
         $uniqueFiles = array_keys($fileGroups);
         sort($uniqueFiles);
+
         return $uniqueFiles;
+    }
+
+    /**
+     * Keep files that belong to the selected packs ('' is lang/).
+     *
+     * @param list<string> $availableFiles
+     * @param list<string> $selectedPacks
+     * @param list<string> $knownPacks
+     *
+     * @return list<string>
+     */
+    public function filterFilesByPacks(array $availableFiles, array $selectedPacks, array $knownPacks = []): array
+    {
+        $allowed = array_fill_keys($selectedPacks, true);
+        $filtered = [];
+        foreach ($availableFiles as $contextualFileKey) {
+            if (isset($allowed[$this->packFromFileKey($contextualFileKey, $knownPacks)])) {
+                $filtered[] = $contextualFileKey;
+            }
+        }
+
+        return $filtered;
     }
 
     /** Map keys to selected files */
     public function mapKeysToSelectedFiles(array $allPossibleKeys, array $selectedFiles, array $keyOriginMap): array
     {
         $structured = [];
-
-        // Invert the selected files for quick lookups
-        $selectedFileMap = array_flip($selectedFiles);
 
         foreach ($allPossibleKeys as $rawKey) {
             $origin = $keyOriginMap[$rawKey] ?? '__MAIN__';
@@ -262,10 +283,16 @@ class ScannerService
             if (str_contains((string) $rawKey, '.')) {
                 $prefix = explode('.', (string) $rawKey, 2)[0];
                 if (preg_match('/^[a-zA-Z0-9_-]+$/', $prefix)) {
-                    $contextualFileKey = $origin . '::' . $prefix;
-
-                    if (isset($selectedFileMap[$contextualFileKey])) {
-                        $keySuffix = substr((string) $rawKey, strlen($prefix) + 1);
+                    $keySuffix = substr((string) $rawKey, strlen($prefix) + 1);
+                    foreach ($selectedFiles as $contextualFileKey) {
+                        $contextualFileKey = (string) $contextualFileKey;
+                        if (! str_starts_with($contextualFileKey, $origin . '::') || str_ends_with($contextualFileKey, '__JSON__')) {
+                            continue;
+                        }
+                        $fileKey = substr($contextualFileKey, strlen($origin) + 2);
+                        if ($this->phpGroupFromFileKey($fileKey) !== $prefix) {
+                            continue;
+                        }
                         $structured[$contextualFileKey][] = $keySuffix;
                         $isPhpKey = true;
                     }
@@ -274,10 +301,10 @@ class ScannerService
 
             // Dotted keys also belong in JSON when that group is selected
             // (Laravel JSON files may store "messages.welcome" as a flat key).
-            if (!$isPhpKey) {
+            if (! $isPhpKey) {
                 $possibleJsonFiles = array_filter(
                     $selectedFiles,
-                    fn($file) => str_starts_with((string) $file, $origin . '::') && str_ends_with((string) $file, '__JSON__')
+                    fn($file) => str_starts_with((string) $file, $origin . '::') && str_ends_with((string) $file, '__JSON__'),
                 );
 
                 foreach ($possibleJsonFiles as $contextualJsonFileKey) {
@@ -299,7 +326,7 @@ class ScannerService
         $newSourceTextMap = $sourceTextMap;
 
         foreach ($allPossibleKeys as $key) {
-            if (!isset($newSourceTextMap[$key])) {
+            if (! isset($newSourceTextMap[$key])) {
                 if ($isOffline) {
                     // If it looks like a machine key, humanize it; otherwise use as is
                     if (TextHelper::looksMachineKey($key)) {
@@ -312,5 +339,38 @@ class ScannerService
         }
 
         return $newSourceTextMap;
+    }
+
+    /** @param  list<string>  $knownPacks */
+    public function packFromFileKey(string $contextualFileKey, array $knownPacks = []): string
+    {
+        $fileKey = str_contains($contextualFileKey, '::')
+            ? explode('::', $contextualFileKey, 2)[1]
+            : $contextualFileKey;
+        $fileKey = str_replace('\\', '/', $fileKey);
+        if ($fileKey === '__JSON__') {
+            return '';
+        }
+        if (str_ends_with($fileKey, '/__JSON__')) {
+            return substr($fileKey, 0, -strlen('/__JSON__'));
+        }
+        $slash = strrpos($fileKey, '/');
+        if ($slash === false) {
+            return '';
+        }
+        $maybePack = substr($fileKey, 0, $slash);
+        if ($knownPacks !== [] && ! in_array($maybePack, $knownPacks, true)) {
+            return '';
+        }
+
+        return $maybePack;
+    }
+
+    private function phpGroupFromFileKey(string $fileKey): string
+    {
+        $normalized = str_replace('\\', '/', $fileKey);
+        $slash = strrpos($normalized, '/');
+
+        return $slash === false ? $normalized : substr($normalized, $slash + 1);
     }
 }

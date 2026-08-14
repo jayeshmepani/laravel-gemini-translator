@@ -17,6 +17,7 @@
 
     const csrf = root.dataset.csrf || '';
     const languageNames = parseJson(root.dataset.languageNames, {});
+    const packMap = parseJson(root.dataset.packMap, {});
     const supportsDialog = typeof HTMLDialogElement !== 'undefined'
         && typeof HTMLDialogElement.prototype.showModal === 'function';
     const supportsPopover = typeof HTMLElement !== 'undefined'
@@ -26,6 +27,8 @@
         type: root.querySelector('[data-filter="type"]'),
         moduleWrap: root.querySelector('[data-module-filter]'),
         module: root.querySelector('[data-filter="module"]'),
+        packWrap: root.querySelector('[data-pack-filter]'),
+        pack: root.querySelector('[data-filter="pack"]'),
         fileWrap: root.querySelector('[data-file-filter]'),
         filesToggle: root.querySelector('[data-files-toggle]'),
         filesMenu: root.querySelector('[data-files-menu]'),
@@ -67,6 +70,7 @@
     const state = {
         type: els.type ? els.type.value : 'all',
         module: els.module ? els.module.value : 'all',
+        pack: els.pack ? els.pack.value : 'all',
         files: [],
         scope: els.scope ? els.scope.value : 'all',
         language: els.language ? els.language.value : 'all',
@@ -167,7 +171,7 @@
     }
 
     function changeKey(row, lang) {
-        return [row.module || '', row.scope || '', row.key, lang].join('\u0001');
+        return [row.module || '', row.pack || '', row.scope || '', row.key, lang].join('\u0001');
     }
 
     function findChange(row, lang) {
@@ -175,8 +179,52 @@
             item.lang === lang
             && item.key === row.key
             && item.module === (row.module || '')
+            && item.pack === (row.pack || '')
             && item.scope === (row.scope || '')
         ));
+    }
+
+    function packLabel(pack) {
+        return pack ? 'lang/' + pack + '/' : 'lang/';
+    }
+
+    function packsForContext() {
+        if (state.type === 'non-module') {
+            return Array.isArray(packMap['']) ? packMap[''].slice() : [''];
+        }
+        if (state.type === 'module' && state.module !== 'all') {
+            return Array.isArray(packMap[state.module]) ? packMap[state.module].slice() : [''];
+        }
+        return [''];
+    }
+
+    function packOptionValue(pack) {
+        return pack === '' ? '__root__' : pack;
+    }
+
+    function syncPackFilter() {
+        const packs = packsForContext();
+        const scoped = state.type === 'non-module'
+            || (state.type === 'module' && state.module !== 'all');
+        const show = scoped && packs.length > 1;
+        if (els.packWrap) {
+            els.packWrap.classList.toggle('is-hidden', !show);
+        }
+        if (!els.pack) {
+            return;
+        }
+        if (!show) {
+            state.pack = 'all';
+            els.pack.value = 'all';
+            return;
+        }
+        const current = state.pack;
+        const allowed = ['all'].concat(packs.map(packOptionValue));
+        els.pack.innerHTML = '<option value="all">All packs</option>' + packs.map((pack) => {
+            return '<option value="' + escapeHtml(packOptionValue(pack)) + '">' + escapeHtml(packLabel(pack)) + '</option>';
+        }).join('');
+        state.pack = allowed.includes(current) ? current : 'all';
+        els.pack.value = state.pack;
     }
 
     function updateSaveBadge() {
@@ -300,7 +348,13 @@
             return;
         }
         els.body.innerHTML = state.rows.map((row) => {
-            let cells = '<th scope="row" class="manager-key-cell">' + escapeHtml(row.key) + '</th>';
+            const pack = row.pack || '';
+            const packMarkup = pack
+                ? '<span class="manager-key-pack">' + escapeHtml(packLabel(pack)) + '</span>'
+                : '';
+            let cells = '<th scope="row" class="manager-key-cell"><span class="manager-key-stack">'
+                + '<span class="manager-key-text">' + escapeHtml(row.key) + '</span>'
+                + packMarkup + '</span></th>';
             codes.forEach((code) => {
                 const change = findChange(row, code);
                 const value = change ? change.value : (row[code] ?? '');
@@ -309,6 +363,7 @@
                     + ' data-key="' + escapeHtml(row.key) + '"'
                     + ' data-lang="' + escapeHtml(code) + '"'
                     + ' data-module="' + escapeHtml(row.module || '') + '"'
+                    + ' data-pack="' + escapeHtml(pack) + '"'
                     + ' data-scope="' + escapeHtml(row.scope || '') + '"'
                     + ' aria-label="' + escapeHtml(langLabel(code) + ' translation for ' + row.key) + '">'
                     + escapeHtml(value) + '</textarea></td>';
@@ -460,8 +515,27 @@
         els.filesSummary.textContent = state.files.length + ' files';
     }
 
+    function rebuildFilesMenu(files) {
+        if (!els.filesMenu) {
+            return;
+        }
+        const allowed = Array.isArray(files) ? files.filter((file) => typeof file === 'string' && file !== '') : [];
+        state.files = state.files.filter((file) => allowed.includes(file));
+        if (allowed.length === 0) {
+            els.filesMenu.innerHTML = '<p class="manager-empty-copy">No PHP language files found.</p>';
+        } else {
+            els.filesMenu.innerHTML = allowed.map((file) => {
+                const checked = state.files.includes(file) ? ' checked' : '';
+                return '<label class="manager-check"><input type="checkbox" data-file-toggle value="'
+                    + escapeHtml(file) + '"' + checked + '><span>' + escapeHtml(file) + '</span></label>';
+            }).join('');
+        }
+        updateFilesSummary();
+    }
+
     function syncFileFilter() {
-        const show = state.type === 'non-module' && state.scope === 'php';
+        const show = state.scope === 'php'
+            && (state.type === 'non-module' || (state.type === 'module' && state.module !== 'all'));
         if (els.fileWrap) {
             els.fileWrap.classList.toggle('is-hidden', !show);
         }
@@ -561,6 +635,7 @@
         const params = new URLSearchParams();
         params.set('type', state.type);
         params.set('module', state.module);
+        params.set('pack', state.pack);
         params.set('scope', state.scope);
         state.files.forEach((file) => params.append('files[]', file));
         params.set('language', state.language);
@@ -580,9 +655,12 @@
             }
             state.total = Number(payload.total || 0);
             state.rows = Array.isArray(payload.rows) ? payload.rows : [];
+            if (Object.prototype.hasOwnProperty.call(payload, 'files')) {
+                rebuildFilesMenu(payload.files);
+            }
             state.rows.forEach((row) => {
                 Object.keys(row).forEach((key) => {
-                    if (!['key', 'module', 'scope', 'file'].includes(key) && !state.availableCodes.includes(key)) {
+                    if (!['key', 'module', 'pack', 'scope', 'file'].includes(key) && !state.availableCodes.includes(key)) {
                         state.availableCodes.push(key);
                     }
                 });
@@ -609,16 +687,23 @@
         const row = {
             key: textarea.dataset.key,
             module: textarea.dataset.module || '',
+            pack: textarea.dataset.pack || '',
             scope: textarea.dataset.scope || '',
         };
         const lang = textarea.dataset.lang;
         const value = textarea.value;
         const idx = state.changes.findIndex((item) => changeKey(item, item.lang) === changeKey({
             module: row.module,
+            pack: row.pack,
             scope: row.scope,
             key: row.key,
         }, lang));
-        const original = (state.rows.find((item) => item.key === row.key && (item.module || '') === row.module && (item.scope || '') === row.scope) || {})[lang] ?? '';
+        const original = (state.rows.find((item) => (
+            item.key === row.key
+            && (item.module || '') === row.module
+            && (item.pack || '') === row.pack
+            && (item.scope || '') === row.scope
+        )) || {})[lang] ?? '';
         if (value === original) {
             if (idx > -1) {
                 state.changes.splice(idx, 1);
@@ -631,6 +716,7 @@
             state.changes.push({
                 lang,
                 module: row.module,
+                pack: row.pack,
                 scope: row.scope,
                 key: row.key,
                 value,
@@ -685,6 +771,7 @@
                 if (els.moduleWrap) {
                     els.moduleWrap.classList.toggle('is-hidden', state.type !== 'module');
                 }
+                syncPackFilter();
                 syncFileFilter();
                 loadRows();
             });
@@ -693,6 +780,16 @@
             els.module.addEventListener('change', () => {
                 state.module = els.module.value;
                 state.offset = 0;
+                syncPackFilter();
+                syncFileFilter();
+                loadRows();
+            });
+        }
+        if (els.pack) {
+            els.pack.addEventListener('change', () => {
+                state.pack = els.pack.value;
+                state.offset = 0;
+                syncFileFilter();
                 loadRows();
             });
         }
@@ -987,6 +1084,7 @@
                 closeDialog();
             }
         });
+        syncPackFilter();
         syncFileFilter();
     }
 

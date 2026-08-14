@@ -81,6 +81,7 @@ class TextHelper
     public static function hasPlaceholderMismatch(string $sourceText, string $translatedText): bool
     {
         $missingPlaceholders = LocaleHelper::findMissing($sourceText, $translatedText);
+
         return $missingPlaceholders !== [];
     }
 
@@ -168,6 +169,7 @@ class TextHelper
             // If the message part still contains dots (like Laravel file structure), extract the final part
             if (str_contains($messagePart, '.')) {
                 $finalPart = substr($messagePart, strrpos($messagePart, '.') + 1);
+
                 return $finalPart;
             }
 

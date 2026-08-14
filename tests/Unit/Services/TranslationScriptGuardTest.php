@@ -30,7 +30,7 @@ class TranslationScriptGuardTest extends TestCase
                 'categories.latest_posts' => 'Latest Posts',
                 'categories.required' => 'The :attribute field is required.',
                 'categories.home' => 'Home',
-            ]
+            ],
         );
 
         $this->assertSame('Posts count', $structured['gu']['app::categories']['posts_count']);
@@ -48,7 +48,7 @@ class TranslationScriptGuardTest extends TestCase
             ['posts_count'],
             'app::categories',
             ['gu'],
-            ['categories.posts_count' => 'Posts count']
+            ['categories.posts_count' => 'Posts count'],
         );
 
         $this->assertSame('પોસ્ટ ગણતરી', $structured['gu']['app::categories']['posts_count']);

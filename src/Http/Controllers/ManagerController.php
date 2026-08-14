@@ -70,6 +70,7 @@ final readonly class ManagerController
             'changes.*.key' => ['required', 'string'],
             'changes.*.value' => ['nullable', 'string'],
             'changes.*.module' => ['nullable', 'string'],
+            'changes.*.pack' => ['nullable', 'string'],
             'changes.*.scope' => ['nullable', 'string'],
         ]);
 
@@ -111,6 +112,8 @@ final readonly class ManagerController
             'modules' => $this->catalog->modules(),
             'scopes' => $this->catalog->scopes(),
             'files' => $this->catalog->files(),
+            'packs' => $this->catalog->packs(),
+            'packMap' => $this->catalog->packMap(),
             'languages' => $this->catalog->languages(),
             'languageNames' => $this->catalog->languageNames(),
             'endpoints' => [

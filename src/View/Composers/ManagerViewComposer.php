@@ -25,6 +25,8 @@ final class ManagerViewComposer
             'modules' => $data['modules'] ?? $catalog->modules(),
             'scopes' => $data['scopes'] ?? $catalog->scopes(),
             'files' => $data['files'] ?? $catalog->files(),
+            'packs' => $data['packs'] ?? $catalog->packs(),
+            'packMap' => $data['packMap'] ?? $catalog->packMap(),
             'languages' => $data['languages'] ?? $catalog->languages(),
             'languageNames' => $data['languageNames'] ?? $catalog->languageNames(),
             'endpoints' => $data['endpoints'] ?? $this->defaultEndpoints(),

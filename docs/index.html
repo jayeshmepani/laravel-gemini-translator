@@ -17,9 +17,9 @@
     <link rel="dns-prefetch" href="//laravelmodules.com">
 
     <meta name="description"
-        content="Official documentation for the Laravel Gemini AI Translation Synchronization Tool, an Artisan command to extract, translate, and sync language files for Laravel and nwidart/laravel-modules projects using Google's Gemini AI.">
+        content="Documentation for Laravel Gemini Translator 5.1.0: Artisan CLI, Translation Manager UI, lang packs, Windows parallel Process workers, and Gemini AI sync for Laravel and nwidart/laravel-modules.">
     <meta name="keywords"
-        content="laravel translation, laravel localization, gemini ai, artisan command, nwidart laravel modules, php translation tool, auto translate laravel, language files sync, i18n, l10n, google gemini">
+        content="laravel translation, laravel localization, gemini ai, artisan command, translation manager, lang packs, nwidart laravel modules, windows process workers, i18n, l10n">
     <meta name="author" content="Jayesh Mepani">
     <meta name="robots" content="index, follow">
     <meta name="color-scheme" content="light dark">
@@ -34,7 +34,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="Laravel Gemini AI Translation Synchronization Tool - Documentation">
     <meta property="og:description"
-        content="An Artisan command to extract, translate, and sync language files for Laravel and nwidart/laravel-modules projects using Google's Gemini AI.">
+        content="Extract, translate, and sync Laravel language files with Gemini AI. Includes a Translation Manager UI, lang packs, and Windows parallel workers.">
     <meta property="og:url" content="https://jayeshmepani.github.io/laravel-gemini-translator/">
     <meta property="og:image" content="https://jayeshmepani.github.io/laravel-gemini-translator/social-preview.png">
     <meta property="og:image:alt" content="Laravel Gemini Translator documentation preview">
@@ -43,7 +43,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Laravel Gemini Translator Documentation">
     <meta name="twitter:description"
-        content="Official docs for extracting, translating, and synchronizing Laravel language files with Gemini AI.">
+        content="Artisan CLI and Translation Manager for Laravel language files. Lang packs, Windows parallel Process workers, Gemini AI.">
     <meta name="twitter:image" content="https://jayeshmepani.github.io/laravel-gemini-translator/social-preview.png">
     <meta name="twitter:image:alt" content="Laravel Gemini Translator documentation preview">
 
@@ -56,8 +56,8 @@
           "name": "Laravel Gemini Translator",
           "codeRepository": "https://github.com/jayeshmepani/laravel-gemini-translator",
           "url": "https://jayeshmepani.github.io/laravel-gemini-translator/",
-          "description": "Artisan command to extract, translate, and synchronize Laravel language files using Gemini AI.",
-          "runtimePlatform": "PHP 8.2+",
+          "description": "Artisan command and Translation Manager UI to extract, translate, and synchronize Laravel language files using Gemini AI.",
+          "runtimePlatform": "PHP 8.3+",
           "license": "https://github.com/jayeshmepani/laravel-gemini-translator/blob/main/LICENSE.md",
           "author": {
             "@type": "Person",
@@ -92,7 +92,7 @@
               "name": "How does this handle translations in subdirectories like lang/web/en.json?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "The tool recursively scans lang directories in both the main app and modules, detects files like web/en.json as distinct file groups, and writes generated translations back to the matching subdirectories."
+                "text": "Folders such as lang/web/ and lang/app3/ are packs. After you select a module that has them, the CLI and Translation Manager let you pick packs, then list JSON and PHP from those packs only. Pack PHP writes to lang/web/{locale}/messages.php."
               }
             },
             {
@@ -108,7 +108,7 @@
               "name": "What are the different operation modes available?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Three modes are available: normal mode for full sync, --skip-existing for missing keys only, and --refresh for re-translating existing keys only. --refresh and --skip-existing are mutually exclusive."
+                "text": "Four modes: normal full sync, --skip-existing for missing keys only, --refresh to re-translate existing keys from current file wording, and --refresh-clean to rebuild existing keys from the key (official Laravel English for auth, pagination, passwords, and validation). Those three flags are mutually exclusive."
               }
             },
             {
@@ -133,6 +133,22 @@
               "acceptedAnswer": {
                 "@type": "Answer",
                 "text": "The tool applies intelligent fallback logic by using existing English source text or the key itself, and logs persistent failures to failed_translation_keys.json."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do I open the Translation Manager?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Visit /translations-manager. Routes register automatically. If the host app has a login route, sign in first. Publish views only if you want to customize them with --tag=gemini-translator-manager."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does Windows run translations in parallel?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Windows does not use Spatie fork. --driver=fork or --driver=process starts Symfony Process workers so chunks run in parallel. Menus use kernel32 when ext-ffi is available."
               }
             }
           ]
@@ -162,7 +178,7 @@
                     Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges" role="group" aria-label="Project Information Badges">
-                    <span class="badge" aria-label="Version 5.0.0">v5.0.0</span>
+                    <span class="badge" aria-label="Version 5.1.0">v5.1.0</span>
                     <span class="badge" aria-label="Requires PHP 8.3 or higher">PHP 8.3+</span>
                     <span class="badge" aria-label="Requires Laravel 11, 12, or 13">Laravel 11-13</span>
                     <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
@@ -212,6 +228,13 @@
                                 <polyline points="14 2 14 8 20 8" />
                             </svg>
                             Overview</a></li>
+                    <li><a href="#whats-new" aria-label="Go to What's new in 5.1.0 section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
+                            5.1.0</a></li>
                     <li><a href="#installation" aria-label="Go to Installation section">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
                                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -239,6 +262,14 @@
                                 <polyline points="2 12 12 17 22 12" />
                             </svg>
                             Usage</a></li>
+                    <li><a href="#manager" aria-label="Go to Translation Manager section">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <path d="M3 9h18M9 21V9" />
+                            </svg>
+                            Manager</a></li>
                     <li><a href="#modules" aria-label="Go to Module Support section">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
                                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -331,13 +362,17 @@
                                 <line x1="10" x2="8" y1="9" y2="9" />
                             </svg></span>Overview</h2>
                     <p>
-                        The Laravel Gemini AI Translation Synchronization Tool is a powerful Artisan command that
-                        revolutionizes the localization workflow for modern Laravel applications, including those built
-                        with <a href="https://laravelmodules.com/" target="_blank" rel="noopener noreferrer"
+                        The Laravel Gemini AI Translation Synchronization Tool is an Artisan command and a browser
+                        Translation Manager for modern Laravel apps, including those built with
+                        <a href="https://laravelmodules.com/" target="_blank" rel="noopener noreferrer"
                             aria-label="Laravel Modules package (opens in new tab)">nwidart/laravel-modules</a>.
-                        It goes beyond simple key extraction by discovering keys from all sources—your code, existing
-                        language files, and the framework—and then intelligently synchronizes them across all target
-                        languages using Gemini AI.
+                        It discovers keys from your code, existing language files, registered custom lang directories,
+                        and the framework, then synchronizes them across target languages with Gemini AI. Extra lang
+                        folders such as <code class="inline-code">lang/app3/</code> and
+                        <code class="inline-code">lang/web/</code> are handled as separate packs. Linux/macOS use
+                        Laravel Prompts and <code class="inline-code">spatie/fork</code>; Windows uses matching
+                        <code class="inline-code">kernel32</code> menus and Symfony Process workers for parallel
+                        chunks.
                     </p>
                     <ul class="feature-grid" aria-label="Key features">
                         <li class="feature-card">
@@ -352,10 +387,10 @@
                                 </svg>
                             </div>
                             <h3>Full Module Support</h3>
-                            <p>Scans are correctly isolated between the main app and modules. A new feature also lets
-                                you
-                                choose to keep module translations separate or consolidate them into the main `lang`
-                                directory.</p>
+                            <p>Scans stay isolated between the main app and modules. You can keep module files
+                                separate or consolidate them into the root <code class="inline-code">lang/</code>
+                                directory. Packs such as <code class="inline-code">lang/app3/</code> and
+                                <code class="inline-code">lang/web/</code> are selected on their own.</p>
                         </li>
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -370,10 +405,8 @@
                                 </svg>
                             </div>
                             <h3>AI-First Translation</h3>
-                            <p>Trusts the AI to interpret both namespaced keys (e.g., <code
-                                    class="inline-code">messages.welcome</code>) and literal strings to generate
-                                accurate,
-                                context-aware translations.</p>
+                            <p>Prompts send source text and per-locale script rules. Namespaced keys and literal
+                                strings are both supported. Mixed-script or leftover-English output is rejected.</p>
                         </li>
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -390,7 +423,8 @@
                                 no
                                 translation is left behind. Use <code class="inline-code">--skip-existing</code> to only
                                 add
-                                missing keys or <code class="inline-code">--refresh</code> to re-translate existing.</p>
+                                missing keys, <code class="inline-code">--refresh</code> to re-translate from file
+                                wording, or <code class="inline-code">--refresh-clean</code> for a key-only rebuild.</p>
                         </li>
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -401,10 +435,11 @@
                                 </svg>
                             </div>
                             <h3>High Performance</h3>
-                            <p>Features a <code class="inline-code">fork</code> driver for lightning-fast parallel
-                                processing with configurable <code class="inline-code">--concurrency</code>, and a
-                                stable <code class="inline-code">sync</code> driver. <strong>Now with full
-                                    support for Windows and non-interactive CI/CD environments.</strong></p>
+                            <p>Unix uses the <code class="inline-code">fork</code> driver
+                                (<code class="inline-code">pcntl</code> + Spatie). Windows uses the
+                                <code class="inline-code">process</code> driver (Symfony Process workers) for the same
+                                kind of parallel chunks. <code class="inline-code">sync</code> is sequential on every
+                                OS. Non-interactive CI/CD skips prompts.</p>
                         </li>
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -415,9 +450,89 @@
                                 </svg>
                             </div>
                             <h3>Production-Ready Safety</h3>
-                            <p>Atomic file writes with path validation, framework translation bootstrapping, and <code
-                                    class="inline-code">--dry-run</code> mode for safe previews.</p>
+                            <p>Atomic file writes with path validation, framework translation bootstrapping, mixed-script
+                                rejection, and <code class="inline-code">--dry-run</code> previews.</p>
                         </li>
+                        <li class="feature-card">
+                            <div class="feature-icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    <path d="M3 9h18M9 21V9" />
+                                </svg>
+                            </div>
+                            <h3>Translation Manager</h3>
+                            <p>Open <code class="inline-code">/translations-manager</code> to browse, edit, save, scan,
+                                and add languages. Filters cover type, module, pack, scope, PHP files, and language.
+                                Auth follows the host app.</p>
+                        </li>
+                    </ul>
+                </section>
+                <section id="whats-new" class="section" aria-labelledby="whats-new-heading">
+                    <h2 id="whats-new-heading"><span class="section-icon" aria-hidden="true"><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg></span>What's new in 5.1.0</h2>
+                    <p>Released 14 August 2026. Everything listed here is new since v5.0.1. The same list lives in
+                        <a href="https://github.com/jayeshmepani/laravel-gemini-translator/blob/main/CHANGELOG.md">CHANGELOG.md</a>.
+                    </p>
+                    <h3>Added</h3>
+                    <ul>
+                        <li><strong>Translation Manager</strong> at <code class="inline-code">/translations-manager</code>
+                            (prefix, enable flag, and middleware are configurable). Routes and JSON APIs register
+                            automatically. Guests must sign in when the host has login/register routes; otherwise the
+                            page is open. Publish tags:
+                            <code class="inline-code">gemini-translator-config</code>,
+                            <code class="inline-code">gemini-translator-views</code>,
+                            <code class="inline-code">gemini-translator-assets</code>,
+                            <code class="inline-code">gemini-translator-manager</code>. Filters: Type, Module, Pack,
+                            Scope, PHP files, Language, show-only-missing. Theme switch, sticky KEY column, pagination
+                            (default 5 rows, last two pages always shown).</li>
+                        <li><strong>Lang packs</strong> in the manager and the CLI. Extra folders such as
+                            <code class="inline-code">lang/app3/</code> and <code class="inline-code">lang/web/</code>
+                            stay separate from <code class="inline-code">lang/</code>. Custom directories registered
+                            with <code class="inline-code">loadJsonTranslationsFrom()</code> /
+                            <code class="inline-code">loadTranslationsFrom()</code> and published
+                            <code class="inline-code">resources/lang/modules/{name}</code> are scanned. Pack PHP writes
+                            to <code class="inline-code">lang/{pack}/{locale}/…</code>.</li>
+                        <li><strong>249-language catalog</strong> with fallbacks such as
+                            <code class="inline-code">zh</code> → <code class="inline-code">zh_CN</code>.</li>
+                        <li><strong>Multi-OS adapters:</strong> Unix Prompts + fork; Windows
+                            <code class="inline-code">kernel32</code> menus + Symfony Process.
+                            <code class="inline-code">--driver=process</code> on every OS. Hidden
+                            <code class="inline-code">translations:run-payload</code> for child jobs.</li>
+                        <li><code class="inline-code">--refresh-clean</code> rebuilds existing keys from the key
+                            (official Laravel English for auth / pagination / passwords / validation).</li>
+                        <li><strong>Dated quota snapshot</strong> in
+                            <code class="inline-code">config/gemini-translator.php</code> (as of 2026-08-13), plus
+                            <code class="inline-code">GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS</code>.</li>
+                        <li><strong>Configurable model:</strong> <code class="inline-code">--model</code>,
+                            <code class="inline-code">GEMINI_MODEL</code> /
+                            <code class="inline-code">GEMINI_TRANSLATOR_MODEL</code>, then config. Default
+                            <code class="inline-code">gemini-3.5-flash-lite</code>.</li>
+                        <li>Per-locale writing-system map and mixed-script / leftover-English rejection.</li>
+                    </ul>
+                    <h3>Changed</h3>
+                    <ul>
+                        <li><code class="inline-code">--refresh</code> uses current file wording as the source.</li>
+                        <li>On Windows, <code class="inline-code">--driver=fork</code> runs Process workers. FFI menus
+                            match Laravel Prompts.</li>
+                        <li>JSON keeps dotted PHP-style keys. Blank literal JSON values fill from the key. JSON-only
+                            selection does not re-translate PHP <code class="inline-code">file.subkey</code> keys.</li>
+                        <li>A selected language in the manager lists only keys that exist in that locale file. PHP file
+                            pickers follow the selected pack.</li>
+                        <li>Command summary records <code class="inline-code">processed_chunks</code>.</li>
+                    </ul>
+                    <h3>Fixed</h3>
+                    <ul>
+                        <li>Mixed-script output (for example Gujarati + Kannada <code class="inline-code">ೋ</code>) is
+                            rejected instead of written.</li>
+                        <li>Add-languages no longer reports failure after one root writes successfully.</li>
+                        <li><code class="inline-code">web</code> and similar 2–3 letter folders are packs when they
+                            contain locale files, not locales.</li>
                     </ul>
                 </section>
                 <section id="installation" class="section" aria-labelledby="installation-heading">
@@ -432,8 +547,15 @@
                     <h3>Step 1: Install via Composer</h3>
                     <pre><code>composer require jayesh/laravel-gemini-translator</code></pre>
                     <h3>Step 2: Publish Configuration</h3>
-                    <pre><code>php artisan vendor:publish --provider="Jayesh\LaravelGeminiTranslator\TranslationServiceProvider"</code></pre>
-                    <p>This creates the <code class="inline-code">config/gemini.php</code> file.</p>
+                    <pre><code>php artisan vendor:publish --tag=gemini-translator-config</code></pre>
+                    <p>That publishes <code class="inline-code">config/gemini-translator.php</code> (model, quota
+                        snapshot, Translation Manager). The API client’s
+                        <code class="inline-code">config/gemini.php</code> comes from
+                        <code class="inline-code">google-gemini-php/laravel</code>, not this tag.</p>
+                    <p>The manager is already registered at
+                        <code class="inline-code">/translations-manager</code>. Publish Blade/CSS/JS only if you want to
+                        edit them:</p>
+                    <pre><code>php artisan vendor:publish --tag=gemini-translator-manager</code></pre>
                     <h3>Step 3: Add API Key</h3>
                     <p>Add your Gemini API key to your <code class="inline-code">.env</code> file. You can get a key
                         from
@@ -458,7 +580,19 @@
                     <h3>Environment Variables</h3>
                     <p>Add these variables to your <code class="inline-code">.env</code> file:</p>
                     <pre><code>GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-GEMINI_REQUEST_TIMEOUT=600</code></pre>
+GEMINI_REQUEST_TIMEOUT=600
+
+# Model (CLI --model wins, then these, then config)
+GEMINI_MODEL="gemini-3.5-flash-lite"
+# GEMINI_TRANSLATOR_MODEL="gemini-3.5-flash-lite"
+
+# Free-tier snapshot caps (set false for paid keys)
+# GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS=true
+
+# Translation Manager
+# GEMINI_TRANSLATOR_MANAGER=true
+# GEMINI_TRANSLATOR_MANAGER_PREFIX=translations-manager
+# GEMINI_TRANSLATOR_MANAGER_MIDDLEWARE=web</code></pre>
                     <h3>Getting Your API Key</h3>
                     <p>
                         1. Visit <a href="https://makersuite.google.com/app/apikey" target="_blank"
@@ -469,18 +603,23 @@ GEMINI_REQUEST_TIMEOUT=600</code></pre>
                         4. Copy and paste it into your <code class="inline-code">.env</code> file
                     </p>
                     <div class="alert alert-warning">
-                        <strong>Free Tier Limits:</strong> The free tier has limits on requests per minute/day. For
-                        large
-                        projects, consider using smaller chunk sizes or processing in batches to stay within these
-                        limits.
+                        <strong>Free-tier snapshot:</strong> RPM/RPD numbers live in
+                        <code class="inline-code">config/gemini-translator.php</code> (dated 2026-08-13). They are not
+                        an API contract. Publish the file and edit a row, add a model, or set
+                        <code class="inline-code">0</code> when Google changes quotas. Default concurrency follows a
+                        recorded positive RPM unless you pass <code class="inline-code">--concurrency</code> or set
+                        <code class="inline-code">GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS=false</code>.
                     </div>
-                    <h3>Configuration File</h3>
-                    <p>The <code class="inline-code">config/gemini.php</code> file allows you to customize:</p>
+                    <h3>Configuration Files</h3>
+                    <p><code class="inline-code">config/gemini.php</code> (from
+                        <code class="inline-code">google-gemini-php/laravel</code>) holds the API key and request
+                        timeout. Cast timeout to int:</p>
+                    <pre><code>'request_timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 600),</code></pre>
+                    <p><code class="inline-code">config/gemini-translator.php</code> (this package) holds:</p>
                     <ul>
-                        <li>AI model selection (e.g., Gemini 2.5 Flash-Lite)</li>
-                        <li>Request timeout settings</li>
-                        <li>Default language preferences</li>
-                        <li>Retry logic parameters</li>
+                        <li>Default Gemini model (<code class="inline-code">gemini-3.5-flash-lite</code>)</li>
+                        <li>Dated free-tier quota snapshot</li>
+                        <li>Translation Manager enable flag, URL prefix, and middleware</li>
                     </ul>
                 </section>
                 <section id="usage" class="section" aria-labelledby="usage-heading">
@@ -493,19 +632,25 @@ GEMINI_REQUEST_TIMEOUT=600</code></pre>
                                 <polyline points="2 12 12 17 22 12" />
                             </svg></span>Usage</h2>
                     <h3>Basic Command</h3>
-                    <p>Simply run the command to start the interactive process. It will guide you through selecting
-                        which
-                        parts of your application and which files to process.</p>
+                    <p>Run the command to start the interactive process. It asks for targets, then packs (only if extra
+                        lang folders exist), then JSON/PHP files.</p>
                     <pre><code>php artisan translations:extract-and-generate</code></pre>
+                    <p>Pick a model for one run with <code class="inline-code">--model</code>:</p>
+                    <pre><code>php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,hi</code></pre>
                     <h3>Platform-Specific Recommendations</h3>
                     <p>For the best experience, specify a driver based on your operating system.</p>
-                    <pre><code># Linux/macOS/WSL (fastest performance)
+                    <pre><code># Linux/macOS/WSL (Prompts + fork)
 php artisan translations:extract-and-generate --driver=fork
-        
-# Windows (maximum stability)
+
+# Windows (same flag; 5.1.0 runs Symfony Process workers)
+php artisan translations:extract-and-generate --driver=fork --concurrency=10
+
+# Sequential on any OS
 php artisan translations:extract-and-generate --driver=sync</code></pre>
-                    <h3>Three Operational Modes</h3>
-                    <p>The tool offers three distinct operational modes:</p>
+                    <h3>Four Operational Modes</h3>
+                    <p>5.1.0 offers four operational modes. <code class="inline-code">--refresh</code>,
+                        <code class="inline-code">--refresh-clean</code>, and
+                        <code class="inline-code">--skip-existing</code> cannot be combined.</p>
                     <h4>1. Normal Mode (Default)</h4>
                     <p>Translates all keys, both existing and new. This is the default behavior.</p>
                     <h4>2. Skip-Existing Mode</h4>
@@ -516,12 +661,51 @@ php artisan translations:extract-and-generate --driver=sync</code></pre>
                     <pre><code># Find and translate only the keys that are missing in Spanish and German
 php artisan translations:extract-and-generate --skip-existing --langs=es,de</code></pre>
                     <h4>3. Refresh Mode</h4>
-                    <p>To re-translate only existing keys without adding new ones, use the <code
-                            class="inline-code">--refresh</code> flag.</p>
-                    <pre><code># Re-translate only existing keys in Spanish and German
-php artisan translations:extract-and-generate --refresh --langs=es,de</code></pre>
-                    <p><strong>Note:</strong> <code class="inline-code">--refresh</code> and <code
-                            class="inline-code">--skip-existing</code> cannot be used together.</p>
+                    <p>Re-translate only existing keys, using the current file wording as the source. Does not add new
+                        keys.</p>
+                    <pre><code>php artisan translations:extract-and-generate --refresh --langs=es,de</code></pre>
+                    <h4>4. Refresh-Clean Mode</h4>
+                    <p>Re-translate only existing keys, ignoring stale file text. Source is the key itself, except
+                        official Laravel English for <code class="inline-code">auth</code>,
+                        <code class="inline-code">pagination</code>, <code class="inline-code">passwords</code>, and
+                        <code class="inline-code">validation</code>.</p>
+                    <pre><code>php artisan translations:extract-and-generate --refresh-clean --langs=es,de</code></pre>
+                </section>
+                <section id="manager" class="section" aria-labelledby="manager-heading">
+                    <h2 id="manager-heading"><span class="section-icon" aria-hidden="true"><svg
+                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <path d="M3 9h18M9 21V9" />
+                            </svg></span>Translation Manager</h2>
+                    <p>The package registers the page and JSON APIs. Open:</p>
+                    <pre><code>/translations-manager</code></pre>
+                    <p>Example: <code class="inline-code">http://127.0.0.1:8000/translations-manager</code></p>
+                    <h3>Auth</h3>
+                    <ul>
+                        <li>If the host already has login/register/sign-in routes, guests are redirected (JSON APIs
+                            return 401).</li>
+                        <li>If the host has no auth routes, the manager is open.</li>
+                    </ul>
+                    <h3>What it scans</h3>
+                    <p>App <code class="inline-code">lang/</code>, <code class="inline-code">Modules/*/lang</code>,
+                        published <code class="inline-code">resources/lang/modules/{name}</code> (published wins), and
+                        extra directories registered with
+                        <code class="inline-code">loadJsonTranslationsFrom()</code> /
+                        <code class="inline-code">loadTranslationsFrom()</code>.</p>
+                    <h3>Filters</h3>
+                    <p>Type → Module (when Type is Module) → Pack (only if that source has more than
+                        <code class="inline-code">lang/</code>) → Scope → PHP files (when Scope is PHP) → Language →
+                        show only missing. A selected language lists only keys that exist in that locale file.</p>
+                    <h3>UI</h3>
+                    <p>Light/dark theme (stored as <code class="inline-code">gemini-translator-theme</code>), sticky KEY
+                        column, pagination (default 5 rows, last two pages always shown), Add Languages, Sync, and Save.
+                        CSS is semantic component CSS, not Tailwind or Bootstrap utilities.</p>
+                    <p>Optional publish:</p>
+                    <pre><code>php artisan vendor:publish --tag=gemini-translator-manager</code></pre>
+                    <p>Or drop the workspace into an existing layout:</p>
+                    <pre><code>@include('gemini-translator::partials.workspace')</code></pre>
                 </section>
                 <section id="modules" class="section">
                     <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
@@ -542,9 +726,20 @@ php artisan translations:extract-and-generate --refresh --langs=es,de</code></pr
                     <pre><code> ┌ Which parts of the application would you like to scan and process? ┐
  │ Module: Settings                                                   │
  └────────────────────────────────────────────────────────────────────┘</code></pre>
-                    <h3>2. Consolidating Module Translations (New Feature)</h3>
-                    <p>If you select any modules, you'll be asked a new question. This gives you full control over your
-                        project's structure.</p>
+                    <h3>2. Language packs</h3>
+                    <p>If the selected module (or the main app) has extra lang folders such as
+                        <code class="inline-code">lang/app3/</code> or <code class="inline-code">lang/web/</code>, the
+                        next prompt is a multi-select for those packs. The file list then only includes JSON and PHP
+                        from the packs you chose. Modules with only <code class="inline-code">lang/</code> skip this
+                        step. The Translation Manager uses the same pack filter.</p>
+                    <pre><code> ┌ Which language packs would you like to process? ┐
+ │ lang/                                           │
+ │ lang/app3/                                      │
+ │ lang/web/                                       │
+ └─────────────────────────────────────────────────┘</code></pre>
+                    <h3>3. Consolidating Module Translations</h3>
+                    <p>If you select any modules, you are asked whether to consolidate writes into the main
+                        <code class="inline-code">lang/</code> directory.</p>
                     <pre><code> ┌ Consolidate all module translations into the main application's `lang` directory? ┐
  │ No                                                                                │
  └───────────────────────────────────────────────────────────────────────────────────┘</code></pre>
@@ -573,11 +768,12 @@ php artisan translations:extract-and-generate --refresh --langs=es,de</code></pr
                                 <line x1="16.24" x2="19.07" y1="7.76" y2="4.93" />
                             </svg></span>Advanced Usage & Output</h2>
                     <h3>Fork Driver Output (Linux/macOS)</h3>
-                    <p>The high-performance `fork` driver shows a real-time progress bar for all keys being processed
-                        concurrently.</p>
+                    <p>The <code class="inline-code">fork</code> driver (<code class="inline-code">pcntl</code> +
+                        Spatie) shows a real-time progress bar. Cooperative stop
+                        (<code class="inline-code">--stop-key</code>, default <code class="inline-code">q</code>) does
+                        <strong>not</strong> interrupt an in-flight fork or Process batch. Use
+                        <code class="inline-code">sync</code> if you need to stop between chunks.</p>
                     <pre><code>✅ Key discovery complete! Found 451 unique keys from all sources combined.
-        
-Press the 'q' key at any time to gracefully stop the process.
 📊 Total keys needing translation: 7
 📦 Total chunks to process: 2
 ⚡ Using 'fork' driver for high-performance concurrency.
@@ -589,10 +785,18 @@ Press the 'q' key at any time to gracefully stop the process.
  ✅ Updated: lang/ru/auth.php (8 total keys)
  ✅ Updated: lang/uz/auth.php (8 total keys)
         </code></pre>
-                    <h3>Sync Driver Output (Windows)</h3>
-                    <p>The stable `sync` driver processes chunks sequentially and provides feedback for each one, which
-                        is
-                        ideal for environments that don't support forking.</p>
+                    <h3>Process Driver (Windows parallel)</h3>
+                    <p>On Windows, <code class="inline-code">--driver=fork</code> and
+                        <code class="inline-code">--driver=process</code> run Symfony Process workers. That is not
+                        Spatie fork (<code class="inline-code">pcntl</code> is Unix-only). You still get parallel
+                        chunks, ordered results, inherited env, and the same “cannot stop mid-flight” behaviour as
+                        Unix fork. Menus use <code class="inline-code">kernel32</code> FFI when
+                        <code class="inline-code">ext-ffi</code> is loaded; otherwise Symfony
+                        <code class="inline-code">choice()</code> / <code class="inline-code">confirm()</code>.</p>
+                    <pre><code>php artisan translations:extract-and-generate --driver=fork --concurrency=10 --langs=gu,hi</code></pre>
+                    <h3>Sync Driver Output (sequential)</h3>
+                    <p>The <code class="inline-code">sync</code> driver processes chunks one after another on any OS.
+                        Use it when you want cooperative stop, or when Process/fork is unavailable.</p>
                     <pre><code>✅ Key discovery complete! Found 222 unique keys from all sources combined.
         
 🐌 Running in synchronous mode - this will be slower but more stable!
@@ -612,6 +816,10 @@ Error: File: __MAIN__::__JSON__, Keys: An unknown error occurred.,... - Error: S
                         translations
                         separate.</p>
                     <pre><code>Scanning 1 target(s): Module: Settings
+
+ ┌ Which language packs would you like to process? ┐
+ │ lang/web/                                       │
+ └─────────────────────────────────────────────────┘
         
  ┌ Consolidate all module translations into the main application's `lang` directory? ┐
  │ No                                                                                │
@@ -678,9 +886,14 @@ Found missing translations needing synchronization:
                                     <td>Vue.js, JavaScript (i18n Libraries)</td>
                                 </tr>
                                 <tr>
-                                    <td><code>v-t</code>, <code>x-text</code></td>
+                                    <td><code>v-t</code>, <code>x-text</code>, <code>:v-t</code>, <code>:x-text</code></td>
                                     <td><code>&lt;span v-t="'buttons.submit'"&gt;</code></td>
-                                    <td>Vue.js & Alpine.js Directives</td>
+                                    <td>Vue.js &amp; Alpine.js (including bound attributes)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>Lang::get()</code>, <code>Lang::choice()</code></td>
+                                    <td><code>Lang::get('messages.welcome')</code></td>
+                                    <td>Laravel facade</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -711,7 +924,7 @@ Found missing translations needing synchronization:
                         Laravel conventions.
                     </p>
                     <h3>How the AI Interprets Keys</h3>
-                    <p>The prompt sent to Gemini is specially designed to handle two types of keys:</p>
+                    <p>The prompt includes source text and script rules. Gemini is asked to handle two kinds of keys:</p>
                     <div class="table-responsive-wrapper">
                         <table class="options-table">
                             <thead>
@@ -737,12 +950,18 @@ Found missing translations needing synchronization:
                             </tbody>
                         </table>
                     </div>
-                    <h3><span class="inline-heading-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                            </svg></span>Enhanced through v4.0.1 - v4.0.3: Intelligent Fallbacks</h3>
+                    <h3>Writing-system guard</h3>
+                    <p>Each locale is mapped to one Unicode writing system (<code class="inline-code">sc=</code>, so
+                        shared marks such as danda <code class="inline-code">।</code> are Common). Gemini output that
+                        mixes neighbor scripts (for example Gujarati plus Kannada
+                        <code class="inline-code">ೋ</code>) or leaves English sentences in an Indic locale is rejected
+                        and the source is kept. The prompt also sends source text and script rules.</p>
+                    <p>The catalog covers 249 language codes, including
+                        <code class="inline-code">zh_CN</code> / <code class="inline-code">zh_TW</code>,
+                        <code class="inline-code">pt_BR</code> / <code class="inline-code">pt_PT</code>, and Punjabi
+                        Gurmukhi/Shahmukhi. Short codes such as <code class="inline-code">zh</code> resolve to the
+                        primary variant.</p>
+                    <h3>Intelligent Fallbacks</h3>
                     <p>
                         The tool no longer generates useless placeholders like <code
                             class="inline-code">"NEEDS TRANSLATION"</code>. If the AI fails to provide a translation for
@@ -758,12 +977,7 @@ Found missing translations needing synchronization:
                         that
                         needs attention, dramatically speeding up the manual review process.
                     </p>
-                    <h3><span class="inline-heading-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                            </svg></span>Enhanced through v4.0.1 - v4.0.3: Placeholder Mismatch Detection</h3>
+                    <h3>Placeholder Mismatch Detection</h3>
                     <p>Added robust placeholder validation with count checking instead of just presence. This ensures:
                     </p>
                     <ul>
@@ -810,9 +1024,10 @@ php artisan translations:extract-and-generate \
                                 </tr>
                                 <tr>
                                     <td><code>--driver</code></td>
-                                    <td>Concurrency driver: <code class="inline-code">fork</code> (fast, for
-                                        Linux/macOS) or
-                                        <code class="inline-code">sync</code> (stable, for Windows).
+                                    <td>Concurrency driver: <code class="inline-code">fork</code> (Unix Prompts +
+                                        <code class="inline-code">pcntl</code>; on Windows 5.1.0 maps to Process),
+                                        <code class="inline-code">process</code> (Symfony Process workers), or
+                                        <code class="inline-code">sync</code> (sequential, any OS).
                                     </td>
                                 </tr>
                                 <tr>
@@ -832,12 +1047,28 @@ php artisan translations:extract-and-generate \
                                 </tr>
                                 <tr>
                                     <td><code>--concurrency</code></td>
-                                    <td>Number of concurrent processes when using fork driver. Default: 15.</td>
+                                    <td>Number of concurrent workers for the <code class="inline-code">fork</code> and
+                                        <code class="inline-code">process</code> drivers. Default: 15 (capped to a
+                                        recorded free-tier RPM unless you override or turn caps off).</td>
                                 </tr>
                                 <tr>
                                     <td><code>--refresh</code></td>
-                                    <td>Re-translate only existing keys from lang directories; do NOT generate
-                                        translations for new/missing keys.</td>
+                                    <td>Re-translate only existing keys, using current file wording as the source. Does
+                                        not add new keys.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>--refresh-clean</code></td>
+                                    <td>Like <code class="inline-code">--refresh</code>, but ignores stale file wording.
+                                        Official Laravel English is used for
+                                        <code class="inline-code">auth</code>,
+                                        <code class="inline-code">pagination</code>,
+                                        <code class="inline-code">passwords</code>, and
+                                        <code class="inline-code">validation</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>--model</code></td>
+                                    <td>Gemini model id. Overrides <code class="inline-code">GEMINI_MODEL</code> /
+                                        config. Default: <code class="inline-code">gemini-3.5-flash-lite</code>.</td>
                                 </tr>
                                 <tr>
                                     <td><code>--dry-run</code></td>
@@ -845,10 +1076,10 @@ php artisan translations:extract-and-generate \
                                         writing anything.</td>
                                 </tr>
                                 <tr>
-                                    <td><code>--source</code></td>
-                                    <td><strong>(Deprecated)</strong> The root directory to scan. The interactive prompt
-                                        is
-                                        now preferred. Default: ".".</td>
+                                    <td><code>--stop-key</code></td>
+                                    <td>Key that requests a graceful stop (default <code class="inline-code">q</code>).
+                                        Honoured between chunks on <code class="inline-code">sync</code>. Fork and
+                                        Process do not stop a batch that is already running.</td>
                                 </tr>
                                 <tr>
                                     <td><code>--consolidate-modules</code></td>
@@ -894,8 +1125,8 @@ php artisan translations:extract-and-generate \
 php artisan translations:extract-and-generate --driver=fork --langs=es,fr</code></pre>
                     <h3>Synchronize a Single Module (Separate)</h3>
                     <pre><code># Interactively select only the 'Settings' module.
+# If it has lang/app3 or lang/web, pick those packs next.
 # When prompted, choose NOT to consolidate.
-# This will find and update missing keys only within Modules/Settings/lang/
 php artisan translations:extract-and-generate --driver=fork --skip-existing</code></pre>
                     <h3>Translate All Modules into Main `lang` Directory</h3>
                     <pre><code># Scan all targets (main app + all modules).
@@ -916,15 +1147,27 @@ php artisan translations:extract-and-generate --skip-existing \
                     <pre><code># This command runs non-interactively, great for a GitHub Action.
 # It skips prompts, consolidates modules, and only syncs missing Spanish keys.
 php artisan translations:extract-and-generate --langs=es --skip-existing --consolidate-modules</code></pre>
+                    <h3>Open the Translation Manager</h3>
+                    <pre><code># No extra route registration. Visit:
+# http://127.0.0.1:8000/translations-manager</code></pre>
                     <h3>Dry Run to Preview Changes</h3>
                     <pre><code># Preview what would be changed without writing any files
 php artisan translations:extract-and-generate --dry-run --langs=es,fr</code></pre>
                     <h3>Refresh Only Existing Translations</h3>
-                    <pre><code># Only re-translate existing keys, ignore new keys found in code
-php artisan translations:extract-and-generate --refresh --langs=es,fr</code></pre>
-                    <h3>Custom Concurrency for High-Performance</h3>
-                    <pre><code># Control the number of concurrent processes when using fork driver
-php artisan translations:extract-and-generate --driver=fork --concurrency=20</code></pre>
+                    <pre><code># Current file wording is the source
+php artisan translations:extract-and-generate --refresh --langs=es,fr
+
+# Key-only rebuild (official Laravel English for auth/pagination/passwords/validation)
+php artisan translations:extract-and-generate --refresh-clean --langs=es,fr</code></pre>
+                    <h3>Custom Concurrency</h3>
+                    <pre><code># Unix fork, or Windows Process (same flag)
+php artisan translations:extract-and-generate --driver=fork --concurrency=20
+
+# Explicit Process driver
+php artisan translations:extract-and-generate --driver=process --concurrency=10 --langs=gu,hi
+
+# One-off model
+php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,hi</code></pre>
                 </section>
                 <section id="troubleshooting" class="section">
                     <h2><span class="section-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg"
@@ -979,18 +1222,22 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                                 </tr>
                                 <tr>
                                     <td>"Call to undefined function pcntl_fork()"</td>
-                                    <td>You are trying to use <code class="inline-code">--driver=fork</code> on an
-                                        environment without the <code class="inline-code">pcntl</code> PHP extension
-                                        (like
-                                        standard Windows).</td>
-                                    <td>Use the stable driver: <code class="inline-code">--driver=sync</code>.</td>
+                                    <td>The <code class="inline-code">pcntl</code> extension is missing. In 5.1.0,
+                                        <code class="inline-code">--driver=fork</code> on Windows uses Process workers
+                                        instead of <code class="inline-code">pcntl</code>.</td>
+                                    <td>On Windows, use <code class="inline-code">--driver=fork</code> or
+                                        <code class="inline-code">--driver=process</code>. On Unix without
+                                        <code class="inline-code">pcntl</code>, use
+                                        <code class="inline-code">--driver=sync</code> or
+                                        <code class="inline-code">--driver=process</code>.</td>
                                 </tr>
                                 <tr>
                                     <td>Script hangs or runs very slowly</td>
                                     <td>Processing a very large number of keys with the <code
                                             class="inline-code">sync</code> driver.</td>
-                                    <td>Be patient, as sync mode is sequential. For large projects, use the <code
-                                            class="inline-code">fork</code> driver on Linux/macOS/WSL if possible.</td>
+                                    <td>Use <code class="inline-code">--driver=fork</code> on Linux/macOS, or the same
+                                        flag (Process workers) on Windows. Use
+                                        <code class="inline-code">sync</code> only when you need sequential runs.</td>
                                 </tr>
                                 <tr>
                                     <td>Keys from a module appear in the main app's files.</td>
@@ -1022,11 +1269,31 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                                 </tr>
                                 <tr>
                                     <td>"You cannot use --refresh and --skip-existing together"</td>
-                                    <td>You tried to use both <code class="inline-code">--refresh</code> and <code
-                                            class="inline-code">--skip-existing</code> flags together.</td>
-                                    <td>These modes are mutually exclusive. <code class="inline-code">--refresh</code>
-                                        only re-translates existing keys, while <code
-                                            class="inline-code">--skip-existing</code> only adds missing keys.</td>
+                                    <td>You combined <code class="inline-code">--refresh</code>,
+                                        <code class="inline-code">--refresh-clean</code>, and/or
+                                        <code class="inline-code">--skip-existing</code>.</td>
+                                    <td>Those three flags are mutually exclusive. Pick one mode per run.</td>
+                                </tr>
+                                <tr>
+                                    <td>Manager redirects to login / JSON 401</td>
+                                    <td>The host app already has login or register routes.</td>
+                                    <td>Sign in with the host app. If the app has no auth routes, the manager is open.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Published manager Blade is missing Pack / theme / rows 5</td>
+                                    <td>Laravel prefers
+                                        <code class="inline-code">resources/views/vendor/gemini-translator</code> over
+                                        the package views.</td>
+                                    <td>Republish <code class="inline-code">--tag=gemini-translator-manager</code> or
+                                        delete the published views so the package copies load.</td>
+                                </tr>
+                                <tr>
+                                    <td>Mixed-script or leftover English in a translation</td>
+                                    <td>Gemini mixed neighbor scripts or left English in a non-Latin locale.</td>
+                                    <td>The writing-system guard rejects that output and keeps the source. Re-run
+                                        <code class="inline-code">--refresh</code> or
+                                        <code class="inline-code">--refresh-clean</code> for that language.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1046,12 +1313,13 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                                     class="inline-code">lang/web/en.json</code>?</summary>
                             <dl class="qa-pair">
                                 <dt class="sr-only">Question</dt>
-                                <dd>Perfectly. The tool recursively scans your <code class="inline-code">lang</code>
-                                    directories (in both the main app and modules). It detects <code
-                                        class="inline-code">web/en.json</code> and presents it as a distinct file group
-                                    (for example: <code class="inline-code">Main Application: JSON File
-                                        (web/*.json)</code>). Generated translations are written back to the matching
-                                    subdirectories, preserving your structure.</dd>
+                                <dd>Those folders are packs. After you pick a module (or the main app) that has
+                                    <code class="inline-code">lang/</code>, <code class="inline-code">lang/app3/</code>,
+                                    and <code class="inline-code">lang/web/</code>, the CLI asks which packs to process,
+                                    then lists JSON/PHP from those packs only. The manager Pack filter does the same.
+                                    PHP under a pack writes to
+                                    <code class="inline-code">lang/web/{locale}/messages.php</code>, not
+                                    <code class="inline-code">lang/{locale}/web/messages.php</code>.</dd>
                             </dl>
                         </details>
                         <details name="faq">
@@ -1067,17 +1335,42 @@ php artisan translations:extract-and-generate --driver=fork --concurrency=20</co
                             <summary>What are the different operation modes available?</summary>
                             <dl class="qa-pair">
                                 <dt class="sr-only">Question</dt>
-                                <dd>The tool supports three modes:
+                                <dd>Four modes:
                                     <ul>
                                         <li><strong>Normal:</strong> translates all keys (new and existing).</li>
                                         <li><strong>Skip Existing:</strong> translates only missing keys (<code
                                                 class="inline-code">--skip-existing</code>).</li>
-                                        <li><strong>Refresh:</strong> re-translates existing keys only (<code
-                                                class="inline-code">--refresh</code>).</li>
+                                        <li><strong>Refresh:</strong> re-translates existing keys from current file
+                                            wording (<code class="inline-code">--refresh</code>).</li>
+                                        <li><strong>Refresh-clean:</strong> re-translates existing keys from the key
+                                            only (<code class="inline-code">--refresh-clean</code>).</li>
                                     </ul>
-                                    <p><code class="inline-code">--refresh</code> and <code
-                                            class="inline-code">--skip-existing</code> are mutually exclusive.</p>
+                                    <p><code class="inline-code">--refresh</code>,
+                                        <code class="inline-code">--refresh-clean</code>, and
+                                        <code class="inline-code">--skip-existing</code> are mutually exclusive.</p>
                                 </dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>How do I open the Translation Manager?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>Visit <code class="inline-code">/translations-manager</code>. You do not register
+                                    routes yourself. If the app has a login route, sign in first. Publish the Blade only
+                                    if you want to customize it:
+                                    <code class="inline-code">php artisan vendor:publish --tag=gemini-translator-manager</code>.
+                                </dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
+                            <summary>Does Windows run translations in parallel?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>Yes. Windows does not use Spatie fork (<code class="inline-code">pcntl</code>).
+                                    <code class="inline-code">--driver=fork</code> or
+                                    <code class="inline-code">--driver=process</code> starts Symfony Process workers so
+                                    chunks run in parallel, similar to Unix fork. Menus use
+                                    <code class="inline-code">kernel32</code> when FFI is available.</dd>
                             </dl>
                         </details>
                         <details name="faq">

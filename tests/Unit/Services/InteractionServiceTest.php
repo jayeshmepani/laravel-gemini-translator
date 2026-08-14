@@ -58,6 +58,45 @@ class InteractionServiceTest extends TestCase
         $this->assertSame([], $prompt->calls);
     }
 
+    public function test_single_pack_skips_the_prompt(): void
+    {
+        $prompt = new FakePrompt;
+        $service = new InteractionService($prompt);
+
+        $selected = $service->promptForPackSelection(['' => 'lang/']);
+
+        $this->assertSame([''], $selected);
+        $this->assertSame([], $prompt->calls);
+    }
+
+    public function test_all_packs_sentinel_expands_to_every_pack(): void
+    {
+        $prompt = new FakePrompt(multiselectResult: ['__ALL_PACKS__']);
+        $service = new InteractionService($prompt);
+
+        $selected = $service->promptForPackSelection([
+            '' => 'lang/',
+            'app3' => 'lang/app3/',
+            'web' => 'lang/web/',
+        ]);
+
+        $this->assertSame(['', 'app3', 'web'], $selected);
+        $this->assertSame('multiselect', $prompt->calls[0]['type']);
+        $this->assertSame('Which language packs would you like to process?', $prompt->calls[0]['label']);
+    }
+
+    public function test_root_pack_sentinel_maps_back_to_empty_id(): void
+    {
+        $prompt = new FakePrompt(multiselectResult: ['__root__', 'web']);
+        $service = new InteractionService($prompt);
+
+        $this->assertSame(['', 'web'], $service->promptForPackSelection([
+            '' => 'lang/',
+            'app3' => 'lang/app3/',
+            'web' => 'lang/web/',
+        ]));
+    }
+
     public function test_consolidation_prompt_uses_the_adapter(): void
     {
         $prompt = new FakePrompt(confirmResult: true);

@@ -36,7 +36,7 @@ final readonly class FreeTierQuotaCatalog
                     continue;
                 }
 
-                if (!is_array($limits)) {
+                if (! is_array($limits)) {
                     continue;
                 }
 

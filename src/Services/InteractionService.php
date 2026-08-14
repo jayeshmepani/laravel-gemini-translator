@@ -28,7 +28,7 @@ class InteractionService
             options: $displayChoices,
             hint: 'Select the main application and/or any specific modules.',
             default: ['__ALL_TARGETS__'],
-            command: $command
+            command: $command,
         );
 
         if (in_array('__ALL_TARGETS__', $selected, true)) {
@@ -38,11 +38,53 @@ class InteractionService
         return $selected;
     }
 
+    /**
+     * Prompt for language packs (lang/, lang/app3/, lang/web/).
+     * Skipped when only the root pack exists.
+     *
+     * @param array<string, string> $availablePacks pack id => label ('' is lang/)
+     *
+     * @return list<string>
+     */
+    public function promptForPackSelection(array $availablePacks, ?Command $command = null): array
+    {
+        if ($availablePacks === []) {
+            return [''];
+        }
+        if (count($availablePacks) <= 1) {
+            return array_keys($availablePacks);
+        }
+
+        $displayChoices = ['__ALL_PACKS__' => '-- ALL PACKS --'];
+        foreach ($availablePacks as $pack => $label) {
+            $displayChoices[$pack === '' ? '__root__' : $pack] = $label;
+        }
+
+        $selected = $this->promptForMultiChoice(
+            label: 'Which language packs would you like to process?',
+            options: $displayChoices,
+            hint: 'Packs are extra lang folders such as lang/app3/ and lang/web/. Use the space bar to select.',
+            default: ['__ALL_PACKS__'],
+            command: $command,
+        );
+
+        if (in_array('__ALL_PACKS__', $selected, true)) {
+            return array_keys($availablePacks);
+        }
+
+        $packs = [];
+        foreach ($selected as $value) {
+            $packs[] = $value === '__root__' ? '' : (string) $value;
+        }
+
+        return $packs;
+    }
+
     /** Prompt for file selection */
     public function promptForFileSelection(array $availableFiles, array $scanTargets, ?Command $command = null): array
     {
         if (count($availableFiles) <= 1) {
-            return array_keys($availableFiles);
+            return array_values($availableFiles);
         }
 
         $displayChoices = ['__ALL_FILES__' => '-- ALL FILES --']
@@ -55,7 +97,11 @@ class InteractionService
                     $path = str_replace('__JSON__', '', $fileKey);
                     $displayName = "{$targetName}: JSON File ({$path}*.json)";
                 } else {
-                    $displayName = "{$targetName}: {$fileKey}.php";
+                    $normalized = str_replace('\\', '/', $fileKey);
+                    $slash = strrpos($normalized, '/');
+                    $displayName = $slash === false
+                        ? "{$targetName}: {$fileKey}.php"
+                        : $targetName . ': lang/' . substr($normalized, 0, $slash) . '/' . substr($normalized, $slash + 1) . '.php';
                 }
 
                 return [$contextualFileKey => $displayName];
@@ -66,7 +112,7 @@ class InteractionService
             options: $displayChoices,
             hint: 'Use the space bar to select options.',
             default: ['__ALL_FILES__'],
-            command: $command
+            command: $command,
         );
 
         // Handle different selection scenarios:
@@ -100,7 +146,7 @@ class InteractionService
     /** Prompt for consolidation */
     public function promptForConsolidation(bool $hasModulesSelected, bool $noInteraction = false, bool $consolidateModulesOption = false, ?Command $command = null): bool
     {
-        if ($hasModulesSelected && !$consolidateModulesOption && !$noInteraction) {
+        if ($hasModulesSelected && ! $consolidateModulesOption && ! $noInteraction) {
             return $this->prompt->confirm(
                 label: "Consolidate all module translations into the main application's `lang` directory?",
                 default: false,
@@ -120,7 +166,7 @@ class InteractionService
     {
         // 1️⃣ Non-interactive environment (CI, cron, supervisor)
         // Do not prompt. Just return defaults or everything.
-        if ($command !== null && method_exists($command, 'isInteractive') && !$command->isInteractive()) {
+        if ($command !== null && method_exists($command, 'isInteractive') && ! $command->isInteractive()) {
             return $default ?? array_keys($options);
         }
 

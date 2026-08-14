@@ -42,6 +42,8 @@ class ManagerViewTest extends TestCase
         $this->assertStringContainsString('appearance: base-select', $html);
         $this->assertStringContainsString('::picker(select)', $html);
         $this->assertStringContainsString('input[type="checkbox"]', $html);
+        $this->assertStringContainsString('content: "✓"', $html);
+        $this->assertStringNotContainsString('--color-check:', $html);
         $this->assertStringContainsString('showModal', $html);
         $this->assertStringContainsString('AbortController', $html);
         $this->assertStringNotContainsString('container-xl', $html);
@@ -65,6 +67,8 @@ class ManagerViewTest extends TestCase
         $this->assertStringContainsString('manager-pager-status', $html);
         $this->assertStringContainsString('data-file-filter', $html);
         $this->assertStringContainsString('data-files-menu', $html);
+        $this->assertStringContainsString('data-pack-filter', $html);
+        $this->assertStringContainsString('data-pack-map', $html);
     }
 
     public function test_manager_view_uses_composer_defaults_and_inlines_assets_once(): void

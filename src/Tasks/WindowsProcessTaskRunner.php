@@ -208,11 +208,11 @@ final readonly class WindowsProcessTaskRunner implements TaskRunnerInterface
 
     private function assertHandler(string $handlerClass): void
     {
-        if (!str_starts_with($handlerClass, $this->allowedHandlerPrefix)) {
+        if (! str_starts_with($handlerClass, $this->allowedHandlerPrefix)) {
             throw new InvalidArgumentException('Refusing to execute a handler outside the package namespace.');
         }
 
-        if (!method_exists($handlerClass, 'handle')) {
+        if (! method_exists($handlerClass, 'handle')) {
             throw new InvalidArgumentException("Handler {$handlerClass} must define public static handle().");
         }
     }

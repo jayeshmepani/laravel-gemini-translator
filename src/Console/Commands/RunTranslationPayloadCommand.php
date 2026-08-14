@@ -44,7 +44,7 @@ final class RunTranslationPayloadCommand extends Command
             }
 
             $payload = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-            if (!is_array($payload)) {
+            if (! is_array($payload)) {
                 throw new RuntimeException('Payload JSON must decode to an object/array.');
             }
 
@@ -77,18 +77,18 @@ final class RunTranslationPayloadCommand extends Command
 
     private function assertHandler(string $handlerClass): void
     {
-        if ($handlerClass === '' || !str_starts_with($handlerClass, self::ALLOWED_HANDLER_PREFIX)) {
+        if ($handlerClass === '' || ! str_starts_with($handlerClass, self::ALLOWED_HANDLER_PREFIX)) {
             throw new InvalidArgumentException('Refusing to execute a handler outside the package namespace.');
         }
 
-        if (!class_exists($handlerClass) || !method_exists($handlerClass, 'handle')) {
+        if (! class_exists($handlerClass) || ! method_exists($handlerClass, 'handle')) {
             throw new InvalidArgumentException("Handler {$handlerClass} is not executable.");
         }
     }
 
     private function assertSafePath(string $path, string $label): void
     {
-        if ($path === '' || !str_contains($path, DIRECTORY_SEPARATOR) && !str_contains($path, '/')) {
+        if ($path === '' || ! str_contains($path, DIRECTORY_SEPARATOR) && ! str_contains($path, '/')) {
             throw new InvalidArgumentException("Option --{$label} must be an absolute temp file path.");
         }
 
@@ -104,7 +104,7 @@ final class RunTranslationPayloadCommand extends Command
             $temp = strtolower($temp);
         }
 
-        if (!str_starts_with($real, $temp)) {
+        if (! str_starts_with($real, $temp)) {
             throw new InvalidArgumentException("Option --{$label} must point at a file inside the system temp directory.");
         }
     }

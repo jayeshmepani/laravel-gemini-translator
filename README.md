@@ -9,11 +9,15 @@ An interactive Artisan command that scans your Laravel project for translation k
 ## 🚀 Key Features
 
 - **AI-Powered Translation:** Uses Gemini AI for high-quality translations with context awareness
-- **Interactive & Cross-Platform:** Works on all operating systems with robust fallback
-- **Flexible Concurrency:** Fork driver (Linux/macOS via `pcntl`), Symfony Process driver (Windows), and a sequential sync fallback
+- **Translation Manager:** Browser UI at `/translations-manager` to browse, edit, save, scan, and add languages
+- **Lang packs:** Extra folders such as `lang/app3/` and `lang/web/` are handled separately from `lang/` in both the CLI and the manager
+- **Interactive & Cross-Platform:** Laravel Prompts + fork on Linux/macOS; `kernel32` menus + Symfony Process workers on Windows
+- **Flexible Concurrency:** Fork driver (`pcntl`), Process driver, and a sequential sync fallback
 - **Smart Key Detection:** Scans Blade, PHP, Vue, JS, and TypeScript files comprehensively
 - **Framework Integration:** Automatic Laravel framework translation bootstrapping
-- **Four Operational Modes:** Full sync, missing-only (`--skip-existing`), refresh existing from file wording (`--refresh`), clean refresh from keys only (`--refresh-clean`)
+- **Four Operational Modes:** Full sync, missing-only (`--skip-existing`), refresh from file wording (`--refresh`), clean refresh from keys only (`--refresh-clean`)
+- **Configurable model:** `--model`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, or config (default `gemini-3.5-flash-lite`)
+- **Writing-system guard:** Mixed-script or leftover-English Gemini output is rejected; JSON keeps dotted PHP-style keys
 - **Production-Ready Safety:** Atomic file writes, path validation, and security checks
 - **Module Support:** Full integration with `nwidart/laravel-modules` with consolidation options
 
@@ -82,6 +86,10 @@ To drop the workspace into an existing layout:
 ```
 
 The include picks up the registered `/translations-manager/*` endpoints automatically.
+
+The table reads every lang tree Laravel knows about: `lang/`, `Modules/*/lang`, published `resources/lang/modules/{name}`, and any extra directory passed to `loadJsonTranslationsFrom()` / `loadTranslationsFrom()`. If a module (or the app) registers more than one folder — for example `lang/`, `lang/app3/`, and `lang/web/` — each pack stays a separate set of keys. Select **Module**, then **Pack**, to work on one folder at a time.
+
+The Artisan command uses the same pack step: after you pick a module that has extra lang folders, it asks which packs to process (`lang/`, `lang/app3/`, `lang/web/`). Then it lists JSON and PHP files from those packs only. Modules with a single `lang/` tree skip that prompt.
 
 ### 2. Configuration
 
@@ -349,8 +357,8 @@ Configuration value for key [gemini.request_timeout] must be an integer, string 
 - **Windows:** `--driver=fork` maps to Symfony Process workers with the same concurrency, result order, and “cannot stop mid-process” UX as Linux `pcntl` fork. Native menus (`ext-ffi`) match Laravel Prompts (boxed list, arrows, space, enter). Without FFI the command falls back to Symfony `choice()` / `confirm()`.
 - **Large Projects:** Use smaller `--chunk-size` to avoid API timeouts
 - **Module Projects:** Ensure `nwidart/laravel-modules` is properly configured
-- **Empty Keys:** Package automatically filters empty/whitespace-only keys (v4.0.1+)
-- **Very Long Keys:** Automatic chunk size adjustment for keys >80 characters (v4.0.1+)
+- **Empty Keys:** Package automatically filters empty/whitespace-only keys
+- **Very Long Keys:** Automatic chunk size adjustment for keys >80 characters
 
 ### Debugging
 

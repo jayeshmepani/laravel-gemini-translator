@@ -2,34 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [v5.1.0] - 2026-08-14
+
+Everything below is new since **v5.0.1**.
 
 ### ⭐ Added
 
-- **Multi-OS adapter layer:** `PromptInterface` and `TaskRunnerInterface` with a `PlatformFactory` that routes on `PHP_OS_FAMILY`
+- **Translation Manager** at `/translations-manager` (prefix, enable flag, and middleware are configurable). Routes and JSON APIs register automatically: data, languages, existing map, scan, save, add-languages. Guests must sign in when the host already has login/register/sign-in routes (browser redirect or JSON 401 + unauthenticated view). If the host has no auth routes, the manager is open. Publish tags: `gemini-translator-config`, `gemini-translator-views`, `gemini-translator-assets`, `gemini-translator-manager`. `ManagerViewComposer` inlines CSS/JS so the page works without publishing assets. Optional `@include('gemini-translator::partials.workspace')` for an existing layout.
+- **Manager UI:** semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>` / `popover`, light/dark theme (`localStorage` key `gemini-translator-theme`), sticky KEY column, pagination footer (default 5 rows, last two pages always visible with an ellipsis), Type / Module / Pack / Scope / PHP-files / Language / “show only missing” filters, Add Languages, Sync, Save. Checkboxes use a `✓` mark on the monochromatic tokens (sun stays yellow, Save stays green).
+- **Lang packs (manager + CLI):** extra folders such as `lang/app3/` and `lang/web/` are first-class trees, separate from `lang/`. The manager Pack filter appears only after you select a module (or Non-module) that actually has more than one pack. PHP file pickers list files from the selected pack. A selected language lists only keys that exist in that locale file.
+- **Registered / published lang paths:** the manager also scans `loadJsonTranslationsFrom()` / `loadTranslationsFrom()` directories (for example `base_path('custom_dir')`) and published `resources/lang/modules/{name}` (published copy wins on the same key). Composer `vendor/` lang trees are skipped.
+- **CLI pack step:** after you pick a module that has extra lang folders, `translations:extract-and-generate` asks which packs to process. The JSON/PHP file list is then limited to those packs. Modules with only `lang/` skip the prompt. Pack PHP files load and write as `lang/{pack}/{locale}/messages.php`.
+- **249-language catalog** (`LanguageCatalog`) with display names and fallbacks (`zh` → `zh_CN`, `pt` → `pt_BR`, `pa` → `pa_GURU`, and similar). Short file codes still resolve to the primary variant.
+- **Multi-OS adapter layer:** `PromptInterface` and `TaskRunnerInterface` via `PlatformFactory` on `PHP_OS_FAMILY`
   - Unix: Laravel Prompts + `spatie/fork` (`pcntl`)
   - Windows: isolated `kernel32.dll` FFI console binder + Symfony Process workers
   - Sequential `sync` runner on every OS, with cooperative stop
-- **`--driver=process`:** Concurrent Symfony Process workers (used automatically when `--driver=fork` is selected on Windows)
+- **`--driver=process`:** concurrent Symfony Process workers (also used when `--driver=fork` is selected on Windows)
 - Hidden `translations:run-payload` worker command for Windows/process child jobs
 - Suggested extensions: `ext-pcntl` (fork) and `ext-ffi` (native Windows menus)
-- **Dated Gemini quota snapshot** in publishable `config/gemini-translator.php` (as of 2026-08-13). Rows can be raised, lowered, zeroed, removed, or extended when Google changes RPM/RPD or ships a new model. `0` RPM/RPD is a first-class “no free-tier budget” state, not a crash.
-- **Translation Manager** at `/translations-manager` (configurable prefix). The package registers the page plus data/save/scan/add-languages JSON APIs. If the host app already has login/register routes, guests must sign in first (redirect or JSON 401). If it has no auth routes, the manager is open. Optional publish: `--tag=gemini-translator-manager`. Semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>`, theme switch, and token layers.
+- **`--refresh-clean`:** rebuild existing keys only, ignoring stale file wording. Official Laravel English is the source for `auth` / `pagination` / `passwords` / `validation` (not `ucwords` of the key)
+- **Dated Gemini quota snapshot** in publishable `config/gemini-translator.php` (as of 2026-08-13). Add, raise, lower, zero, or remove rows when Google changes RPM/RPD. `0` RPM/RPD is “no free-tier budget”, not a crash. `GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS` can turn snapshot caps off
+- **Configurable Gemini model:** `--model=`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, then `config/gemini-translator.php`, then `config('gemini.model')`, then the package default. Paid/ListModels ids are allowed and are not free-tier capped unless listed in the snapshot
+- Per-locale **writing-system map** on `LocaleHelper` (Unicode `sc=` so shared danda `।` is Common, not a mix) plus `looksUntranslated` / disallowed-script checks
 
 ### 🔧 Changed
 
-- Interactive prompts and parallel execution no longer branch on `PHP_OS_FAMILY` inside the command/services; they go through the factory
-- `--driver=fork` on Windows now runs Process workers instead of silently falling back to sync
-- Windows FFI menus use the same boxed UI, checkboxes, and keybindings as Laravel Prompts (arrows, space, enter). Symfony Process workers match fork: ordered results, inherited env, no cooperative mid-flight stop, same progress UX
-- Command summary now records `processed_chunks` from the translation runner
-- `--refresh` is the original refresh again (existing keys only, current file wording is the source). New `--refresh-clean` is the key-only rebuild that ignores stale/faulty file text. Clean source for `auth`/`pagination`/`passwords`/`validation` is Laravel's official English, not `ucwords(str_replace('_', ' ', $key))`
-- JSON writes keep dotted PHP-style keys (`messages.welcome`, `validation.required`) when that is the selected group. Blank literal JSON values are filled from the key; empty/whitespace source is treated as missing
-- Gemini model is user-configurable: `--model=`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, then `config/gemini-translator.php`. Paid/ListModels ids are allowed and are not free-tier capped unless listed in the snapshot
-- Default Gemini model is `gemini-3.5-flash-lite` (highest free-tier RPM/RPD that appears in ListModels: 15 RPM / 500 RPD). Snapshot rows for models missing from ListModels (`gemini-2.5-flash-exp`, `gemini-3-flash`) were removed.
-- JSON-only selection no longer re-translates `file.subkey` keys that belong to PHP lang files
-- Translation prompts now include source text and reject mixed-script / placeholder / plural-token drift
-- Per-locale writing-system guard: `LocaleHelper` maps each language code to one Unicode script (`sc=`, so shared danda `।` is not a mix). Gemini output with neighbor-script letters (Gujarati+Kannada `ೋ`, Hindi+Gujarati, Urdu inside `hi`) or leftover English sentences is rejected and falls back to source
-- Translation Manager language catalog is the full 249-code set (including `zh_CN` / `zh_TW`, `pt_BR` / `pt_PT`, Punjabi Gurmukhi/Shahmukhi). Short file codes such as `zh` still resolve to the primary variant name
+- Interactive prompts and parallel execution go through the platform factory instead of branching on `PHP_OS_FAMILY` inside the command/services
+- `--driver=fork` on Windows runs Process workers instead of silently falling back to sync
+- Windows FFI menus match Laravel Prompts (boxed list, checkboxes, arrows, space, enter). Process workers match fork: ordered results, inherited env, no cooperative mid-flight stop, same progress UX
+- `--refresh` is the original refresh again: existing keys only, current file wording is the source
+- Default Gemini model is `gemini-3.5-flash-lite` (15 RPM / 500 RPD in the snapshot and present in ListModels). Snapshot rows for ids missing from ListModels (`gemini-2.5-flash-exp`, `gemini-3-flash`) were removed
+- JSON writes keep dotted PHP-style keys (`messages.welcome`, `validation.required`) when that group is selected. Blank literal JSON values are filled from the key; empty/whitespace source is treated as missing
+- JSON-only selection no longer re-translates `file.subkey` keys that belong to a selected PHP lang file
+- Translation prompts include source text and reject mixed-script, placeholder, and plural-token drift. Rejected Gemini output falls back to source
+- Command summary records `processed_chunks` from the translation runner
+- CLI file picker labels pack PHP as `lang/{pack}/{file}.php`. Selecting a single file returns that file (no longer `array_keys` of a list)
+
+### 🐛 Fixed
+
+- Mixed-script deformities (Gujarati + Kannada `ೋ`, Hindi + Gujarati, leftover English in Indic locales) are rejected instead of written
+- Add-languages no longer 500s as a false positive when one writable root succeeds and another (for example a module `lang/`) is not writable
+- Manager writes treat “file exists after put” as success so pessimistic `is_writable` / `www-data` checks do not throw after a successful write
+- `web` (and other 2–3 letter pack folder names) are packs when they contain locale JSON or locale dirs, not locales
+- Nested PHP groups such as `foo/bar.php` stay on the root pack unless the first segment is a known pack
+- `LanguageCatalog::FALLBACKS` typed as `array<string, string>`
+
+### 📚 Tests
+
+- Suite covers the manager routes/views/auth, language catalog, script guard, model resolution, refresh source map, platform factory, Windows process runner, pack discovery, pack PHP I/O, and pack CLI prompts (124 tests / 468 assertions in this tree)
+
+## [v5.0.1] - 2026-04-27
+
+### ⭐ Added
+
+- `driftingly/rector-laravel` plus `rector:dry` / `rector:debug` composer scripts
+
+### 🔧 Changed
+
+- Rector Laravel rule sets and composer-based versioning; auto-imports and unused-import cleanup (`Sleep::usleep()`, `sprintf()`, strict comparisons)
 
 ## [v5.0.0] - 2026-04-27
 
@@ -223,3 +254,6 @@ All notable changes to this project will be documented in this file.
 [v4.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/3.8...4.0
 [v4.0.1]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0...4.0.1
 [v4.0.2]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0.1...4.0.2
+[v5.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0.3...5.0.0
+[v5.0.1]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/5.0.0...5.0.1
+[v5.1.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/5.0.1...5.1.0

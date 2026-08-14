@@ -8,7 +8,8 @@
     data-endpoint-scan="{{ $endpoints['scan'] ?? '' }}"
     data-endpoint-save="{{ $endpoints['save'] ?? '' }}"
     data-endpoint-add-languages="{{ $endpoints['add_languages'] ?? '' }}"
-    data-language-names="{{ e(json_encode($languageNames, JSON_UNESCAPED_UNICODE)) }}"
+    data-language-names='@json($languageNames ?? [])'
+    data-pack-map='@json($packMap ?? [])'
 >
     @once
         <script>
@@ -110,6 +111,13 @@
                             @foreach ($modules as $module)
                                 <option value="{{ $module }}">{{ $module }}</option>
                             @endforeach
+                        </select>
+                    </div>
+
+                    <div class="manager-filter manager-filter-pack is-hidden" data-pack-filter>
+                        <label class="manager-label" for="manager-pack">{{ __('Pack') }}</label>
+                        <select id="manager-pack" class="manager-select" data-filter="pack" autocomplete="off">
+                            <option value="all" selected>{{ __('All packs') }}</option>
                         </select>
                     </div>
 

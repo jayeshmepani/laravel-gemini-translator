@@ -280,7 +280,7 @@ class LocaleHelper
         $stripped = preg_replace(
             '/\b(?:URL|UUID|ULID|JSON|AJAX|HTML|CSS|JSX|TSX|PHP|API|IPv4|IPv6|MAC|ASCII|HTTP|HTTPS|XML|SQL|Vue|TypeScript|ID|OK|IP)\b/',
             '',
-            $stripped
+            $stripped,
         ) ?? $stripped;
 
         $allowed = self::ALLOWED_UNICODE_SCRIPTS[self::writingSystem($lang)] ?? ['Latin'];

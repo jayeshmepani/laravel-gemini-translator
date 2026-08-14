@@ -127,7 +127,7 @@ final readonly class InteractivePromptSession
                 }
 
                 if (in_array($key, ['left', 'right', 'up', 'down', 'space'], true)) {
-                    $confirmed = !$confirmed;
+                    $confirmed = ! $confirmed;
                 }
             }
         } finally {
@@ -176,7 +176,7 @@ final readonly class InteractivePromptSession
 
         $this->console->write($frame);
         $previousLines = substr_count($frame, "\n");
-        if (!str_ends_with($frame, "\n")) {
+        if (! str_ends_with($frame, "\n")) {
             $previousLines++;
         }
     }

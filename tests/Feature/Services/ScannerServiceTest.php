@@ -36,7 +36,7 @@ class ScannerServiceTest extends TestCase
             [$tempDir],
             'vendor,node_modules',
             'php,blade.php',
-            []
+            [],
         );
 
         $this->assertInstanceOf(Finder::class, $finder);
@@ -113,6 +113,40 @@ class ScannerServiceTest extends TestCase
             ['messages.welcome', 'validation.required', 'Save Changes'],
             $mapped['__MAIN__::__JSON__'],
         );
+    }
+
+    public function test_filter_files_by_packs_keeps_selected_pack_only(): void
+    {
+        $files = [
+            'Post::__JSON__',
+            'Post::app3/__JSON__',
+            'Post::web/__JSON__',
+            'Post::messages',
+            'Post::app3/messages',
+        ];
+
+        $filtered = $this->scanner->filterFilesByPacks($files, ['', 'web'], ['', 'app3', 'web']);
+
+        $this->assertSame([
+            'Post::__JSON__',
+            'Post::web/__JSON__',
+            'Post::messages',
+        ], $filtered);
+    }
+
+    public function test_map_keys_sends_php_keys_to_pack_php_file(): void
+    {
+        $mapped = $this->scanner->mapKeysToSelectedFiles(
+            ['messages.welcome', 'Save Changes'],
+            ['Post::app3/messages', 'Post::app3/__JSON__'],
+            [
+                'messages.welcome' => 'Post',
+                'Save Changes' => 'Post',
+            ],
+        );
+
+        $this->assertSame(['welcome'], $mapped['Post::app3/messages']);
+        $this->assertSame(['Save Changes'], $mapped['Post::app3/__JSON__']);
     }
 
     public function test_map_keys_sends_php_keys_to_php_file_when_that_group_is_selected(): void

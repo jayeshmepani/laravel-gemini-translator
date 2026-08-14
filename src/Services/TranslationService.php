@@ -38,7 +38,7 @@ class TranslationService
         array $sourceTextMap,
         array $options,
         callable $stopSignal,
-        $output
+        $output,
     ): array {
         $translations = [];
         $totalKeysSuccessfullyProcessed = 0;
@@ -70,7 +70,7 @@ class TranslationService
             $keysToTranslate,
             $targetLanguages,
             $sourceTextMap,
-            $options
+            $options,
         );
 
         $processedChunks = 0;
@@ -129,7 +129,7 @@ class TranslationService
                     if (isset($result['failed_keys'], $result['filename'])) {
                         $failedKeys[$result['filename']] = array_merge(
                             $failedKeys[$result['filename']] ?? [],
-                            $result['failed_keys']
+                            $result['failed_keys'],
                         );
                     }
 
@@ -158,7 +158,7 @@ class TranslationService
                     }
 
                     return false;
-                }
+                },
             );
 
             if ($stopped) {
@@ -181,7 +181,7 @@ class TranslationService
                     if (isset($result['failed_keys'], $result['filename'])) {
                         $failedKeys[$result['filename']] = array_merge(
                             $failedKeys[$result['filename']] ?? [],
-                            $result['failed_keys']
+                            $result['failed_keys'],
                         );
                     }
                 }
@@ -234,7 +234,7 @@ class TranslationService
         }
 
         // Static system instructions (rules, format, etc.) - no variables here!
-        $systemPrompt = <<<SYSTEM_WRAP
+        $systemPrompt = <<<'SYSTEM_WRAP'
         You are an expert Laravel translation generator. Your task is to generate high-quality, professional translations for a list of localization keys. Follow ALL rules below EXACTLY. These rules are strict and non-negotiable.
         
         ## 1. ROLE & CONSTRAINTS
@@ -593,6 +593,7 @@ USER;
                     if ($attempt < $maxRetries) {
                         $delay = (int) (($baseRetryDelay * 2 ** $attempt + mt_rand(500, 1500) / 1000) * 1000000);
                         Sleep::usleep($delay);
+
                         continue;
                     }
                 } elseif ($isJsonError) {
@@ -600,6 +601,7 @@ USER;
                     if ($attempt < $maxRetries) {
                         $delay = (int) (($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000) * 1000000);
                         Sleep::usleep($delay);
+
                         continue;
                     }
                 } else {
@@ -607,6 +609,7 @@ USER;
                     if ($attempt < $maxRetries) {
                         $delay = (int) (($baseRetryDelay * $attempt + mt_rand(500, 2000) / 1000) * 1000000);
                         Sleep::usleep($delay);
+
                         continue;
                     }
                 }
@@ -619,7 +622,7 @@ USER;
         throw new Exception(
             sprintf('Failed to translate keys after %d attempts. ', $maxRetries)
             . sprintf('File: %s, Keys: ', $fileKey) . implode(', ', array_slice($keys, 0, 5)) . '... '
-            . 'Last error: ' . ($lastError ?? 'unknown')
+            . 'Last error: ' . ($lastError ?? 'unknown'),
         );
     }
 
@@ -629,7 +632,7 @@ USER;
         array $originalKeys,
         string $contextualFileKey,
         array $languages,
-        array $sourceTextMap
+        array $sourceTextMap,
     ): array {
         $chunkTranslations = [];
         [, $fileKey] = explode('::', $contextualFileKey, 2);
@@ -709,7 +712,7 @@ USER;
                     $sourceText = $keyToLookup;
                 }
 
-                if ($sourceText !== $text && !is_null($sourceText) && TextHelper::hasPlaceholderMismatch($sourceText, $text)) {
+                if ($sourceText !== $text && ! is_null($sourceText) && TextHelper::hasPlaceholderMismatch($sourceText, $text)) {
                     // Placeholder mismatch detected, fallback to source text
                     $text = $sourceText;
                 }
@@ -741,7 +744,7 @@ USER;
         foreach ($structuredKeys as $filename => $keys) {
             foreach ($keys as $key) {
                 foreach ($languages as $lang) {
-                    if (!isset($existingTranslations[$lang][$filename][$key])) {
+                    if (! isset($existingTranslations[$lang][$filename][$key])) {
                         $missingStats[$filename][$lang][] = $key;
                     }
                 }
@@ -791,7 +794,7 @@ USER;
 
                 // Check if the key exists in any of the target languages
                 foreach ($targetLanguages as $lang) {
-                    if (!isset($existingTranslations[$lang][$fileKey][$key])) {
+                    if (! isset($existingTranslations[$lang][$fileKey][$key])) {
                         $shouldInclude = true;
                         break;
                     }
@@ -899,8 +902,9 @@ USER;
 
         foreach ($rebuilt as $fullKey => $derived) {
             $current = $sourceTextMap[$fullKey] ?? null;
-            if (!is_string($current) || trim($current) === '') {
+            if (! is_string($current) || trim($current) === '') {
                 $sourceTextMap[$fullKey] = $derived;
+
                 continue;
             }
 
@@ -982,18 +986,18 @@ USER;
 
         self::$frameworkEnglish = [];
         $dir = base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en');
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return self::$frameworkEnglish;
         }
 
         foreach (['auth', 'pagination', 'passwords', 'validation'] as $file) {
             $path = $dir . DIRECTORY_SEPARATOR . $file . '.php';
-            if (!is_file($path)) {
+            if (! is_file($path)) {
                 continue;
             }
 
             $data = include $path;
-            if (!is_array($data)) {
+            if (! is_array($data)) {
                 continue;
             }
 
@@ -1124,7 +1128,7 @@ USER;
         }
 
         $isHumanReadableKey = str_contains($key, ' ')
-            && !str_contains($key, '.')
+            && ! str_contains($key, '.')
             && preg_match('/\p{L}/u', $key) === 1;
 
         if ($isHumanReadableKey) {
@@ -1171,7 +1175,7 @@ USER;
     private static function sourceContradictsKey(string $key, string $source): bool
     {
         if (preg_match('/(?:^|\.)by_([A-Za-z][A-Za-z0-9_]*)$/', $key, $match) === 1) {
-            return !str_contains($source, ':' . $match[1]);
+            return ! str_contains($source, ':' . $match[1]);
         }
 
         return false;
@@ -1201,7 +1205,7 @@ USER;
             return true;
         }
 
-        if ($effectiveSource !== '' && !TextHelper::isPluralizationString($effectiveSource) && TextHelper::isPluralizationString($text)) {
+        if ($effectiveSource !== '' && ! TextHelper::isPluralizationString($effectiveSource) && TextHelper::isPluralizationString($text)) {
             return true;
         }
 
@@ -1224,7 +1228,7 @@ USER;
             }
 
             foreach (array_unique($found[0]) as $token) {
-                if ($allowed !== [] && !in_array($token, $allowed, true)) {
+                if ($allowed !== [] && ! in_array($token, $allowed, true)) {
                     return true;
                 }
 
@@ -1253,7 +1257,7 @@ USER;
 
                     // Only add new translations for keys that don't exist anywhere
                     foreach ($data as $key => $value) {
-                        if (!isset($allExisting[$key])) {
+                        if (! isset($allExisting[$key])) {
                             $currentTranslations[$key] = $value;
                         }
                     }

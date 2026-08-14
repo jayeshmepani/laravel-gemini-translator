@@ -46,7 +46,7 @@ final class SyncTaskRunner implements TaskRunnerInterface
 
     private function assertHandler(string $handlerClass): void
     {
-        if (!method_exists($handlerClass, 'handle')) {
+        if (! method_exists($handlerClass, 'handle')) {
             throw new InvalidArgumentException("Handler {$handlerClass} must define public static handle().");
         }
     }
