@@ -36,6 +36,53 @@ php artisan vendor:publish --provider="Jayesh\LaravelGeminiTranslator\Translatio
 php artisan vendor:publish --tag=gemini-translator-config
 ```
 
+### Translation Manager page
+
+The package registers the UI and JSON APIs for you. Open:
+
+`/translations-manager`
+
+Example: `http://127.0.0.1:8000/translations-manager`
+
+Auth is automatic:
+
+- **App already has login/register (Breeze, Fortify, Jetstream, Filament, …):** guests must sign in first. Browser requests redirect to the login page; JSON/AJAX requests get **401 Unauthenticated**.
+- **App has no auth routes:** the manager is available without signing in.
+
+Optional publish (only if you want to edit the Blade or serve CSS/JS as files):
+
+```bash
+php artisan vendor:publish --tag=gemini-translator-manager
+```
+
+That copies views to `resources/views/vendor/gemini-translator/` and CSS/JS to `public/vendor/gemini-translator/`. After publishing assets, pass `$assetCss` / `$assetJs` to use those files instead of the inlined CSS/JS.
+
+Change the URL or turn the UI off in `config/gemini-translator.php` (publish with `--tag=gemini-translator-config`):
+
+```php
+'manager' => [
+    'enabled' => true,
+    'prefix' => 'translations-manager',
+    'middleware' => ['web'],
+],
+```
+
+Or `.env`:
+
+```env
+GEMINI_TRANSLATOR_MANAGER=true
+GEMINI_TRANSLATOR_MANAGER_PREFIX=translations-manager
+GEMINI_TRANSLATOR_MANAGER_MIDDLEWARE=web
+```
+
+To drop the workspace into an existing layout:
+
+```blade
+@include('gemini-translator::partials.workspace')
+```
+
+The include picks up the registered `/translations-manager/*` endpoints automatically.
+
 ### 2. Configuration
 
 Add to your `.env`:

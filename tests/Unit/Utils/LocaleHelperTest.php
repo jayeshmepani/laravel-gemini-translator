@@ -103,4 +103,65 @@ class LocaleHelperTest extends TestCase
         $this->assertFalse(LocaleHelper::isLatinScript('你好世界'));
         $this->assertFalse(LocaleHelper::isLatinScript('Привет мир'));
     }
+
+    public function test_writing_system_is_per_locale_not_just_family(): void
+    {
+        $this->assertSame('gujarati', LocaleHelper::writingSystem('gu'));
+        $this->assertSame('devanagari', LocaleHelper::writingSystem('hi'));
+        $this->assertSame('kannada', LocaleHelper::writingSystem('kn'));
+        $this->assertSame('telugu', LocaleHelper::writingSystem('te'));
+        $this->assertSame('tamil', LocaleHelper::writingSystem('ta'));
+        $this->assertSame('malayalam', LocaleHelper::writingSystem('ml'));
+        $this->assertSame('bengali', LocaleHelper::writingSystem('bn'));
+        $this->assertSame('gurmukhi', LocaleHelper::writingSystem('pa'));
+        $this->assertSame('arabic', LocaleHelper::writingSystem('ur'));
+        $this->assertSame('latin', LocaleHelper::writingSystem('uz'));
+        $this->assertSame('cyrillic', LocaleHelper::writingSystem('ru'));
+        $this->assertSame('latin', LocaleHelper::writingSystem('sr_Latn'));
+        $this->assertSame('arabic', LocaleHelper::writingSystem('pa-Arab'));
+    }
+
+    public function test_get_script_type_detects_brahmic(): void
+    {
+        $this->assertSame('brahmic', LocaleHelper::getScriptType('gu'));
+        $this->assertSame('brahmic', LocaleHelper::getScriptType('kn'));
+        $this->assertSame('brahmic', LocaleHelper::getScriptType('hi'));
+    }
+
+    public function test_has_disallowed_script_rejects_indic_mixes(): void
+    {
+        $this->assertTrue(LocaleHelper::hasDisallowedScript('नवीनतम પોસ્ટ્સ', 'gu'));
+        $this->assertTrue(LocaleHelper::hasDisallowedScript('પ' . "\u{0CCB}" . 'સ્ટ', 'gu'));
+        $this->assertTrue(LocaleHelper::hasDisallowedScript(':attribute फ़ील्ड આવશ્યક છે.', 'gu'));
+        $this->assertFalse(LocaleHelper::hasDisallowedScript('નવીનતમ પોસ્ટ્સ', 'gu'));
+        $this->assertFalse(LocaleHelper::hasDisallowedScript(':attribute ફીલ્ડ આવશ્યક છે.', 'gu'));
+        $this->assertFalse(LocaleHelper::hasDisallowedScript('આવશ્યક છે।', 'gu'));
+
+        $this->assertTrue(LocaleHelper::hasDisallowedScript('स्वागत છે', 'hi'));
+        $this->assertTrue(LocaleHelper::hasDisallowedScript('ये रिकॉर्ड سے मेल नहीं खाते', 'hi'));
+        $this->assertFalse(LocaleHelper::hasDisallowedScript('बहुत अधिक लॉगिन प्रयास।', 'hi'));
+
+        $this->assertTrue(LocaleHelper::hasDisallowedScript('Welcome फ़ील्ड', 'en'));
+        $this->assertFalse(LocaleHelper::hasDisallowedScript('The :attribute field is required.', 'en'));
+    }
+
+    public function test_looks_untranslated_detects_leftover_english(): void
+    {
+        $this->assertTrue(LocaleHelper::looksUntranslated('The :attribute field must match the format :format.', 'gu'));
+        $this->assertTrue(LocaleHelper::looksUntranslated('The :attribute field must match the format :format.', 'hi'));
+        $this->assertFalse(LocaleHelper::looksUntranslated(':attribute ફીલ્ડ આવશ્યક છે.', 'gu'));
+        $this->assertFalse(LocaleHelper::looksUntranslated('JSON અનુવાદો', 'gu'));
+        $this->assertFalse(LocaleHelper::looksUntranslated('The :attribute field is required.', 'fr'));
+    }
+
+    public function test_script_requirements_for_prompt_lists_each_language(): void
+    {
+        $block = LocaleHelper::scriptRequirementsForPrompt(['gu', 'hi', 'kn']);
+        $this->assertStringContainsString('`gu`:', $block);
+        $this->assertStringContainsString('Gujarati', $block);
+        $this->assertStringContainsString('`hi`:', $block);
+        $this->assertStringContainsString('Devanagari', $block);
+        $this->assertStringContainsString('`kn`:', $block);
+        $this->assertStringContainsString('Kannada', $block);
+    }
 }

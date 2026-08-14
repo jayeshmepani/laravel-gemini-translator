@@ -41,4 +41,21 @@ return [
             'gemini-3.6-flash' => ['rpm' => 5, 'rpd' => 20],
         ],
     ],
+
+    /*
+    | Translation Manager HTTP UI.
+    |
+    | Enabled by default. Visit /{prefix}.
+    | If the host app already has auth routes (login / register / sign-in),
+    | guests are sent through that login first. If no auth routes exist,
+    | the manager is available without signing in.
+    */
+    'manager' => [
+        'enabled' => filter_var(env('GEMINI_TRANSLATOR_MANAGER', true), FILTER_VALIDATE_BOOLEAN),
+        'prefix' => env('GEMINI_TRANSLATOR_MANAGER_PREFIX', 'translations-manager'),
+        'middleware' => array_values(array_filter(array_map(
+            trim(...),
+            explode(',', (string) env('GEMINI_TRANSLATOR_MANAGER_MIDDLEWARE', 'web')),
+        ))),
+    ],
 ];

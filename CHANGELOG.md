@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Hidden `translations:run-payload` worker command for Windows/process child jobs
 - Suggested extensions: `ext-pcntl` (fork) and `ext-ffi` (native Windows menus)
 - **Dated Gemini quota snapshot** in publishable `config/gemini-translator.php` (as of 2026-08-13). Rows can be raised, lowered, zeroed, removed, or extended when Google changes RPM/RPD or ships a new model. `0` RPM/RPD is a first-class “no free-tier budget” state, not a crash.
+- **Translation Manager** at `/translations-manager` (configurable prefix). The package registers the page plus data/save/scan/add-languages JSON APIs. If the host app already has login/register routes, guests must sign in first (redirect or JSON 401). If it has no auth routes, the manager is open. Optional publish: `--tag=gemini-translator-manager`. Semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>`, theme switch, and token layers.
 
 ### 🔧 Changed
 
@@ -27,6 +28,8 @@ All notable changes to this project will be documented in this file.
 - Default Gemini model is `gemini-3.5-flash-lite` (highest free-tier RPM/RPD that appears in ListModels: 15 RPM / 500 RPD). Snapshot rows for models missing from ListModels (`gemini-2.5-flash-exp`, `gemini-3-flash`) were removed.
 - JSON-only selection no longer re-translates `file.subkey` keys that belong to PHP lang files
 - Translation prompts now include source text and reject mixed-script / placeholder / plural-token drift
+- Per-locale writing-system guard: `LocaleHelper` maps each language code to one Unicode script (`sc=`, so shared danda `।` is not a mix). Gemini output with neighbor-script letters (Gujarati+Kannada `ೋ`, Hindi+Gujarati, Urdu inside `hi`) or leftover English sentences is rejected and falls back to source
+- Translation Manager language catalog is the full 249-code set (including `zh_CN` / `zh_TW`, `pt_BR` / `pt_PT`, Punjabi Gurmukhi/Shahmukhi). Short file codes such as `zh` still resolve to the primary variant name
 
 ## [v5.0.0] - 2026-04-27
 
