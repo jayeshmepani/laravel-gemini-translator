@@ -42,7 +42,7 @@
                     <p class="manager-subtitle">{{ $pageLede }}</p>
                 </div>
                 <div class="manager-actions">
-                    <div class="manager-theme" title="{{ __('Toggle theme') }}">
+                    <div class="manager-theme" title="Toggle theme">
                         <label class="manager-theme-toggle" for="manager-theme-toggle">
                             <input
                                 type="checkbox"
@@ -51,7 +51,7 @@
                                 data-action="theme"
                                 role="switch"
                                 aria-checked="false"
-                                aria-label="{{ __('Use dark theme') }}"
+                                aria-label="Use dark theme"
                             >
                             <span class="manager-theme-slider" aria-hidden="true">
                                 <svg class="manager-theme-sun" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -77,7 +77,7 @@
                             <path d="M19.95 11a8 8 0 1 0 -.55 5.5" />
                             <path d="M20 4v4h-4" />
                         </svg>
-                        {{ __('Sync') }}
+                        Sync
                     </button>
                     <button type="button" class="manager-button manager-button-save" data-action="save" disabled>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -85,7 +85,7 @@
                             <circle cx="12" cy="14" r="2" />
                             <path d="M14 4v4H8V4" />
                         </svg>
-                        <span>{{ __('Save') }}</span>
+                        <span>Save</span>
                         <span class="manager-save-count" data-save-count aria-live="polite">0</span>
                     </button>
                 </div>
@@ -93,21 +93,21 @@
 
             <form class="manager-filters" data-filters novalidate aria-labelledby="manager-filters-legend">
                 <fieldset class="manager-filter-set">
-                    <legend class="manager-legend" id="manager-filters-legend">{{ __('Filter translations') }}</legend>
+                    <legend class="manager-legend" id="manager-filters-legend">Filter translations</legend>
 
                     <div class="manager-filter">
-                        <label class="manager-label" for="manager-type">{{ __('Type') }}</label>
+                        <label class="manager-label" for="manager-type">Type</label>
                         <select id="manager-type" class="manager-select" data-filter="type" autocomplete="off">
-                            <option value="all" selected>{{ __('All') }}</option>
-                            <option value="module">{{ __('Module') }}</option>
-                            <option value="non-module">{{ __('Non-module') }}</option>
+                            <option value="all" selected>All</option>
+                            <option value="module">Module</option>
+                            <option value="non-module">Non-module</option>
                         </select>
                     </div>
 
                     <div class="manager-filter manager-filter-module is-hidden" data-module-filter>
-                        <label class="manager-label" for="manager-module">{{ __('Module') }}</label>
+                        <label class="manager-label" for="manager-module">Module</label>
                         <select id="manager-module" class="manager-select" data-filter="module" autocomplete="off">
-                            <option value="all">{{ __('All Modules') }}</option>
+                            <option value="all">All Modules</option>
                             @foreach ($modules as $module)
                                 <option value="{{ $module }}">{{ $module }}</option>
                             @endforeach
@@ -115,16 +115,16 @@
                     </div>
 
                     <div class="manager-filter manager-filter-pack is-hidden" data-pack-filter>
-                        <label class="manager-label" for="manager-pack">{{ __('Pack') }}</label>
+                        <label class="manager-label" for="manager-pack">Pack</label>
                         <select id="manager-pack" class="manager-select" data-filter="pack" autocomplete="off">
-                            <option value="all" selected>{{ __('All packs') }}</option>
+                            <option value="all" selected>All packs</option>
                         </select>
                     </div>
 
                     <div class="manager-filter">
-                        <label class="manager-label" for="manager-scope">{{ __('Scope') }}</label>
+                        <label class="manager-label" for="manager-scope">Scope</label>
                         <select id="manager-scope" class="manager-select" data-filter="scope" autocomplete="off">
-                            <option value="all" selected>{{ __('All Scopes') }}</option>
+                            <option value="all" selected>All Scopes</option>
                             @foreach ($scopes as $scope)
                                 <option value="{{ $scope }}">{{ ucfirst((string) $scope) }}</option>
                             @endforeach
@@ -132,7 +132,7 @@
                     </div>
 
                     <div class="manager-filter manager-filter-files is-hidden" data-file-filter>
-                        <span class="manager-label" id="manager-files-label">{{ __('PHP files') }}</span>
+                        <span class="manager-label" id="manager-files-label">PHP files</span>
                         <button
                             type="button"
                             class="manager-files-toggle"
@@ -143,7 +143,7 @@
                             aria-haspopup="true"
                             aria-labelledby="manager-files-label"
                         >
-                            <span data-files-summary>{{ __('All PHP files') }}</span>
+                            <span data-files-summary>All PHP files</span>
                         </button>
                         <div class="manager-columns-menu manager-files-menu" id="manager-files-menu" data-files-menu popover="auto">
                             @forelse (($files ?? []) as $file)
@@ -152,15 +152,15 @@
                                     <span>{{ $file }}</span>
                                 </label>
                             @empty
-                                <p class="manager-empty-copy">{{ __('No PHP language files found.') }}</p>
+                                <p class="manager-empty-copy">No PHP language files found.</p>
                             @endforelse
                         </div>
                     </div>
 
                     <div class="manager-filter">
-                        <label class="manager-label" for="manager-language">{{ __('Language') }}</label>
+                        <label class="manager-label" for="manager-language">Language</label>
                         <select id="manager-language" class="manager-select" data-filter="language" autocomplete="off">
-                            <option value="all" selected>{{ __('All Languages') }}</option>
+                            <option value="all" selected>All Languages</option>
                             @foreach ($languages as $language)
                                 <option value="{{ $language }}" data-language-code="{{ $language }}">{{ strtoupper((string) $language) }}</option>
                             @endforeach
@@ -170,7 +170,7 @@
                     <div class="manager-filter manager-filter-missing">
                         <label class="manager-check" for="manager-missing">
                             <input id="manager-missing" type="checkbox" data-filter="missing">
-                            <span>{{ __('Show only missing') }}</span>
+                            <span>Show only missing</span>
                         </label>
                     </div>
                 </fieldset>
@@ -184,7 +184,7 @@
                             <path d="M12 20l4-9 4 9" />
                             <path d="M19.1 18h-6.2" />
                         </svg>
-                        {{ __('Add Languages') }}
+                        Add Languages
                     </button>
                 </div>
             </form>
@@ -192,24 +192,24 @@
 
         <main class="manager-panel" id="manager-main" tabindex="-1" aria-labelledby="manager-heading">
             <div class="manager-tools">
-                <search class="manager-search" aria-label="{{ __('Search translations') }}">
+                <search class="manager-search" aria-label="Search translations">
                     <div class="manager-search-field">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                             <circle cx="11" cy="11" r="7" />
                             <path d="M21 21l-4.3-4.3" />
                         </svg>
-                        <label class="manager-visually-hidden" for="manager-search">{{ __('Search') }}</label>
-                        <input id="manager-search" type="search" data-search placeholder="{{ __('Search') }}" autocomplete="off" spellcheck="false">
+                        <label class="manager-visually-hidden" for="manager-search">Search</label>
+                        <input id="manager-search" type="search" data-search placeholder="Search" autocomplete="off" spellcheck="false">
                     </div>
                 </search>
                 <div class="manager-tool-group">
-                    <button type="button" class="manager-icon-button" data-action="refresh" aria-label="{{ __('Refresh') }}">
+                    <button type="button" class="manager-icon-button" data-action="refresh" aria-label="Refresh">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                             <path d="M20 11a8 8 0 1 0-1.7 4.9" />
                             <path d="M20 4v7h-7" />
                         </svg>
                     </button>
-                    <button type="button" class="manager-icon-button" data-action="columns" popovertarget="manager-columns-menu" aria-controls="manager-columns-menu" aria-expanded="false" aria-haspopup="true" aria-label="{{ __('Columns') }}">
+                    <button type="button" class="manager-icon-button" data-action="columns" popovertarget="manager-columns-menu" aria-controls="manager-columns-menu" aria-expanded="false" aria-haspopup="true" aria-label="Columns">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                             <path d="M4 6h16" />
                             <path d="M4 12h16" />
@@ -222,7 +222,7 @@
 
             <div class="manager-table-wrap" data-table-wrap>
                 <table class="manager-table" data-table>
-                    <caption class="manager-visually-hidden">{{ __('Translation keys and values by language') }}</caption>
+                    <caption class="manager-visually-hidden">Translation keys and values by language</caption>
                     <thead data-table-head></thead>
                     <tbody data-table-body></tbody>
                 </table>
@@ -235,21 +235,21 @@
                     <div class="manager-skeleton-row"></div>
                 </div>
                 <div class="manager-empty" data-empty hidden>
-                    <h2 class="manager-empty-title">{{ __('No translations match') }}</h2>
-                    <p class="manager-empty-copy">{{ __('Try a different search or clear the filters.') }}</p>
+                    <h2 class="manager-empty-title">No translations match</h2>
+                    <p class="manager-empty-copy">Try a different search or clear the filters.</p>
                 </div>
                 <div class="manager-error" data-error hidden role="alert">
-                    <h2 class="manager-empty-title">{{ __('Could not load translations') }}</h2>
+                    <h2 class="manager-empty-title">Could not load translations</h2>
                     <p class="manager-empty-copy" data-error-copy></p>
-                    <button type="button" class="manager-button" data-action="retry">{{ __('Try again') }}</button>
+                    <button type="button" class="manager-button" data-action="retry">Try again</button>
                 </div>
             </div>
 
-            <nav class="manager-pager" data-pager hidden aria-label="{{ __('Pagination') }}">
+            <nav class="manager-pager" data-pager hidden aria-label="Translation pagination">
                 <div class="manager-pager-status">
                     <p class="manager-pager-meta" data-pager-meta></p>
                     <label class="manager-pager-size-wrap" for="manager-page-size">
-                        <span class="manager-visually-hidden">{{ __('Rows per page') }}</span>
+                        <span class="manager-visually-hidden">Rows per page</span>
                         <select id="manager-page-size" class="manager-select manager-pager-size" data-page-size>
                             <option value="5" selected>5</option>
                             <option value="10">10</option>
@@ -257,10 +257,10 @@
                             <option value="25">25</option>
                             <option value="50">50</option>
                             <option value="100">100</option>
-                            <option value="All">{{ __('All') }}</option>
+                            <option value="All">All</option>
                         </select>
                     </label>
-                    <span class="manager-pager-size-copy" aria-hidden="true">{{ __('rows per page') }}</span>
+                    <span class="manager-pager-size-copy" aria-hidden="true">rows per page</span>
                 </div>
                 <div class="manager-pager-nav" data-pager-nav></div>
             </nav>
@@ -269,16 +269,16 @@
 
     <dialog class="manager-dialog" data-dialog aria-labelledby="manager-add-langs-title" aria-describedby="manager-add-langs-desc">
         <div class="manager-dialog-header">
-            <h2 class="manager-dialog-title" id="manager-add-langs-title">{{ __('Add New Languages') }}</h2>
-            <button type="button" class="manager-dialog-close" data-dialog-close aria-label="{{ __('Close') }}">&times;</button>
+            <h2 class="manager-dialog-title" id="manager-add-langs-title">Add New Languages</h2>
+            <button type="button" class="manager-dialog-close" data-dialog-close aria-label="Close">&times;</button>
         </div>
-        <p class="manager-dialog-lede" id="manager-add-langs-desc">{{ __('Select languages to add. Existing locales stay checked.') }}</p>
+        <p class="manager-dialog-lede" id="manager-add-langs-desc">Select languages to add. Existing locales stay checked.</p>
         <div class="manager-dialog-body">
             <div class="manager-language-grid" data-language-grid></div>
         </div>
         <div class="manager-dialog-footer">
-            <button type="button" class="manager-button" data-dialog-close value="cancel">{{ __('Cancel') }}</button>
-            <button type="button" class="manager-button manager-button-accent" data-action="confirm-languages">{{ __('Add Selected') }}</button>
+            <button type="button" class="manager-button" data-dialog-close value="cancel">Cancel</button>
+            <button type="button" class="manager-button manager-button-accent" data-action="confirm-languages">Add Selected</button>
         </div>
     </dialog>
 

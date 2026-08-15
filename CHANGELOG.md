@@ -26,6 +26,10 @@ Everything below is new since **v5.0.1**.
 - **Configurable Gemini model:** `--model=`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, then `config/gemini-translator.php`, then `config('gemini.model')`, then the package default. Paid/ListModels ids are allowed and are not free-tier capped unless listed in the snapshot
 - Per-locale **writing-system map** on `LocaleHelper` (Unicode `sc=` so shared danda `।` is Common, not a mix) plus `looksUntranslated` / disallowed-script checks
 
+### 🐛 Fixed
+
+- Manager pager `aria-label` no longer uses `__('Pagination')`. On Windows that key loads `lang/{locale}/pagination.php` as an array and crashes `htmlspecialchars()`.
+
 ### 🔧 Changed
 
 - Interactive prompts and parallel execution go through the platform factory instead of branching on `PHP_OS_FAMILY` inside the command/services

@@ -24,7 +24,7 @@
     </script>
 </head>
 <body class="translation-manager-body">
-    <a class="manager-skip" href="#manager-main">{{ __('Skip to translations') }}</a>
+    <a class="manager-skip" href="#manager-main">Skip to translations</a>
     @include('gemini-translator::partials.workspace')
 </body>
 </html>

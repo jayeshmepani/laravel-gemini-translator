@@ -71,6 +71,28 @@ class ManagerViewTest extends TestCase
         $this->assertStringContainsString('data-pack-map', $html);
     }
 
+    public function test_manager_view_renders_when_host_has_pagination_lang_file(): void
+    {
+        $langDir = $this->app->langPath('en');
+        if (! is_dir($langDir)) {
+            mkdir($langDir, 0777, true);
+        }
+        file_put_contents($langDir.DIRECTORY_SEPARATOR.'pagination.php', <<<'PHP'
+<?php
+
+return [
+    'previous' => '&laquo; Previous',
+    'next' => 'Next &raquo;',
+];
+PHP);
+
+        $this->app->setLocale('en');
+
+        $html = view('gemini-translator::manager')->render();
+
+        $this->assertStringContainsString('aria-label="Translation pagination"', $html);
+    }
+
     public function test_manager_view_uses_composer_defaults_and_inlines_assets_once(): void
     {
         $html = view('gemini-translator::manager')->render();
