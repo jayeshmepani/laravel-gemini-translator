@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 use Jayesh\LaravelGeminiTranslator\Services\ManagerCatalogService;
+use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
 
 final class ManagerViewComposer
 {
@@ -29,6 +30,7 @@ final class ManagerViewComposer
             'packMap' => $data['packMap'] ?? $catalog->packMap(),
             'languages' => $data['languages'] ?? $catalog->languages(),
             'languageNames' => $data['languageNames'] ?? $catalog->languageNames(),
+            'scriptCatalog' => $data['scriptCatalog'] ?? LocaleHelper::detectorCatalog(),
             'endpoints' => $data['endpoints'] ?? $this->defaultEndpoints(),
             'pageTitle' => $pageTitle,
             'pageLede' => $data['pageLede'] ?? __('Browse, edit and save translations'),

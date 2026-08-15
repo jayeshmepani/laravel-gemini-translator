@@ -10,6 +10,7 @@
     data-endpoint-add-languages="{{ $endpoints['add_languages'] ?? '' }}"
     data-language-names='@json($languageNames ?? [])'
     data-pack-map='@json($packMap ?? [])'
+    data-script-catalog='@json($scriptCatalog ?? [])'
 >
     @once
         <script>
@@ -173,6 +174,13 @@
                             <span>Show only missing</span>
                         </label>
                     </div>
+
+                    <div class="manager-filter manager-filter-malform">
+                        <label class="manager-check" for="manager-malform">
+                            <input id="manager-malform" type="checkbox" data-malform-detector>
+                            <span>Highlight script faults</span>
+                        </label>
+                    </div>
                 </fieldset>
 
                 <div class="manager-filter manager-filter-languages-action">
@@ -270,7 +278,9 @@
     <dialog class="manager-dialog" data-dialog aria-labelledby="manager-add-langs-title" aria-describedby="manager-add-langs-desc">
         <div class="manager-dialog-header">
             <h2 class="manager-dialog-title" id="manager-add-langs-title">Add New Languages</h2>
-            <button type="button" class="manager-dialog-close" data-dialog-close aria-label="Close">&times;</button>
+            <button type="button" class="manager-dialog-close" data-dialog-close aria-label="Close">
+                <span>&#10005;</span>
+            </button>
         </div>
         <p class="manager-dialog-lede" id="manager-add-langs-desc">Select languages to add. Existing locales stay checked.</p>
         <div class="manager-dialog-body">

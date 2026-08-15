@@ -9,7 +9,8 @@ Everything below is new since **v5.0.1**.
 ### ⭐ Added
 
 - **Translation Manager** at `/translations-manager` (prefix, enable flag, and middleware are configurable). Routes and JSON APIs register automatically: data, languages, existing map, scan, save, add-languages. Guests must sign in when the host already has login/register/sign-in routes (browser redirect or JSON 401 + unauthenticated view). If the host has no auth routes, the manager is open. Publish tags: `gemini-translator-config`, `gemini-translator-views`, `gemini-translator-assets`, `gemini-translator-manager`. `ManagerViewComposer` inlines CSS/JS so the page works without publishing assets. Optional `@include('gemini-translator::partials.workspace')` for an existing layout.
-- **Manager UI:** semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>` / `popover`, light/dark theme (`localStorage` key `gemini-translator-theme`), sticky KEY column, pagination footer (default 5 rows, last two pages always visible with an ellipsis), Type / Module / Pack / Scope / PHP-files / Language / “show only missing” filters, Add Languages, Sync, Save. Checkboxes use a `✓` mark on the monochromatic tokens (sun stays yellow, Save stays green).
+- **Manager UI:** semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>` / `popover`, light/dark theme (`localStorage` key `gemini-translator-theme`), sticky KEY column, pagination footer (default 5 rows, last two pages always visible with an ellipsis), Type / Module / Pack / Scope / PHP-files / Language / “show only missing” / **Highlight script faults** filters, Add Languages, Sync, Save. Checkboxes use a `✓` mark on the monochromatic tokens (sun stays yellow, Save stays green).
+- **Manager script-fault highlighter:** optional checkbox (off by default, stored as `gemini-translator-malform-detector`). Uses `LocaleHelper::detectorCatalog()` / `malformReasons()`. Flags letters that do not belong to the cell’s locale — including Latin inside Gujarati/Hindi/etc. Placeholders (`:name`, `{0}`, `[2,*]`) and Common marks (danda `।`) are ignored. Faulty editors get an amber outline/background and a tooltip of the unexpected scripts. Stricter than the CLI `hasDisallowedScript()` check, which still allows Latin in native scripts.
 - **Lang packs (manager + CLI):** extra folders such as `lang/app3/` and `lang/web/` are first-class trees, separate from `lang/`. The manager Pack filter appears only after you select a module (or Non-module) that actually has more than one pack. PHP file pickers list files from the selected pack. A selected language lists only keys that exist in that locale file.
 - **Registered / published lang paths:** the manager also scans `loadJsonTranslationsFrom()` / `loadTranslationsFrom()` directories (for example `base_path('custom_dir')`) and published `resources/lang/modules/{name}` (published copy wins on the same key). Composer `vendor/` lang trees are skipped.
 - **CLI pack step:** after you pick a module that has extra lang folders, `translations:extract-and-generate` asks which packs to process. The JSON/PHP file list is then limited to those packs. Modules with only `lang/` skip the prompt. Pack PHP files load and write as `lang/{pack}/{locale}/messages.php`.
@@ -24,7 +25,7 @@ Everything below is new since **v5.0.1**.
 - **`--refresh-clean`:** rebuild existing keys only, ignoring stale file wording. Official Laravel English is the source for `auth` / `pagination` / `passwords` / `validation` (not `ucwords` of the key)
 - **Dated Gemini quota snapshot** in publishable `config/gemini-translator.php` (as of 2026-08-13). Add, raise, lower, zero, or remove rows when Google changes RPM/RPD. `0` RPM/RPD is “no free-tier budget”, not a crash. `GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS` can turn snapshot caps off
 - **Configurable Gemini model:** `--model=`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, then `config/gemini-translator.php`, then `config('gemini.model')`, then the package default. Paid/ListModels ids are allowed and are not free-tier capped unless listed in the snapshot
-- Per-locale **writing-system map** on `LocaleHelper` (Unicode `sc=` so shared danda `।` is Common, not a mix) plus `looksUntranslated` / disallowed-script checks
+- Per-locale **writing-system map** on `LocaleHelper` (Unicode `sc=` so shared danda `।` is Common, not a mix) plus `looksUntranslated` / disallowed-script checks. Map now includes Tibetan, N’Ko, Tifinagh, Ol Chiki, Meitei, Canadian Aboriginal, extra Devanagari/Cyrillic/Arabic catalog codes, and script tags (`_latn`, `_cyrl`, `_arab`, `_deva`, `_guru`, `_hans`/`_hant`, `_tfng`, `_olck`, `_syll`)
 
 ### 🐛 Fixed
 
@@ -54,7 +55,7 @@ Everything below is new since **v5.0.1**.
 
 ### 📚 Tests
 
-- Suite covers the manager routes/views/auth, language catalog, script guard, model resolution, refresh source map, platform factory, Windows process runner, pack discovery, pack PHP I/O, and pack CLI prompts (124 tests / 468 assertions in this tree)
+- Suite covers the manager routes/views/auth, language catalog, script guard, malform detector catalog, model resolution, refresh source map, platform factory, Windows process runner, pack discovery, pack PHP I/O, and pack CLI prompts
 
 ## [v5.0.1] - 2026-04-27
 

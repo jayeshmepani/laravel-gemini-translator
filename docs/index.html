@@ -140,7 +140,7 @@
               "name": "How do I open the Translation Manager?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Visit /translations-manager. Routes register automatically. If the host app has a login route, sign in first. Publish views only if you want to customize them with --tag=gemini-translator-manager."
+                "text": "Visit /translations-manager. Routes register automatically. If the host app has a login route, sign in first. Use Highlight script faults to mark cells whose writing system does not match the locale. Publish views only if you want to customize them with --tag=gemini-translator-manager."
               }
             },
             {
@@ -464,8 +464,8 @@
                             </div>
                             <h3>Translation Manager</h3>
                             <p>Open <code class="inline-code">/translations-manager</code> to browse, edit, save, scan,
-                                and add languages. Filters cover type, module, pack, scope, PHP files, and language.
-                                Auth follows the host app.</p>
+                                and add languages. Filters cover type, module, pack, scope, PHP files, language, missing
+                                keys, and script faults. Auth follows the host app.</p>
                         </li>
                     </ul>
                 </section>
@@ -489,8 +489,14 @@
                             <code class="inline-code">gemini-translator-views</code>,
                             <code class="inline-code">gemini-translator-assets</code>,
                             <code class="inline-code">gemini-translator-manager</code>. Filters: Type, Module, Pack,
-                            Scope, PHP files, Language, show-only-missing. Theme switch, sticky KEY column, pagination
-                            (default 5 rows, last two pages always shown).</li>
+                            Scope, PHP files, Language, show-only-missing, Highlight script faults. Theme switch, sticky
+                            KEY column, pagination (default 5 rows, last two pages always shown).</li>
+                        <li><strong>Manager script-fault highlighter:</strong> optional checkbox (off by default,
+                            <code class="inline-code">localStorage</code> key
+                            <code class="inline-code">gemini-translator-malform-detector</code>). Marks cells whose
+                            letters do not belong to that locale, including leftover Latin in Gujarati or Hindi.
+                            Placeholders are ignored. Amber outline plus a tooltip of the unexpected scripts. Powered by
+                            <code class="inline-code">LocaleHelper::malformReasons()</code>.</li>
                         <li><strong>Lang packs</strong> in the manager and the CLI. Extra folders such as
                             <code class="inline-code">lang/app3/</code> and <code class="inline-code">lang/web/</code>
                             stay separate from <code class="inline-code">lang/</code>. Custom directories registered
@@ -513,7 +519,10 @@
                             <code class="inline-code">GEMINI_MODEL</code> /
                             <code class="inline-code">GEMINI_TRANSLATOR_MODEL</code>, then config. Default
                             <code class="inline-code">gemini-3.5-flash-lite</code>.</li>
-                        <li>Per-locale writing-system map and mixed-script / leftover-English rejection.</li>
+                        <li>Per-locale writing-system map (Tibetan, N’Ko, Tifinagh, Ol Chiki, Meitei, extra
+                            Devanagari/Cyrillic/Arabic codes, and script tags such as
+                            <code class="inline-code">_latn</code> / <code class="inline-code">_arab</code>) plus
+                            mixed-script / leftover-English rejection.</li>
                     </ul>
                     <h3>Changed</h3>
                     <ul>
@@ -697,7 +706,21 @@ php artisan translations:extract-and-generate --skip-existing --langs=es,de</cod
                     <h3>Filters</h3>
                     <p>Type → Module (when Type is Module) → Pack (only if that source has more than
                         <code class="inline-code">lang/</code>) → Scope → PHP files (when Scope is PHP) → Language →
-                        show only missing. A selected language lists only keys that exist in that locale file.</p>
+                        show only missing → <strong>Highlight script faults</strong>. A selected language lists only
+                        keys that exist in that locale file.</p>
+                    <h3>Script faults</h3>
+                    <p>The highlighter is off until you check it. The choice is stored as
+                        <code class="inline-code">gemini-translator-malform-detector</code>. Rules come from
+                        <code class="inline-code">LocaleHelper::detectorCatalog()</code> (same 249-language map as the
+                        CLI). A cell is marked when it contains a writing system that locale does not use — for example
+                        Devanagari or Latin inside <code class="inline-code">gu</code>, or Gujarati inside
+                        <code class="inline-code">en</code>. Laravel placeholders
+                        (<code class="inline-code">:name</code>, <code class="inline-code">{0}</code>,
+                        <code class="inline-code">[2,*]</code>) and Common marks such as danda
+                        <code class="inline-code">।</code> are ignored. Faulty editors use an amber outline and a
+                        tooltip of the unexpected scripts. This is review-only; it does not rewrite files. The CLI
+                        <code class="inline-code">hasDisallowedScript()</code> check still allows Latin tokens in native
+                        scripts; the highlighter is stricter.</p>
                     <h3>UI</h3>
                     <p>Light/dark theme (stored as <code class="inline-code">gemini-translator-theme</code>), sticky KEY
                         column, pagination (default 5 rows, last two pages always shown), Add Languages, Sync, and Save.
@@ -955,7 +978,9 @@ Found missing translations needing synchronization:
                         shared marks such as danda <code class="inline-code">।</code> are Common). Gemini output that
                         mixes neighbor scripts (for example Gujarati plus Kannada
                         <code class="inline-code">ೋ</code>) or leaves English sentences in an Indic locale is rejected
-                        and the source is kept. The prompt also sends source text and script rules.</p>
+                        and the source is kept. The prompt also sends source text and script rules. In the Translation
+                        Manager, <strong>Highlight script faults</strong> uses the same map (plus leftover Latin in
+                        native-script locales) to outline bad cells while you edit.</p>
                     <p>The catalog covers 249 language codes, including
                         <code class="inline-code">zh_CN</code> / <code class="inline-code">zh_TW</code>,
                         <code class="inline-code">pt_BR</code> / <code class="inline-code">pt_PT</code>, and Punjabi
@@ -1289,9 +1314,17 @@ php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,
                                         delete the published views so the package copies load.</td>
                                 </tr>
                                 <tr>
+                                    <td>No “Highlight script faults” checkbox</td>
+                                    <td>Published manager Blade/JS is older than the package.</td>
+                                    <td>Republish <code class="inline-code">--tag=gemini-translator-manager</code> or
+                                        delete <code class="inline-code">resources/views/vendor/gemini-translator</code>.</td>
+                                </tr>
+                                <tr>
                                     <td>Mixed-script or leftover English in a translation</td>
                                     <td>Gemini mixed neighbor scripts or left English in a non-Latin locale.</td>
-                                    <td>The writing-system guard rejects that output and keeps the source. Re-run
+                                    <td>The writing-system guard rejects that output and keeps the source. In the
+                                        manager, turn on <strong>Highlight script faults</strong> to see remaining
+                                        cells. Re-run
                                         <code class="inline-code">--refresh</code> or
                                         <code class="inline-code">--refresh-clean</code> for that language.</td>
                                 </tr>

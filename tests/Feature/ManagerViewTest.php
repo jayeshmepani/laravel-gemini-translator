@@ -69,6 +69,11 @@ class ManagerViewTest extends TestCase
         $this->assertStringContainsString('data-files-menu', $html);
         $this->assertStringContainsString('data-pack-filter', $html);
         $this->assertStringContainsString('data-pack-map', $html);
+        $this->assertStringContainsString('data-script-catalog', $html);
+        $this->assertStringContainsString('data-malform-detector', $html);
+        $this->assertStringContainsString('Highlight script faults', $html);
+        $this->assertStringContainsString('is-malformed', $html);
+        $this->assertStringContainsString('gemini-translator-malform-detector', $html);
     }
 
     public function test_manager_view_renders_when_host_has_pagination_lang_file(): void

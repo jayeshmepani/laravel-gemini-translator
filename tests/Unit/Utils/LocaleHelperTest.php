@@ -154,6 +154,29 @@ class LocaleHelperTest extends TestCase
         $this->assertFalse(LocaleHelper::looksUntranslated('The :attribute field is required.', 'fr'));
     }
 
+    public function test_malform_reasons_flags_foreign_and_latin_in_native_scripts(): void
+    {
+        $this->assertSame(['Devanagari'], LocaleHelper::malformReasons('નવીનતમ नवीनतम', 'gu'));
+        $this->assertContains('Latin', LocaleHelper::malformReasons('Welcome પોસ્ટ', 'gu'));
+        $this->assertSame([], LocaleHelper::malformReasons(':attribute ફીલ્ડ આવશ્યક છે.', 'gu'));
+        $this->assertSame([], LocaleHelper::malformReasons('The :attribute field is required.', 'en'));
+        $this->assertContains('Gujarati', LocaleHelper::malformReasons('Welcome ફીલ્ડ', 'en'));
+        $this->assertSame([], LocaleHelper::malformReasons('', 'gu'));
+    }
+
+    public function test_detector_catalog_covers_writing_systems_and_unicode_properties(): void
+    {
+        $catalog = LocaleHelper::detectorCatalog();
+        $this->assertSame('gujarati', $catalog['systems']['gu']);
+        $this->assertSame(['Gujarati'], $catalog['allowed']['gujarati']);
+        $this->assertSame('Gujr', $catalog['properties']['Gujarati']);
+        $this->assertSame('latin', LocaleHelper::writingSystem('ms-latn'));
+        $this->assertSame('arabic', LocaleHelper::writingSystem('ms-arab'));
+        $this->assertSame('tifinagh', LocaleHelper::writingSystem('zgh-tfng'));
+        $this->assertSame('olchiki', LocaleHelper::writingSystem('sat-olck'));
+        $this->assertSame('tibetan', LocaleHelper::writingSystem('bo'));
+    }
+
     public function test_script_requirements_for_prompt_lists_each_language(): void
     {
         $block = LocaleHelper::scriptRequirementsForPrompt(['gu', 'hi', 'kn']);

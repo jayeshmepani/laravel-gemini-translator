@@ -9,7 +9,7 @@ An interactive Artisan command that scans your Laravel project for translation k
 ## 🚀 Key Features
 
 - **AI-Powered Translation:** Uses Gemini AI for high-quality translations with context awareness
-- **Translation Manager:** Browser UI at `/translations-manager` to browse, edit, save, scan, and add languages
+- **Translation Manager:** Browser UI at `/translations-manager` to browse, edit, save, scan, and add languages. Optional **Highlight script faults** checkbox marks cells whose script does not match the locale
 - **Lang packs:** Extra folders such as `lang/app3/` and `lang/web/` are handled separately from `lang/` in both the CLI and the manager
 - **Interactive & Cross-Platform:** Laravel Prompts + fork on Linux/macOS; `kernel32` menus + Symfony Process workers on Windows
 - **Flexible Concurrency:** Fork driver (`pcntl`), Process driver, and a sequential sync fallback
@@ -17,7 +17,7 @@ An interactive Artisan command that scans your Laravel project for translation k
 - **Framework Integration:** Automatic Laravel framework translation bootstrapping
 - **Four Operational Modes:** Full sync, missing-only (`--skip-existing`), refresh from file wording (`--refresh`), clean refresh from keys only (`--refresh-clean`)
 - **Configurable model:** `--model`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, or config (default `gemini-3.5-flash-lite`)
-- **Writing-system guard:** Mixed-script or leftover-English Gemini output is rejected; JSON keeps dotted PHP-style keys
+- **Writing-system guard:** Mixed-script or leftover-English Gemini output is rejected; JSON keeps dotted PHP-style keys. The manager can highlight the same class of faults (plus leftover Latin in native scripts) while you edit
 - **Production-Ready Safety:** Atomic file writes, path validation, and security checks
 - **Module Support:** Full integration with `nwidart/laravel-modules` with consolidation options
 
@@ -88,6 +88,8 @@ To drop the workspace into an existing layout:
 The include picks up the registered `/translations-manager/*` endpoints automatically.
 
 The table reads every lang tree Laravel knows about: `lang/`, `Modules/*/lang`, published `resources/lang/modules/{name}`, and any extra directory passed to `loadJsonTranslationsFrom()` / `loadTranslationsFrom()`. If a module (or the app) registers more than one folder — for example `lang/`, `lang/app3/`, and `lang/web/` — each pack stays a separate set of keys. Select **Module**, then **Pack**, to work on one folder at a time.
+
+**Highlight script faults** (checkbox next to “Show only missing”, off until you turn it on) uses the same writing-system map as the CLI. A Gujarati cell with Devanagari or Latin letters, or an English cell with Indic script, gets an amber outline and a tooltip of the unexpected scripts. Laravel placeholders (`:name`, `{0}`, `[2,*]`) are ignored. The choice is stored in `localStorage` as `gemini-translator-malform-detector`. If you published the manager views/assets, republish `--tag=gemini-translator-manager` to pick this up.
 
 The Artisan command uses the same pack step: after you pick a module that has extra lang folders, it asks which packs to process (`lang/`, `lang/app3/`, `lang/web/`). Then it lists JSON and PHP files from those packs only. Modules with a single `lang/` tree skip that prompt.
 
@@ -258,7 +260,9 @@ Supports all quote types: single (`'`), double (`"`), and backtick (`` ` ``).
 - Automatic locale canonicalization (converts `en-US` to `en_US`)
 - Script-aware formatting (title case for English, sentence case for other Latin languages)
 - Proper handling for RTL, CJK, Brahmic, and Cyrillic scripts
+- 249-language writing-system map (`LocaleHelper`), including script tags such as `pa-Arab`, `ms-latn`, `zgh-tfng`
 - Placeholder preservation across all language families
+- Manager highlighter via `LocaleHelper::malformReasons()` (stricter than CLI: Latin is a fault in native-script locales)
 
 ### Translation Quality
 

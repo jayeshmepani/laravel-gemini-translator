@@ -128,7 +128,8 @@ return [
 
 ## 5.1.0 notes
 
-- **Translation Manager:** open `/translations-manager`. If the app has a login route, sign in first. If a published Blade looks stale, republish `--tag=gemini-translator-manager` or delete `resources/views/vendor/gemini-translator`.
+- **Translation Manager:** open `/translations-manager`. If the app has a login route, sign in first. If a published Blade looks stale (missing Pack, theme, or **Highlight script faults**), republish `--tag=gemini-translator-manager` or delete `resources/views/vendor/gemini-translator`.
+- **Script faults in the manager:** turn on **Highlight script faults**. Amber cells have letters that do not belong to that locale (for example Devanagari or Latin inside `gu`). Placeholders are ignored. The toggle is stored as `gemini-translator-malform-detector`. This does not rewrite files; it only marks editors. Use `--refresh` / `--refresh-clean` to regenerate bad Gemini output.
 - **Packs:** extra folders such as `lang/app3/` and `lang/web/` are a separate CLI prompt after you pick a module. The manager Pack filter appears only when that module (or non-module) has more than `lang/`.
 - **`--refresh` vs `--refresh-clean`:** `--refresh` uses the current file text. `--refresh-clean` ignores that text. Do not combine either with `--skip-existing`.
 - **Windows:** `--driver=fork` runs Symfony Process workers. Native menus need `ext-ffi`. Without FFI the command uses Symfony `choice()` / `confirm()`.
@@ -194,6 +195,14 @@ Default `--concurrency` is capped only to a **recorded** positive RPM. `0` RPM/R
 - Check your Google Cloud quota limits
 - Enable billing on your Google Cloud project
 - Request quota increase at https://aistudio.google.com
+
+### Manager shows mixed scripts but the CLI accepted them
+
+**Cause:** The CLI `hasDisallowedScript()` check still allows Latin tokens in native-script locales. The manager highlighter is stricter and flags leftover Latin in Gujarati, Hindi, Arabic, and similar locales.
+
+**Solution:** Keep the highlighter on while reviewing. Re-run `--refresh-clean` for that language if the Latin is leftover English, or leave brand names if they are intentional.
+
+---
 
 ### Authentication Failed
 

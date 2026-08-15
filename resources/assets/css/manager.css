@@ -91,6 +91,7 @@
         /* Primitive — type (admin Minor Third-ish, system fonts) */
         --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
+        --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
         --text-xs: 0.75rem;
         --text-sm: 0.875rem;
         --text-lg: 1.125rem;
@@ -145,6 +146,8 @@
         --color-save-deep: var(--green-800);
         --color-danger: var(--red-600);
         --color-on-danger: var(--white);
+        --color-warning: var(--amber-400);
+        --color-on-warning: var(--slate-900);
         --color-chip: var(--slate-200);
         --color-on-chip: var(--slate-900);
         --color-skeleton: var(--slate-200);
@@ -209,6 +212,8 @@
             --color-save-deep: var(--green-300);
             --color-danger: var(--red-400);
             --color-on-danger: #0a0a0a;
+            --color-warning: var(--amber-400);
+            --color-on-warning: #1c1400;
             --color-chip: #1a1a1a;
             --color-on-chip: #ededed;
             --color-skeleton: #1a1a1a;
@@ -245,6 +250,8 @@
         --color-save-deep: var(--green-300);
         --color-danger: var(--red-400);
         --color-on-danger: #0a0a0a;
+        --color-warning: var(--amber-400);
+        --color-on-warning: #1c1400;
         --color-chip: #1a1a1a;
         --color-on-chip: #ededed;
         --color-skeleton: #1a1a1a;
@@ -899,7 +906,7 @@
         outline: none;
     }
 
-    .manager-filter-missing {
+    .manager-filter-missing, .manager-filter-malform {
         margin-block: 1rem -0.5rem;
     }
 
@@ -986,10 +993,10 @@
 
     .translation-manager :is(.manager-check, .manager-language-option) input[type="checkbox"]::after {
         content: "✓";
-        font-family: var(--font-mono);
-        font-size: 1rem;
-        font-weight: var(--weight-regular);
-        line-height: 1;
+        font-family: var(--font-serif);
+        font-size: 0.875rem;
+        font-weight: var(--weight-semibold);
+        line-height: 1.25;
         color: var(--color-on-action);
         transform: scale(0.6);
         opacity: 0;
@@ -1375,6 +1382,18 @@
         border-color: var(--color-action);
     }
 
+    .manager-editor.is-malformed {
+        border-color: var(--color-warning);
+        background: color-mix(in srgb, var(--color-warning) 18%, var(--color-field));
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-warning) 55%, transparent);
+    }
+
+    .manager-editor.is-malformed:focus,
+    .manager-editor.is-malformed:focus-visible {
+        border-color: var(--color-warning);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 50%, transparent);
+    }
+
     .manager-columns-menu {
         display: none;
         position: absolute;
@@ -1477,10 +1496,15 @@
         inline-size: var(--control-min-size);
         block-size: var(--control-min-size);
         border: 0;
-        font-size: 1.5rem;
+        font-size: 1.125rem;
         line-height: 1;
         color: var(--color-text-muted);
         border-radius: var(--radius-md);
+
+        span {
+            text-box: trim-both cap text;
+            display: inline-block;
+        }
     }
 
     .manager-language-grid {
@@ -1666,6 +1690,7 @@
         }
 
         .manager-editor.is-changed,
+        .manager-editor.is-malformed,
         .manager-button-save,
         .manager-button-accent,
         .manager-page-button.is-current {

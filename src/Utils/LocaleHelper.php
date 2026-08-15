@@ -54,6 +54,33 @@ class LocaleHelper
         'ka' => 'georgian',
         'am' => 'ethiopic',
         'ti' => 'ethiopic',
+        'bo' => 'tibetan',
+        'nqo' => 'nko',
+        'mni' => 'meetei',
+        'kok' => 'devanagari',
+        'mai' => 'devanagari',
+        'doi' => 'devanagari',
+        'bho' => 'devanagari',
+        'awa' => 'devanagari',
+        'new' => 'devanagari',
+        'mwr' => 'devanagari',
+        'tcy' => 'kannada',
+        'yue' => 'han',
+        'ckb' => 'arabic',
+        'ug' => 'arabic',
+        'prs' => 'arabic',
+        'shn' => 'myanmar',
+        'sah' => 'cyrillic',
+        'tt' => 'cyrillic',
+        'ba' => 'cyrillic',
+        'kv' => 'cyrillic',
+        'ce' => 'cyrillic',
+        'cv' => 'cyrillic',
+        'os' => 'cyrillic',
+        'tyv' => 'cyrillic',
+        'udm' => 'cyrillic',
+        'mhr' => 'cyrillic',
+        'bua' => 'cyrillic',
     ];
 
     /** @var array<string, list<string>> Unicode script names allowed in native words */
@@ -84,6 +111,91 @@ class LocaleHelper
         'armenian' => ['Armenian', 'Latin'],
         'georgian' => ['Georgian', 'Latin'],
         'ethiopic' => ['Ethiopic', 'Latin'],
+        'tibetan' => ['Tibetan', 'Latin'],
+        'nko' => ['Nko', 'Latin'],
+        'tifinagh' => ['Tifinagh', 'Latin'],
+        'olchiki' => ['Ol_Chiki', 'Latin'],
+        'meetei' => ['Meetei_Mayek', 'Latin'],
+        'cans' => ['Canadian_Aboriginal', 'Latin'],
+    ];
+
+    /**
+     * Scripts allowed in the manager malform highlighter.
+     * Stricter than ALLOWED_UNICODE_SCRIPTS: Latin is not excused in native scripts.
+     *
+     * @var array<string, list<string>>
+     */
+    private const array MALFORM_ALLOWED_SCRIPTS = [
+        'latin' => ['Latin'],
+        'devanagari' => ['Devanagari'],
+        'gujarati' => ['Gujarati'],
+        'bengali' => ['Bengali'],
+        'gurmukhi' => ['Gurmukhi'],
+        'odia' => ['Oriya'],
+        'tamil' => ['Tamil'],
+        'telugu' => ['Telugu'],
+        'kannada' => ['Kannada'],
+        'malayalam' => ['Malayalam'],
+        'sinhala' => ['Sinhala'],
+        'thai' => ['Thai'],
+        'lao' => ['Lao'],
+        'khmer' => ['Khmer'],
+        'myanmar' => ['Myanmar'],
+        'arabic' => ['Arabic'],
+        'hebrew' => ['Hebrew'],
+        'thaana' => ['Thaana'],
+        'cyrillic' => ['Cyrillic'],
+        'han' => ['Han', 'Bopomofo'],
+        'japanese' => ['Han', 'Hiragana', 'Katakana'],
+        'hangul' => ['Hangul', 'Han'],
+        'greek' => ['Greek'],
+        'armenian' => ['Armenian'],
+        'georgian' => ['Georgian'],
+        'ethiopic' => ['Ethiopic'],
+        'tibetan' => ['Tibetan'],
+        'nko' => ['Nko'],
+        'tifinagh' => ['Tifinagh'],
+        'olchiki' => ['Ol_Chiki'],
+        'meetei' => ['Meetei_Mayek'],
+        'cans' => ['Canadian_Aboriginal'],
+    ];
+
+    /** @var array<string, string> Display script name => Unicode sc= property */
+    private const array UNICODE_SCRIPT_PROPERTIES = [
+        'Latin' => 'Latn',
+        'Devanagari' => 'Deva',
+        'Gujarati' => 'Gujr',
+        'Bengali' => 'Beng',
+        'Gurmukhi' => 'Guru',
+        'Oriya' => 'Orya',
+        'Tamil' => 'Taml',
+        'Telugu' => 'Telu',
+        'Kannada' => 'Knda',
+        'Malayalam' => 'Mlym',
+        'Sinhala' => 'Sinh',
+        'Thai' => 'Thai',
+        'Lao' => 'Laoo',
+        'Khmer' => 'Khmr',
+        'Myanmar' => 'Mymr',
+        'Arabic' => 'Arab',
+        'Hebrew' => 'Hebr',
+        'Thaana' => 'Thaa',
+        'Cyrillic' => 'Cyrl',
+        'Han' => 'Hani',
+        'Hiragana' => 'Hira',
+        'Katakana' => 'Kana',
+        'Hangul' => 'Hang',
+        'Bopomofo' => 'Bopo',
+        'Greek' => 'Grek',
+        'Armenian' => 'Armn',
+        'Georgian' => 'Geor',
+        'Ethiopic' => 'Ethi',
+        'Tibetan' => 'Tibt',
+        'Nko' => 'Nkoo',
+        'Tifinagh' => 'Tfng',
+        'Ol_Chiki' => 'Olck',
+        'Meetei_Mayek' => 'Mtei',
+        'Canadian_Aboriginal' => 'Cans',
     ];
 
     /**
@@ -123,6 +235,11 @@ class LocaleHelper
         'Georgian' => '/\p{sc=Geor}/u',
         'Ethiopic' => '/\p{sc=Ethi}/u',
         'Tibetan' => '/\p{sc=Tibt}/u',
+        'Nko' => '/\p{sc=Nkoo}/u',
+        'Tifinagh' => '/\p{sc=Tfng}/u',
+        'Ol_Chiki' => '/\p{sc=Olck}/u',
+        'Meetei_Mayek' => '/\p{sc=Mtei}/u',
+        'Canadian_Aboriginal' => '/\p{sc=Cans}/u',
     ];
 
     /** Canonicalize a locale code to Laravel's standard format. */
@@ -188,6 +305,18 @@ class LocaleHelper
 
         if (str_contains($canonical, '_hans') || str_contains($canonical, '_hant')) {
             return 'han';
+        }
+
+        if (str_contains($canonical, '_tfng')) {
+            return 'tifinagh';
+        }
+
+        if (str_contains($canonical, '_olck')) {
+            return 'olchiki';
+        }
+
+        if (str_contains($canonical, '_syll')) {
+            return 'cans';
         }
 
         $base = explode('_', $canonical)[0];
@@ -295,6 +424,50 @@ class LocaleHelper
         }
 
         return preg_match_all('/[A-Za-z]{3,}/', $stripped) >= 3;
+    }
+
+    /**
+     * Scripts found in $text that do not belong to $lang (manager highlighter).
+     * Placeholders, HTML entities, and Laravel plural tokens are ignored.
+     * Latin letters in a non-Latin locale are treated as a fault.
+     *
+     * @return list<string>
+     */
+    public static function malformReasons(string $text, string $lang): array
+    {
+        $stripped = trim(self::stripPlaceholdersForScriptCheck($text));
+        if ($stripped === '') {
+            return [];
+        }
+
+        $allowed = self::MALFORM_ALLOWED_SCRIPTS[self::writingSystem($lang)] ?? ['Latin'];
+        $found = [];
+
+        foreach (self::UNICODE_SCRIPT_REGEX as $script => $pattern) {
+            if (in_array($script, $allowed, true)) {
+                continue;
+            }
+
+            if (preg_match($pattern, $stripped) === 1) {
+                $found[] = $script;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Catalog consumed by the manager JS detector so rules stay in one place.
+     *
+     * @return array{systems: array<string, string>, allowed: array<string, list<string>>, properties: array<string, string>}
+     */
+    public static function detectorCatalog(): array
+    {
+        return [
+            'systems' => self::WRITING_SYSTEMS,
+            'allowed' => self::MALFORM_ALLOWED_SCRIPTS,
+            'properties' => self::UNICODE_SCRIPT_PROPERTIES,
+        ];
     }
 
     /** Find missing placeholders in the translated text compared to the source text. */

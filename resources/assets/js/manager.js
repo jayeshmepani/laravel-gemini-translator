@@ -18,6 +18,8 @@
     const csrf = root.dataset.csrf || '';
     const languageNames = parseJson(root.dataset.languageNames, {});
     const packMap = parseJson(root.dataset.packMap, {});
+    const scriptCatalog = parseJson(root.dataset.scriptCatalog, { systems: {}, allowed: {}, properties: {} });
+    const MALFORM_KEY = 'gemini-translator-malform-detector';
     const supportsDialog = typeof HTMLDialogElement !== 'undefined'
         && typeof HTMLDialogElement.prototype.showModal === 'function';
     const supportsPopover = typeof HTMLElement !== 'undefined'
@@ -36,6 +38,7 @@
         scope: root.querySelector('[data-filter="scope"]'),
         language: root.querySelector('[data-filter="language"]'),
         missing: root.querySelector('[data-filter="missing"]'),
+        malform: root.querySelector('[data-malform-detector]'),
         search: root.querySelector('[data-search]'),
         table: root.querySelector('[data-table]'),
         tableWrap: root.querySelector('[data-table-wrap]'),
@@ -75,6 +78,7 @@
         scope: els.scope ? els.scope.value : 'all',
         language: els.language ? els.language.value : 'all',
         showOnlyMissing: els.missing ? els.missing.checked : false,
+        malformDetector: storedMalformEnabled(),
         search: '',
         sort: 'key',
         order: 'asc',
@@ -132,6 +136,126 @@
             els.theme.checked = resolved === 'dark';
             els.theme.setAttribute('aria-checked', resolved === 'dark' ? 'true' : 'false');
             els.theme.setAttribute('aria-label', resolved === 'dark' ? 'Use light theme' : 'Use dark theme');
+        }
+    }
+
+    function storedMalformEnabled() {
+        try {
+            const value = window.localStorage.getItem(MALFORM_KEY);
+            if (value === '0') {
+                return false;
+            }
+            if (value === '1') {
+                return true;
+            }
+        } catch (error) {}
+        return false;
+    }
+
+    function canonicalizeLocale(code) {
+        const normalized = String(code || '').replace(/-/g, '_');
+        const parts = normalized.split('_');
+        if (parts.length === 1) {
+            return parts[0].toLowerCase();
+        }
+        return parts[0].toLowerCase() + '_' + parts.slice(1).join('_').toUpperCase();
+    }
+
+    function writingSystem(code) {
+        const canonical = canonicalizeLocale(code).toLowerCase();
+        if (canonical.includes('_latn')) {
+            return 'latin';
+        }
+        if (canonical.includes('_cyrl')) {
+            return 'cyrillic';
+        }
+        if (canonical.includes('_arab')) {
+            return 'arabic';
+        }
+        if (canonical.includes('_deva')) {
+            return 'devanagari';
+        }
+        if (canonical.includes('_guru')) {
+            return 'gurmukhi';
+        }
+        if (canonical.includes('_hans') || canonical.includes('_hant')) {
+            return 'han';
+        }
+        if (canonical.includes('_tfng')) {
+            return 'tifinagh';
+        }
+        if (canonical.includes('_olck')) {
+            return 'olchiki';
+        }
+        if (canonical.includes('_syll')) {
+            return 'cans';
+        }
+        const base = canonical.split('_')[0];
+        const systems = scriptCatalog.systems || {};
+        return systems[base] || 'latin';
+    }
+
+    function stripPlaceholdersForScriptCheck(text) {
+        return String(text || '')
+            .replace(/:[A-Za-z_][A-Za-z0-9_]*/g, '')
+            .replace(/\{[A-Za-z0-9_]+\}/g, '')
+            .replace(/\[[^\]]+\]/g, '')
+            .replace(/&[a-zA-Z]+;/g, '')
+            .replace(/%(?:\d+\$)?[sdxXoeEfFgGaAcpn%]/g, '');
+    }
+
+    function malformReasons(text, lang) {
+        const stripped = stripPlaceholdersForScriptCheck(text).trim();
+        if (!stripped) {
+            return [];
+        }
+        const allowed = (scriptCatalog.allowed && scriptCatalog.allowed[writingSystem(lang)]) || ['Latin'];
+        const properties = scriptCatalog.properties || {};
+        const found = [];
+        Object.keys(properties).forEach((script) => {
+            if (allowed.indexOf(script) !== -1) {
+                return;
+            }
+            try {
+                const pattern = new RegExp('\\p{sc=' + properties[script] + '}', 'u');
+                if (pattern.test(stripped)) {
+                    found.push(script);
+                }
+            } catch (error) {}
+        });
+        return found;
+    }
+
+    function applyMalformHighlight(textarea) {
+        if (!textarea) {
+            return;
+        }
+        if (!state.malformDetector) {
+            textarea.classList.remove('is-malformed');
+            textarea.removeAttribute('title');
+            textarea.removeAttribute('aria-invalid');
+            return;
+        }
+        const reasons = malformReasons(textarea.value, textarea.dataset.lang || '');
+        const malformed = reasons.length > 0;
+        textarea.classList.toggle('is-malformed', malformed);
+        if (malformed) {
+            textarea.title = 'Unexpected script for this locale: ' + reasons.join(', ');
+            textarea.setAttribute('aria-invalid', 'true');
+        } else {
+            textarea.removeAttribute('title');
+            textarea.removeAttribute('aria-invalid');
+        }
+    }
+
+    function applyMalformHighlights() {
+        if (!els.body) {
+            return;
+        }
+        els.body.querySelectorAll('[data-editor]').forEach(applyMalformHighlight);
+        root.classList.toggle('is-malform-on', state.malformDetector);
+        if (els.malform) {
+            els.malform.checked = state.malformDetector;
         }
     }
 
@@ -564,6 +688,7 @@
     function renderAll() {
         renderHead();
         renderBody();
+        applyMalformHighlights();
         renderPager();
         renderColumnsMenu();
         updateSaveBadge();
@@ -857,6 +982,17 @@
                 }
                 autoResize(editor);
                 trackEditor(editor);
+                applyMalformHighlight(editor);
+            });
+        }
+        if (els.malform) {
+            els.malform.checked = state.malformDetector;
+            els.malform.addEventListener('change', () => {
+                state.malformDetector = els.malform.checked;
+                try {
+                    window.localStorage.setItem(MALFORM_KEY, state.malformDetector ? '1' : '0');
+                } catch (error) {}
+                applyMalformHighlights();
             });
         }
         if (els.theme) {
