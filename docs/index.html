@@ -116,7 +116,7 @@
               "name": "How accurate are the AI translations?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Gemini translations are generally high quality, and final human review is still recommended for production-critical text. Accuracy improves with the --context flag for domain-specific terminology."
+                "text": "Gemini translations are generally high quality: the package sends source text, per-locale script rules, and writing-system checks so most output matches the requested language. Gemini can still mix scripts, include another language, or return wording that is not literal or expected. Human review is still recommended for production-critical text. Use Highlight script faults, --refresh or --refresh-clean for leftover faults, and --context for domain-specific terminology."
               }
             },
             {
@@ -374,6 +374,19 @@
                         <code class="inline-code">kernel32</code> menus and Symfony Process workers for parallel
                         chunks.
                     </p>
+                    <div class="alert alert-warning" role="note">
+                        <strong>AI translations are a best-effort draft.</strong> The package asks Gemini for the
+                        language you selected and rejects some mixed-script or leftover-English output. It cannot
+                        guarantee a perfect, literal, or single-language result. Gemini can still mix writing systems,
+                        slip in another language, or return wording that is not what you expected — for example a
+                        Gujarati request that also contains Hindi, Kannada, or English. Review generated files before
+                        you ship them. In the Translation Manager, turn on
+                        <strong>Highlight script faults</strong>. Re-run
+                        <code class="inline-code">--refresh</code> or
+                        <code class="inline-code">--refresh-clean</code> for bad rows. The
+                        <a href="#ai-first-translation">AI-First Translation</a> section explains what the guard
+                        catches and what it does not.
+                    </div>
                     <ul class="feature-grid" aria-label="Key features">
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -406,7 +419,8 @@
                             </div>
                             <h3>AI-First Translation</h3>
                             <p>Prompts send source text and per-locale script rules. Namespaced keys and literal
-                                strings are both supported. Mixed-script or leftover-English output is rejected.</p>
+                                strings are both supported. Mixed-script or leftover-English output is reduced, not
+                                eliminated. Remaining AI mistakes still need a human review.</p>
                         </li>
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -451,7 +465,8 @@
                             </div>
                             <h3>Production-Ready Safety</h3>
                             <p>Atomic file writes with path validation, framework translation bootstrapping, mixed-script
-                                rejection, and <code class="inline-code">--dry-run</code> previews.</p>
+                                checks that reduce (not eliminate) bad Gemini rows, and
+                                <code class="inline-code">--dry-run</code> previews.</p>
                         </li>
                         <li class="feature-card">
                             <div class="feature-icon" aria-hidden="true">
@@ -522,26 +537,24 @@
                         <li>Per-locale writing-system map (Tibetan, N’Ko, Tifinagh, Ol Chiki, Meitei, extra
                             Devanagari/Cyrillic/Arabic codes, and script tags such as
                             <code class="inline-code">_latn</code> / <code class="inline-code">_arab</code>) plus
-                            mixed-script / leftover-English rejection.</li>
+                            checks that reduce mixed-script / leftover-English output. They do not eliminate it.</li>
                     </ul>
                     <h3>Changed</h3>
                     <ul>
                         <li><code class="inline-code">--refresh</code> uses current file wording as the source.</li>
                         <li>On Windows, <code class="inline-code">--driver=fork</code> runs Process workers. FFI menus
                             match Laravel Prompts.</li>
-                        <li>JSON keeps dotted PHP-style keys. Blank literal JSON values fill from the key. JSON-only
-                            selection does not re-translate PHP <code class="inline-code">file.subkey</code> keys.</li>
-                        <li>A selected language in the manager lists only keys that exist in that locale file. PHP file
-                            pickers follow the selected pack.</li>
+                        <li>JSON keeps dotted PHP-style keys. Blank literal JSON values fill from the key.</li>
                         <li>Command summary records <code class="inline-code">processed_chunks</code>.</li>
+                        <li>CLI writing-system check reduces mixed-script Gemini output (for example Gujarati +
+                            Kannada <code class="inline-code">ೋ</code>). It does not stop every mixed or leftover-English
+                            row.</li>
                     </ul>
-                    <h3>Fixed</h3>
+                    <h3>Fixed (relative to 5.0.1 CLI)</h3>
                     <ul>
-                        <li>Mixed-script output (for example Gujarati + Kannada <code class="inline-code">ೋ</code>) is
-                            rejected instead of written.</li>
-                        <li>Add-languages no longer reports failure after one root writes successfully.</li>
-                        <li><code class="inline-code">web</code> and similar 2–3 letter folders are packs when they
-                            contain locale files, not locales.</li>
+                        <li>JSON-only selection does not re-translate PHP
+                            <code class="inline-code">file.subkey</code> keys.</li>
+                        <li>Selecting a single CLI file group returns that file.</li>
                     </ul>
                 </section>
                 <section id="installation" class="section" aria-labelledby="installation-heading">
@@ -562,9 +575,70 @@
                         <code class="inline-code">config/gemini.php</code> comes from
                         <code class="inline-code">google-gemini-php/laravel</code>, not this tag.</p>
                     <p>The manager is already registered at
-                        <code class="inline-code">/translations-manager</code>. Publish Blade/CSS/JS only if you want to
-                        edit them:</p>
-                    <pre><code>php artisan vendor:publish --tag=gemini-translator-manager</code></pre>
+                        <code class="inline-code">/translations-manager</code>. You do not have to publish views for it
+                        to work. Publish only if you want to edit those files in the app.</p>
+                    <h3>Publishable tags</h3>
+                    <div class="table-responsive-wrapper">
+                        <table class="options-table">
+                            <thead>
+                                <tr>
+                                    <th>Tag</th>
+                                    <th>Copies</th>
+                                    <th>Required?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>gemini-translator-config</code></td>
+                                    <td><code class="inline-code">config/gemini-translator.php</code> (model, quota
+                                        snapshot, manager prefix / enable / middleware)</td>
+                                    <td>No. Package config is merged without publishing. Publish to edit quotas or the
+                                        manager URL.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>gemini-translator-views</code></td>
+                                    <td><code class="inline-code">resources/views/vendor/gemini-translator/</code>
+                                        (<code class="inline-code">manager.blade.php</code>,
+                                        <code class="inline-code">partials/workspace.blade.php</code>,
+                                        <code class="inline-code">errors/unauthenticated.blade.php</code>)</td>
+                                    <td>No. Laravel then prefers these copies over the package. Delete the folder to
+                                        load the package views again.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>gemini-translator-assets</code></td>
+                                    <td><code class="inline-code">public/vendor/gemini-translator/</code>
+                                        (<code class="inline-code">css/manager.css</code>,
+                                        <code class="inline-code">js/manager.js</code>)</td>
+                                    <td>No. CSS/JS are inlined from the package unless you pass
+                                        <code class="inline-code">$assetCss</code> /
+                                        <code class="inline-code">$assetJs</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>gemini-translator-manager</code></td>
+                                    <td>Views <em>and</em> assets (both destinations above)</td>
+                                    <td>No. Convenience tag for customizing the manager UI.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <pre><code># Config only
+php artisan vendor:publish --tag=gemini-translator-config
+
+# Views only
+php artisan vendor:publish --tag=gemini-translator-views
+
+# Public CSS/JS only
+php artisan vendor:publish --tag=gemini-translator-assets
+
+# Views + CSS/JS
+php artisan vendor:publish --tag=gemini-translator-manager
+
+# Overwrite after a package upgrade
+php artisan vendor:publish --tag=gemini-translator-manager --force
+php artisan view:clear</code></pre>
+                    <p><code class="inline-code">config/gemini.php</code> is published by
+                        <code class="inline-code">google-gemini-php/laravel</code>, not by these tags. PHP from this
+                        package is never published.</p>
                     <h3>Step 3: Add API Key</h3>
                     <p>Add your Gemini API key to your <code class="inline-code">.env</code> file. You can get a key
                         from
@@ -725,8 +799,19 @@ php artisan translations:extract-and-generate --skip-existing --langs=es,de</cod
                     <p>Light/dark theme (stored as <code class="inline-code">gemini-translator-theme</code>), sticky KEY
                         column, pagination (default 5 rows, last two pages always shown), Add Languages, Sync, and Save.
                         CSS is semantic component CSS, not Tailwind or Bootstrap utilities.</p>
-                    <p>Optional publish:</p>
+                    <p>Optional publish (only if you want to edit Blade/CSS/JS):</p>
                     <pre><code>php artisan vendor:publish --tag=gemini-translator-manager</code></pre>
+                    <p>After a package upgrade, either overwrite those copies or go back to the package files:</p>
+                    <pre><code># Overwrite published views + assets
+php artisan vendor:publish --tag=gemini-translator-manager --force
+php artisan view:clear
+
+# Or delete the published views so Laravel loads the package copies again
+rm -rf resources/views/vendor/gemini-translator
+php artisan view:clear</code></pre>
+                    <p>There is no <code class="inline-code">unpublish</code> command. PHP from the package is never
+                        published; <code class="inline-code">composer update</code> always uses the new code. Stale UI
+                        almost always means an old published Blade.</p>
                     <p>Or drop the workspace into an existing layout:</p>
                     <pre><code>@include('gemini-translator::partials.workspace')</code></pre>
                 </section>
@@ -946,6 +1031,12 @@ Found missing translations needing synchronization:
                         on
                         Laravel conventions.
                     </p>
+                    <div class="alert alert-warning" role="note">
+                        <strong>Notice:</strong> Gemini is a generative model. This package tries to honor the
+                        requested language as far as prompts and checks allow. It can still return mixed scripts,
+                        another language inside the same string, or a translation that is not literal or not the
+                        wording you wanted. Treat every generated file as a draft until a person reviews it.
+                    </div>
                     <h3>How the AI Interprets Keys</h3>
                     <p>The prompt includes source text and script rules. Gemini is asked to handle two kinds of keys:</p>
                     <div class="table-responsive-wrapper">
@@ -977,10 +1068,17 @@ Found missing translations needing synchronization:
                     <p>Each locale is mapped to one Unicode writing system (<code class="inline-code">sc=</code>, so
                         shared marks such as danda <code class="inline-code">।</code> are Common). Gemini output that
                         mixes neighbor scripts (for example Gujarati plus Kannada
-                        <code class="inline-code">ೋ</code>) or leaves English sentences in an Indic locale is rejected
-                        and the source is kept. The prompt also sends source text and script rules. In the Translation
+                        <code class="inline-code">ೋ</code>) or leaves English sentences in an Indic locale is
+                        <em>sometimes</em> rejected and the source is kept. The check reduces how often that happens; it
+                        does not catch every mixed or leftover-English row. The prompt also sends source text and script
+                        rules. In the Translation
                         Manager, <strong>Highlight script faults</strong> uses the same map (plus leftover Latin in
                         native-script locales) to outline bad cells while you edit.</p>
+                    <p>The guard only looks at writing systems. It does not judge meaning. A Gujarati string that is
+                        grammatically odd, too free, or mixes Hindi words in Gujarati script will usually pass. Brand
+                        names, leftover Latin in a native-script locale, and mixed neighbor scripts are the cases the
+                        manager highlighter is meant to surface. Human review is still required for production
+                        copy.</p>
                     <p>The catalog covers 249 language codes, including
                         <code class="inline-code">zh_CN</code> / <code class="inline-code">zh_TW</code>,
                         <code class="inline-code">pt_BR</code> / <code class="inline-code">pt_PT</code>, and Punjabi
@@ -1310,8 +1408,11 @@ php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,
                                     <td>Laravel prefers
                                         <code class="inline-code">resources/views/vendor/gemini-translator</code> over
                                         the package views.</td>
-                                    <td>Republish <code class="inline-code">--tag=gemini-translator-manager</code> or
-                                        delete the published views so the package copies load.</td>
+                                    <td>Republish with <code class="inline-code">--force</code>:
+                                        <code class="inline-code">php artisan vendor:publish --tag=gemini-translator-manager --force</code>
+                                        and <code class="inline-code">php artisan view:clear</code>. Or delete
+                                        <code class="inline-code">resources/views/vendor/gemini-translator</code> so
+                                        the package views load again. Laravel has no unpublish command.</td>
                                 </tr>
                                 <tr>
                                     <td>No “Highlight script faults” checkbox</td>
@@ -1320,13 +1421,26 @@ php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,
                                         delete <code class="inline-code">resources/views/vendor/gemini-translator</code>.</td>
                                 </tr>
                                 <tr>
-                                    <td>Mixed-script or leftover English in a translation</td>
-                                    <td>Gemini mixed neighbor scripts or left English in a non-Latin locale.</td>
-                                    <td>The writing-system guard rejects that output and keeps the source. In the
-                                        manager, turn on <strong>Highlight script faults</strong> to see remaining
-                                        cells. Re-run
+                                    <td>Mixed-script, other language, or unexpected wording</td>
+                                    <td>Gemini is a generative model. It can mix neighbor scripts, include another
+                                        language, or return wording that is not literal. The writing-system guard
+                                        rejects some mixed-script rows and keeps the source; it does not catch
+                                        meaning or tone.</td>
+                                    <td>Treat generated files as a draft. In the manager, turn on
+                                        <strong>Highlight script faults</strong>. Re-run
                                         <code class="inline-code">--refresh</code> or
-                                        <code class="inline-code">--refresh-clean</code> for that language.</td>
+                                        <code class="inline-code">--refresh-clean</code> for that language. Use
+                                        <code class="inline-code">--context</code> for domain terms.</td>
+                                </tr>
+                                <tr>
+                                    <td>“Cannot write … PHP process cannot create files”</td>
+                                    <td>The user that runs PHP (php-fpm, Apache, nginx, or
+                                        <code class="inline-code">artisan serve</code>) cannot write that path. That
+                                        user is not always <code class="inline-code">www-data</code>.</td>
+                                    <td>The error names the process user when POSIX is available. Give that user write
+                                        access on <code class="inline-code">lang/</code> (and module lang trees), for
+                                        example
+                                        <code class="inline-code">sudo chown -R USER:USER lang && sudo chmod -R u+w lang</code>.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1385,6 +1499,20 @@ php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,
                             </dl>
                         </details>
                         <details name="faq">
+                            <summary>How do I pick up package UI changes after I already published the views?</summary>
+                            <dl class="qa-pair">
+                                <dt class="sr-only">Question</dt>
+                                <dd>Laravel keeps your copies in
+                                    <code class="inline-code">resources/views/vendor/gemini-translator</code>. Overwrite
+                                    them with
+                                    <code class="inline-code">php artisan vendor:publish --tag=gemini-translator-manager --force</code>
+                                    and <code class="inline-code">php artisan view:clear</code>, or delete that folder
+                                    so the package views load. There is no unpublish command. PHP is never published;
+                                    <code class="inline-code">composer update</code> always uses the new package code.
+                                </dd>
+                            </dl>
+                        </details>
+                        <details name="faq">
                             <summary>How do I open the Translation Manager?</summary>
                             <dl class="qa-pair">
                                 <dt class="sr-only">Question</dt>
@@ -1410,8 +1538,16 @@ php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,
                             <summary>How accurate are the AI translations?</summary>
                             <dl class="qa-pair">
                                 <dt class="sr-only">Question</dt>
-                                <dd>Gemini translations are generally high quality, but final review is still
-                                    recommended for production-critical text. Accuracy improves significantly when using
+                                <dd>Gemini translations are generally high quality. The package sends source text,
+                                    per-locale script rules, and a writing-system check so most output matches the
+                                    language you asked for. Gemini can still mix writing systems, slip in another
+                                    language, or return wording that is not literal or not what you expected (for
+                                    example Gujarati mixed with Hindi, Kannada, or English). The check reduces those
+                                    cases; it does not catch every mistake. Human review is still recommended for
+                                    production-critical text. Turn on
+                                    <strong>Highlight script faults</strong> in the manager, re-run
+                                    <code class="inline-code">--refresh</code> or
+                                    <code class="inline-code">--refresh-clean</code> for leftover faults, and use
                                     <code class="inline-code">--context</code> for domain-specific terminology.
                                 </dd>
                             </dl>

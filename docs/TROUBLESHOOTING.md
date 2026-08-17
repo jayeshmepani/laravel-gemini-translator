@@ -85,6 +85,7 @@ GEMINI_REQUEST_TIMEOUT=600
 # Translation Manager (optional)
 # GEMINI_TRANSLATOR_MANAGER=true
 # GEMINI_TRANSLATOR_MANAGER_PREFIX=translations-manager
+# GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS=true
 
 # Base URL (optional, only if using proxy)
 # GEMINI_BASE_URL=https://your-proxy.com
@@ -128,7 +129,19 @@ return [
 
 ## 5.1.0 notes
 
-- **Translation Manager:** open `/translations-manager`. If the app has a login route, sign in first. If a published Blade looks stale (missing Pack, theme, or **Highlight script faults**), republish `--tag=gemini-translator-manager` or delete `resources/views/vendor/gemini-translator`.
+- **Translation Manager:** open `/translations-manager`. If the app has a login route, sign in first. If a published Blade looks stale (missing Pack, theme, or **Highlight script faults**), overwrite it or remove it so the package views load:
+
+```bash
+php artisan vendor:publish --tag=gemini-translator-manager --force
+php artisan view:clear
+
+# There is no unpublish command:
+rm -rf resources/views/vendor/gemini-translator
+php artisan view:clear
+```
+
+- **Cannot write lang/:** the error names the PHP process user when it can (`nginx`, `apache`, `http`, your login user, or `www-data` — not always `www-data`). Example: `sudo chown -R USER:USER lang && sudo chmod -R u+w lang`. Apply the same to module `lang/` trees if needed.
+- **AI output is a draft:** the package tries to produce the language you asked for. Gemini can still mix scripts, include another language, or return wording that is not literal or expected (for example Gujarati mixed with Hindi, Kannada, or English). The writing-system guard **reduces** those cases; it does not eliminate them, and it does not catch meaning or tone.
 - **Script faults in the manager:** turn on **Highlight script faults**. Amber cells have letters that do not belong to that locale (for example Devanagari or Latin inside `gu`). Placeholders are ignored. The toggle is stored as `gemini-translator-malform-detector`. This does not rewrite files; it only marks editors. Use `--refresh` / `--refresh-clean` to regenerate bad Gemini output.
 - **Packs:** extra folders such as `lang/app3/` and `lang/web/` are a separate CLI prompt after you pick a module. The manager Pack filter appears only when that module (or non-module) has more than `lang/`.
 - **`--refresh` vs `--refresh-clean`:** `--refresh` uses the current file text. `--refresh-clean` ignores that text. Do not combine either with `--skip-existing`.
@@ -195,6 +208,14 @@ Default `--concurrency` is capped only to a **recorded** positive RPM. `0` RPM/R
 - Check your Google Cloud quota limits
 - Enable billing on your Google Cloud project
 - Request quota increase at https://aistudio.google.com
+
+### Gemini mixed languages or wrote unexpected wording
+
+**Symptom:** You asked for Gujarati (`gu`) and the file contains Hindi or Kannada letters, leftover English, or a translation that is not literal / not what you wanted.
+
+**Cause:** Gemini is a generative model. The package sends script rules and a writing-system check that **reduces** mixed-script or leftover-English output. That is not a complete fix; mixed or off-language rows can still be written. The CLI `hasDisallowedScript()` check still allows Latin tokens in native-script locales. The manager highlighter is stricter and flags leftover Latin in Gujarati, Hindi, Arabic, and similar locales. Neither check judges meaning or tone.
+
+**Solution:** Treat generated files as a draft. Turn on **Highlight script faults** in `/translations-manager` while you review. Re-run `--refresh` (from current file wording) or `--refresh-clean` (from the key) for the affected language. Pass `--context` if your product uses domain terms. Leave brand names if they are intentional.
 
 ### Manager shows mixed scripts but the CLI accepted them
 

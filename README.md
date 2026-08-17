@@ -2,13 +2,15 @@
 
 An interactive Artisan command that scans your Laravel project for translation keys, translates them using Google's Gemini AI, and generates the necessary language files with advanced safety and performance features.
 
+> **AI translations are a best-effort draft.** The package asks Gemini for the language you selected and rejects some mixed-script or leftover-English output, but it cannot guarantee a perfect, literal, or single-language result. Gemini can still mix writing systems, slip in another language, or return wording that is not what you expected (for example a Gujarati run that also contains Hindi, Kannada, or English). Review generated files before you ship them. In the Translation Manager, turn on **Highlight script faults**. Re-run `--refresh` or `--refresh-clean` for bad rows.
+
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/jayesh/laravel-gemini-translator.svg?style=flat-square)](https://packagist.org/packages/jayesh/laravel-gemini-translator)
 [![Total Downloads](https://img.shields.io/packagist/dt/jayesh/laravel-gemini-translator.svg?style=flat-square)](https://packagist.org/packages/jayesh/laravel-gemini-translator)
 [![License](https://img.shields.io/packagist/l/jayesh/laravel-gemini-translator.svg?style=flat-square)](https://packagist.org/packages/jayesh/laravel-gemini-translator)
 
 ## 🚀 Key Features
 
-- **AI-Powered Translation:** Uses Gemini AI for high-quality translations with context awareness
+- **AI-Powered Translation:** Uses Gemini AI with source text and per-locale script rules. Output is best-effort — review before production (see the notice above)
 - **Translation Manager:** Browser UI at `/translations-manager` to browse, edit, save, scan, and add languages. Optional **Highlight script faults** checkbox marks cells whose script does not match the locale
 - **Lang packs:** Extra folders such as `lang/app3/` and `lang/web/` are handled separately from `lang/` in both the CLI and the manager
 - **Interactive & Cross-Platform:** Laravel Prompts + fork on Linux/macOS; `kernel32` menus + Symfony Process workers on Windows
@@ -17,7 +19,7 @@ An interactive Artisan command that scans your Laravel project for translation k
 - **Framework Integration:** Automatic Laravel framework translation bootstrapping
 - **Four Operational Modes:** Full sync, missing-only (`--skip-existing`), refresh from file wording (`--refresh`), clean refresh from keys only (`--refresh-clean`)
 - **Configurable model:** `--model`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, or config (default `gemini-3.5-flash-lite`)
-- **Writing-system guard:** Mixed-script or leftover-English Gemini output is rejected; JSON keeps dotted PHP-style keys. The manager can highlight the same class of faults (plus leftover Latin in native scripts) while you edit
+- **Writing-system guard:** Reduces mixed-script or leftover-English Gemini output; it does not stop every case. JSON keeps dotted PHP-style keys. The manager can highlight the same class of faults (plus leftover Latin in native scripts) while you edit
 - **Production-Ready Safety:** Atomic file writes, path validation, and security checks
 - **Module Support:** Full integration with `nwidart/laravel-modules` with consolidation options
 
@@ -36,7 +38,6 @@ An interactive Artisan command that scans your Laravel project for translation k
 
 ```bash
 composer require jayesh/laravel-gemini-translator
-php artisan vendor:publish --provider="Jayesh\LaravelGeminiTranslator\TranslationServiceProvider"
 php artisan vendor:publish --tag=gemini-translator-config
 ```
 
@@ -60,6 +61,19 @@ php artisan vendor:publish --tag=gemini-translator-manager
 ```
 
 That copies views to `resources/views/vendor/gemini-translator/` and CSS/JS to `public/vendor/gemini-translator/`. After publishing assets, pass `$assetCss` / `$assetJs` to use those files instead of the inlined CSS/JS.
+
+If you already published and then upgrade the package, Laravel keeps your old copies. Overwrite them or remove them so the package files load again:
+
+```bash
+php artisan vendor:publish --tag=gemini-translator-manager --force
+php artisan view:clear
+
+# Or delete published views (there is no artisan unpublish)
+rm -rf resources/views/vendor/gemini-translator
+php artisan view:clear
+```
+
+`--force` on `--tag=gemini-translator-config` overwrites your local config edits. PHP from the package is never published; `composer update` always uses the new code.
 
 Change the URL or turn the UI off in `config/gemini-translator.php` (publish with `--tag=gemini-translator-config`):
 
@@ -359,6 +373,9 @@ Configuration value for key [gemini.request_timeout] must be an integer, string 
 #### Other Issues
 
 - **Windows:** `--driver=fork` maps to Symfony Process workers with the same concurrency, result order, and “cannot stop mid-process” UX as Linux `pcntl` fork. Native menus (`ext-ffi`) match Laravel Prompts (boxed list, arrows, space, enter). Without FFI the command falls back to Symfony `choice()` / `confirm()`.
+- **Cannot write lang/:** the manager names the PHP process user (not always `www-data`). Give that user write access on `lang/` and any module lang trees.
+- **Stale manager UI after upgrade:** republish `--tag=gemini-translator-manager --force` or delete `resources/views/vendor/gemini-translator`.
+- **Wrong or mixed-language text:** Gemini can mix scripts or miss the requested language even after the writing-system guard. Use **Highlight script faults** in the manager, then `--refresh` or `--refresh-clean` for those keys. The guard does not catch non-literal or off-tone wording.
 - **Large Projects:** Use smaller `--chunk-size` to avoid API timeouts
 - **Module Projects:** Ensure `nwidart/laravel-modules` is properly configured
 - **Empty Keys:** Package automatically filters empty/whitespace-only keys

@@ -8,10 +8,10 @@ Everything below is new since **v5.0.1**.
 
 ### ⭐ Added
 
-- **Translation Manager** at `/translations-manager` (prefix, enable flag, and middleware are configurable). Routes and JSON APIs register automatically: data, languages, existing map, scan, save, add-languages. Guests must sign in when the host already has login/register/sign-in routes (browser redirect or JSON 401 + unauthenticated view). If the host has no auth routes, the manager is open. Publish tags: `gemini-translator-config`, `gemini-translator-views`, `gemini-translator-assets`, `gemini-translator-manager`. `ManagerViewComposer` inlines CSS/JS so the page works without publishing assets. Optional `@include('gemini-translator::partials.workspace')` for an existing layout.
-- **Manager UI:** semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>` / `popover`, light/dark theme (`localStorage` key `gemini-translator-theme`), sticky KEY column, pagination footer (default 5 rows, last two pages always visible with an ellipsis), Type / Module / Pack / Scope / PHP-files / Language / “show only missing” / **Highlight script faults** filters, Add Languages, Sync, Save. Checkboxes use a `✓` mark on the monochromatic tokens (sun stays yellow, Save stays green).
+- **Translation Manager** at `/translations-manager` (prefix, enable flag, and middleware are configurable). Routes and JSON APIs register automatically: data, languages, existing map, scan, save, add-languages. Guests must sign in when the host already has login/register/sign-in routes (browser redirect or JSON 401 + unauthenticated view). If the host has no auth routes, the manager is open. Publish tags: `gemini-translator-config`, `gemini-translator-views`, `gemini-translator-assets`, `gemini-translator-manager`. `ManagerViewComposer` inlines CSS/JS so the page works without publishing assets. Optional `@include('gemini-translator::partials.workspace')` for an existing layout. Writes name the PHP process user in errors (not a hard-coded `www-data`). Add-languages continues if one lang tree writes and another is not writable.
+- **Manager UI:** semantic component CSS (no Tailwind/Bootstrap utilities), native `<dialog>` / `<search>` / `popover`, light/dark theme (`localStorage` key `gemini-translator-theme`), sticky KEY column, pagination footer (default 5 rows, last two pages always visible with an ellipsis; pager labels are not taken from `lang/{locale}/pagination.php`), Type / Module / Pack / Scope / PHP-files / Language / “show only missing” / **Highlight script faults** filters, Add Languages, Sync, Save. Checkboxes use a `✓` mark on the monochromatic tokens (sun stays yellow, Save stays green).
 - **Manager script-fault highlighter:** optional checkbox (off by default, stored as `gemini-translator-malform-detector`). Uses `LocaleHelper::detectorCatalog()` / `malformReasons()`. Flags letters that do not belong to the cell’s locale — including Latin inside Gujarati/Hindi/etc. Placeholders (`:name`, `{0}`, `[2,*]`) and Common marks (danda `।`) are ignored. Faulty editors get an amber outline/background and a tooltip of the unexpected scripts. Stricter than the CLI `hasDisallowedScript()` check, which still allows Latin in native scripts.
-- **Lang packs (manager + CLI):** extra folders such as `lang/app3/` and `lang/web/` are first-class trees, separate from `lang/`. The manager Pack filter appears only after you select a module (or Non-module) that actually has more than one pack. PHP file pickers list files from the selected pack. A selected language lists only keys that exist in that locale file.
+- **Lang packs (manager + CLI):** extra folders such as `lang/app3/` and `lang/web/` are first-class trees, separate from `lang/`. A 2–3 letter folder name (`web`) is a pack when it holds locale JSON or locale dirs, not a locale. Nested PHP such as `foo/bar.php` stays on the root pack unless the first segment is a known pack. The manager Pack filter appears only after you select a module (or Non-module) that actually has more than one pack. PHP file pickers list files from the selected pack. A selected language lists only keys that exist in that locale file.
 - **Registered / published lang paths:** the manager also scans `loadJsonTranslationsFrom()` / `loadTranslationsFrom()` directories (for example `base_path('custom_dir')`) and published `resources/lang/modules/{name}` (published copy wins on the same key). Composer `vendor/` lang trees are skipped.
 - **CLI pack step:** after you pick a module that has extra lang folders, `translations:extract-and-generate` asks which packs to process. The JSON/PHP file list is then limited to those packs. Modules with only `lang/` skip the prompt. Pack PHP files load and write as `lang/{pack}/{locale}/messages.php`.
 - **249-language catalog** (`LanguageCatalog`) with display names and fallbacks (`zh` → `zh_CN`, `pt` → `pt_BR`, `pa` → `pa_GURU`, and similar). Short file codes still resolve to the primary variant.
@@ -25,11 +25,7 @@ Everything below is new since **v5.0.1**.
 - **`--refresh-clean`:** rebuild existing keys only, ignoring stale file wording. Official Laravel English is the source for `auth` / `pagination` / `passwords` / `validation` (not `ucwords` of the key)
 - **Dated Gemini quota snapshot** in publishable `config/gemini-translator.php` (as of 2026-08-13). Add, raise, lower, zero, or remove rows when Google changes RPM/RPD. `0` RPM/RPD is “no free-tier budget”, not a crash. `GEMINI_TRANSLATOR_APPLY_FREE_TIER_CAPS` can turn snapshot caps off
 - **Configurable Gemini model:** `--model=`, `GEMINI_MODEL` / `GEMINI_TRANSLATOR_MODEL`, then `config/gemini-translator.php`, then `config('gemini.model')`, then the package default. Paid/ListModels ids are allowed and are not free-tier capped unless listed in the snapshot
-- Per-locale **writing-system map** on `LocaleHelper` (Unicode `sc=` so shared danda `।` is Common, not a mix) plus `looksUntranslated` / disallowed-script checks. Map now includes Tibetan, N’Ko, Tifinagh, Ol Chiki, Meitei, Canadian Aboriginal, extra Devanagari/Cyrillic/Arabic catalog codes, and script tags (`_latn`, `_cyrl`, `_arab`, `_deva`, `_guru`, `_hans`/`_hant`, `_tfng`, `_olck`, `_syll`)
-
-### 🐛 Fixed
-
-- Manager pager `aria-label` no longer uses `__('Pagination')`. On Windows that key loads `lang/{locale}/pagination.php` as an array and crashes `htmlspecialchars()`.
+- Per-locale **writing-system map** on `LocaleHelper` (Unicode `sc=` so shared danda `।` is Common, not a mix) plus `looksUntranslated` / disallowed-script checks that **reduce** mixed-script output (they do not eliminate it). Map now includes Tibetan, N’Ko, Tifinagh, Ol Chiki, Meitei, Canadian Aboriginal, extra Devanagari/Cyrillic/Arabic catalog codes, and script tags (`_latn`, `_cyrl`, `_arab`, `_deva`, `_guru`, `_hans`/`_hant`, `_tfng`, `_olck`, `_syll`)
 
 ### 🔧 Changed
 
@@ -39,19 +35,15 @@ Everything below is new since **v5.0.1**.
 - `--refresh` is the original refresh again: existing keys only, current file wording is the source
 - Default Gemini model is `gemini-3.5-flash-lite` (15 RPM / 500 RPD in the snapshot and present in ListModels). Snapshot rows for ids missing from ListModels (`gemini-2.5-flash-exp`, `gemini-3-flash`) were removed
 - JSON writes keep dotted PHP-style keys (`messages.welcome`, `validation.required`) when that group is selected. Blank literal JSON values are filled from the key; empty/whitespace source is treated as missing
-- JSON-only selection no longer re-translates `file.subkey` keys that belong to a selected PHP lang file
-- Translation prompts include source text and reject mixed-script, placeholder, and plural-token drift. Rejected Gemini output falls back to source
+- Translation prompts include source text and checks that reduce mixed-script, leftover-English, placeholder, and plural-token drift. Detected bad output falls back to source. The checks do not catch every mixed or off-language row
 - Command summary records `processed_chunks` from the translation runner
-- CLI file picker labels pack PHP as `lang/{pack}/{file}.php`. Selecting a single file returns that file (no longer `array_keys` of a list)
+- CLI file picker labels pack PHP as `lang/{pack}/{file}.php`
+- CLI writing-system check **reduces** mixed-script Gemini output (Gujarati + Kannada `ೋ`, Hindi + Gujarati, leftover English in Indic locales). It does not eliminate those cases; some mixed or leftover-English rows can still be written
 
 ### 🐛 Fixed
 
-- Mixed-script deformities (Gujarati + Kannada `ೋ`, Hindi + Gujarati, leftover English in Indic locales) are rejected instead of written
-- Add-languages no longer 500s as a false positive when one writable root succeeds and another (for example a module `lang/`) is not writable
-- Manager writes treat “file exists after put” as success so pessimistic `is_writable` checks do not throw after a successful write. Unwritable errors name the PHP process user instead of assuming `www-data`
-- `web` (and other 2–3 letter pack folder names) are packs when they contain locale JSON or locale dirs, not locales
-- Nested PHP groups such as `foo/bar.php` stay on the root pack unless the first segment is a known pack
-- `LanguageCatalog::FALLBACKS` typed as `array<string, string>`
+- JSON-only file selection no longer treats `file.subkey` keys that belong to a PHP lang group as JSON keys when that PHP group is also in play
+- Selecting a single CLI file group returns that file (it previously returned `array_keys` of a list)
 
 ### 📚 Tests
 
