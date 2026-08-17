@@ -48,7 +48,7 @@ Everything below is new since **v5.0.1**.
 
 - Mixed-script deformities (Gujarati + Kannada `ೋ`, Hindi + Gujarati, leftover English in Indic locales) are rejected instead of written
 - Add-languages no longer 500s as a false positive when one writable root succeeds and another (for example a module `lang/`) is not writable
-- Manager writes treat “file exists after put” as success so pessimistic `is_writable` / `www-data` checks do not throw after a successful write
+- Manager writes treat “file exists after put” as success so pessimistic `is_writable` checks do not throw after a successful write. Unwritable errors name the PHP process user instead of assuming `www-data`
 - `web` (and other 2–3 letter pack folder names) are packs when they contain locale JSON or locale dirs, not locales
 - Nested PHP groups such as `foo/bar.php` stay on the root pack unless the first segment is a known pack
 - `LanguageCatalog::FALLBACKS` typed as `array<string, string>`

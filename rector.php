@@ -51,7 +51,7 @@ return RectorConfig::configure()
     ->withTypeCoverageLevel(1)
     ->withTypeCoverageDocblockLevel(0)
     ->withDeadCodeLevel(1)
-    ->withCodeQualityLevel(10)
+    ->withCodeQualityLevel(15)
     ->withConfiguredRule(RemoveDumpDataDeadCodeRector::class, [
         'dd',
         'dump',

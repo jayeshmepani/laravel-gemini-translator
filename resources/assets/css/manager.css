@@ -1150,6 +1150,7 @@
 
         .manager-select option:checked::checkmark {
             color: var(--color-on-action);
+            font-family: var(--font-serif);
         }
 
         .manager-select option:disabled {

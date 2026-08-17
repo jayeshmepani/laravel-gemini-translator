@@ -1069,7 +1069,27 @@ final class ManagerCatalogService
 
     private function unwritableMessage(string $path): string
     {
-        return 'Cannot write ' . $path . '. The web server user cannot create files in lang/. '
-            . 'From the project root run: sudo chgrp -R www-data lang && sudo chmod -R g+w lang';
+        $owner = $this->processOwnerName();
+        $base = 'Cannot write ' . $path . '. The PHP process cannot create files there.';
+        if ($owner === '') {
+            return $base . ' Give write access on lang/ to the user that runs PHP-FPM, Apache, nginx, or `php artisan serve` (that is often www-data, nginx, apache, http, or your login user — not always www-data).';
+        }
+
+        return $base . ' PHP is running as `' . $owner . '`. From the project root, for example: '
+            . 'sudo chown -R ' . $owner . ':' . $owner . ' lang && sudo chmod -R u+w lang';
+    }
+
+    private function processOwnerName(): string
+    {
+        if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
+            $info = posix_getpwuid(posix_geteuid());
+            if (is_array($info) && isset($info['name']) && is_string($info['name']) && $info['name'] !== '') {
+                return $info['name'];
+            }
+        }
+
+        $user = get_current_user();
+
+        return $user !== '' ? $user : '';
     }
 }
