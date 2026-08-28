@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Jayesh\LaravelGeminiTranslator\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Jayesh\LaravelGeminiTranslator\Http\Support\ManagerAuthGate;
@@ -19,7 +20,7 @@ final class EnsureManagerAuthenticated
         }
 
         if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
+            return new JsonResponse([
                 'error' => 'Unauthenticated.',
                 'message' => 'You must be signed in to access the translation manager.',
             ], 401);

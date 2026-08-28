@@ -987,7 +987,12 @@ USER;
         self::$frameworkEnglish = [];
         $dir = base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en');
         if (! is_dir($dir)) {
-            return self::$frameworkEnglish;
+            $packageVendor = realpath(__DIR__ . '/../../vendor/laravel/framework/src/Illuminate/Translation/lang/en');
+            if ($packageVendor !== false && is_dir($packageVendor)) {
+                $dir = $packageVendor;
+            } else {
+                return self::$frameworkEnglish;
+            }
         }
 
         foreach (['auth', 'pagination', 'passwords', 'validation'] as $file) {
@@ -1101,7 +1106,7 @@ USER;
 
         if (is_string($source) && $source !== '') {
             $lines[] = '  Source text (translate THIS exact meaning; do not rewrite the key name): ' . $source;
-            if (preg_match_all('/:[A-Za-z_][A-Za-z0-9_]*/', $source, $matches) > 0) {
+            if (preg_match_all('/:[A-Za-z_]\w*/', $source, $matches) > 0) {
                 $lines[] = '  Required placeholders (copy each token exactly): ' . implode(', ', array_unique($matches[0]));
             }
 
@@ -1120,7 +1125,7 @@ USER;
             return implode("\n", $lines) . "\n";
         }
 
-        if (preg_match('/(?:^|\.)by_([A-Za-z][A-Za-z0-9_]*)$/', $key, $match) === 1) {
+        if (preg_match('/(?:^|\.)by_([A-Za-z]\w*)$/', $key, $match) === 1) {
             $token = ':' . $match[1];
             $lines[] = "  No source. Last segment `by_{$match[1]}` means English \"By {$token}\". The only allowed placeholder is {$token} — never rename it.";
 
@@ -1156,7 +1161,7 @@ USER;
             return '';
         }
 
-        if (preg_match('/(?:^|\.)by_([A-Za-z][A-Za-z0-9_]*)$/', $key, $match) === 1) {
+        if (preg_match('/(?:^|\.)by_([A-Za-z]\w*)$/', $key, $match) === 1) {
             return 'By :' . $match[1];
         }
 
@@ -1174,7 +1179,7 @@ USER;
 
     private static function sourceContradictsKey(string $key, string $source): bool
     {
-        if (preg_match('/(?:^|\.)by_([A-Za-z][A-Za-z0-9_]*)$/', $key, $match) === 1) {
+        if (preg_match('/(?:^|\.)by_([A-Za-z]\w*)$/', $key, $match) === 1) {
             return ! str_contains($source, ':' . $match[1]);
         }
 
@@ -1210,20 +1215,20 @@ USER;
         }
 
         if ($effectiveSource !== '' && TextHelper::isPluralizationString($effectiveSource)) {
-            preg_match_all('/\{[0-9]+\}|\[[^\]]+\]/', $effectiveSource, $sourceTokens);
-            preg_match_all('/\{[0-9]+\}|\[[^\]]+\]/', $text, $textTokens);
+            preg_match_all('/\{\d+\}|\[[^\]]+\]/', $effectiveSource, $sourceTokens);
+            preg_match_all('/\{\d+\}|\[[^\]]+\]/', $text, $textTokens);
             if ($sourceTokens[0] !== $textTokens[0]) {
                 return true;
             }
         }
 
-        if (preg_match_all('/:[A-Za-z_][A-Za-z0-9_]*/', $text, $found) > 0) {
+        if (preg_match_all('/:[A-Za-z_]\w*/', $text, $found) > 0) {
             $allowed = [];
-            if ($effectiveSource !== '' && preg_match_all('/:[A-Za-z_][A-Za-z0-9_]*/', $effectiveSource, $srcFound) > 0) {
+            if ($effectiveSource !== '' && preg_match_all('/:[A-Za-z_]\w*/', $effectiveSource, $srcFound) > 0) {
                 $allowed = array_unique($srcFound[0]);
             }
 
-            if ($key !== '' && preg_match('/(?:^|\.)by_([A-Za-z][A-Za-z0-9_]*)$/', $key, $match) === 1) {
+            if ($key !== '' && preg_match('/(?:^|\.)by_([A-Za-z]\w*)$/', $key, $match) === 1) {
                 $allowed[] = ':' . $match[1];
             }
 

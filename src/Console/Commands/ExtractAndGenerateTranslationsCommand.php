@@ -428,7 +428,7 @@ class ExtractAndGenerateTranslationsCommand extends Command
     {
         $this->line('');
         $this->line('<fg=bright-magenta;options=bold>╔═══════════════════════════════════════════════════════════════════════════════╗</>');
-        $this->line('<fg=bright-magenta;options=bold></> <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v5.1.0)</> <fg=bright-magenta;options=bold></>');
+        $this->line('<fg=bright-magenta;options=bold></> <fg=bright-cyan;options=bold> 🌐 LARAVEL AI TRANSLATION SYNCHRONIZATION TOOL (v5.1.1)</> <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold></> <fg=bright-white>Powered by Gemini AI • Built for Modern Laravel Applications</> <fg=bright-magenta;options=bold></>');
         $this->line('<fg=bright-magenta;options=bold>╚═══════════════════════════════════════════════════════════════════════════════╝</>');
         $this->line('');

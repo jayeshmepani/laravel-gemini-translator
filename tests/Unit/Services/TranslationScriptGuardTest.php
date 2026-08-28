@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Services;
 use Jayesh\LaravelGeminiTranslator\Services\TranslationService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class TranslationScriptGuardTest extends TestCase
+final class TranslationScriptGuardTest extends TestCase
 {
     public function test_mixed_gujarati_scripts_are_rejected_and_fall_back(): void
     {

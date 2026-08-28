@@ -67,9 +67,7 @@ final class Kernel32Console implements InteractiveConsole
 
     public function __construct()
     {
-        if (! self::isSupported()) {
-            throw new RuntimeException('Kernel32Console requires Windows and the FFI extension.');
-        }
+        throw_unless(self::isSupported(), RuntimeException::class, 'Kernel32Console requires Windows and the FFI extension.');
 
         $this->kernel32 = FFI::cdef(self::KERNEL32, 'kernel32.dll');
         $this->msvcrt = FFI::cdef('int _getch(void);', 'msvcrt.dll');
@@ -128,7 +126,7 @@ final class Kernel32Console implements InteractiveConsole
             return;
         }
 
-        $utf16 = (string) mb_convert_encoding($text, 'UTF-16LE', 'UTF-8');
+        $utf16 = mb_convert_encoding($text, 'UTF-16LE', 'UTF-8');
         $charCount = intdiv(strlen($utf16), 2);
         if ($charCount < 1) {
             return;
@@ -210,7 +208,7 @@ final class Kernel32Console implements InteractiveConsole
 
         $bytes = FFI::string($buffer, $read->cdata * 2);
 
-        return rtrim((string) mb_convert_encoding($bytes, 'UTF-8', 'UTF-16LE'), "\r\n\0");
+        return rtrim(mb_convert_encoding($bytes, 'UTF-8', 'UTF-16LE'), "\r\n\0");
     }
 
     private function setCursorVisible(mixed $handle, bool $visible): void

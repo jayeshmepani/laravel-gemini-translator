@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Services;
 use Jayesh\LaravelGeminiTranslator\Services\TranslationService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class TranslationModelResolutionTest extends TestCase
+final class TranslationModelResolutionTest extends TestCase
 {
     public function test_default_model_is_used_when_nothing_is_configured(): void
     {

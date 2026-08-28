@@ -8,7 +8,7 @@ use Jayesh\LaravelGeminiTranslator\Services\ScannerService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Symfony\Component\Finder\Finder;
 
-class ScannerServiceTest extends TestCase
+final class ScannerServiceTest extends TestCase
 {
     private ScannerService $scanner;
 

@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Utils;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Jayesh\LaravelGeminiTranslator\Utils\TextHelper;
 
-class TextHelperTest extends TestCase
+final class TextHelperTest extends TestCase
 {
     public function test_looks_machine_key_detects_laravel_keys(): void
     {

@@ -12,7 +12,7 @@ use Jayesh\LaravelGeminiTranslator\Services\ScannerService;
 use Jayesh\LaravelGeminiTranslator\Services\TranslationService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class CommandRegistrationTest extends TestCase
+final class CommandRegistrationTest extends TestCase
 {
     public function test_command_is_registered(): void
     {

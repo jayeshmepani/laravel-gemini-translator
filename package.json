@@ -1,0 +1,24 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "type": "module",
+    "scripts": {
+        "format": "prettier --write \"**/*.blade.php\"",
+        "format:blade": "node scripts/blade-script-files.mjs --write",
+        "format:check": "prettier --check \"**/*.blade.php\"",
+        "format:blade:check": "node scripts/blade-script-files.mjs --check",
+        "lint:blade": "eslint \"resources/views/**/*.blade.php\"",
+        "lint:blade:fix": "eslint \"resources/views/**/*.blade.php\" --fix",
+        "check:blade": "npm run format:blade:check && npm run lint:blade",
+        "modernize": "npm run format:blade && npm run lint:blade:fix",
+        "test:e2e": "playwright test"
+    },
+    "devDependencies": {
+        "@prettier/plugin-php": "^0.24.0",
+        "concurrently": "^9.2.4",
+        "eslint": "^10.7.0",
+        "eslint-plugin-html": "^8.1.4",
+        "eslint-plugin-php-markup": "^6.0.0",
+        "prettier": "^3.9.6",
+        "prettier-plugin-blade": "^3.2.2"
+    }
+}

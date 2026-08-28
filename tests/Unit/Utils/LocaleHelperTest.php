@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Utils;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Jayesh\LaravelGeminiTranslator\Utils\LocaleHelper;
 
-class LocaleHelperTest extends TestCase
+final class LocaleHelperTest extends TestCase
 {
     public function test_canonicalize_converts_locales(): void
     {

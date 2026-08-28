@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Platform;
 use Jayesh\LaravelGeminiTranslator\Platform\OperatingSystem;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class OperatingSystemTest extends TestCase
+final class OperatingSystemTest extends TestCase
 {
     public function test_defaults_match_runtime_family(): void
     {

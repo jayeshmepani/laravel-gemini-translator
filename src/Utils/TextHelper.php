@@ -125,24 +125,19 @@ class TextHelper
         if (preg_match('/^[a-z][a-z0-9]*([A-Z][a-z0-9]*)+$/', $key)) {
             return true;
         }
-
         // Match strict PascalCase: starts uppercase, followed by one or more capitalized words
         // Examples: 'UserName', 'ProductId', 'ApiClientKey'
-        if (preg_match('/^[A-Z][a-z0-9]*([A-Z][a-z0-9]*)+$/', $key)) {
-            return true;
-        }
-
         // If none of the above patterns match, assume it's human-readable text
         // (e.g., "Welcome to our site", "Please enter your name")
-        return false;
+        return (bool) preg_match('/^[A-Z][a-z0-9]*([A-Z][a-z0-9]*)+$/', $key);
     }
 
     public static function isPluralizationString(string $text): bool
     {
         // Check if string looks like a Laravel pluralization string
         // Pattern: contains pipe character, and bracket numbers like {0}, {1}, [2,*]
-        return preg_match('/\{[0-9]+\}.*\|.*\[\d+,.*\]/', $text)
-            || preg_match('/\{[0-9]+\}.*\|.*\{[0-9]+\}.*\|/', $text);
+        return preg_match('/\{\d+\}.*\|.*\[\d+,.*\]/', $text)
+            || preg_match('/\{\d+\}.*\|.*\{\d+\}.*\|/', $text);
     }
 
     public static function translatePluralizationString(string $text, string $lang): string

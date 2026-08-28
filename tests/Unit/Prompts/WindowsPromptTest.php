@@ -10,7 +10,7 @@ use Jayesh\LaravelGeminiTranslator\Tests\Fakes\FakeInteractiveConsole;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Mockery;
 
-class WindowsPromptTest extends TestCase
+final class WindowsPromptTest extends TestCase
 {
     public function test_falls_back_to_symfony_choice_when_ffi_is_unavailable(): void
     {

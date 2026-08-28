@@ -11,7 +11,7 @@ use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use stdClass;
 use Symfony\Component\Process\Process;
 
-class WindowsProcessTaskRunnerTest extends TestCase
+final class WindowsProcessTaskRunnerTest extends TestCase
 {
     public function test_spawns_workers_and_reads_json_results_in_order(): void
     {

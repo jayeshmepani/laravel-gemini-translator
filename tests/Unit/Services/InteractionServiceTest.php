@@ -10,7 +10,7 @@ use Jayesh\LaravelGeminiTranslator\Tests\Fakes\FakePrompt;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Mockery;
 
-class InteractionServiceTest extends TestCase
+final class InteractionServiceTest extends TestCase
 {
     public function test_single_scan_target_skips_the_prompt(): void
     {

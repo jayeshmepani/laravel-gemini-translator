@@ -75,7 +75,7 @@ php artisan translations:extract-and-generate --chunk-size=3
 # Gemini API Key (required)
 GEMINI_API_KEY=your-api-key-here
 
-# Model selection (optional). Default in 5.1.0: gemini-3.5-flash-lite
+# Model selection (optional). Default in 5.1.1: gemini-3.5-flash-lite
 GEMINI_MODEL=gemini-3.5-flash-lite
 # or: GEMINI_TRANSLATOR_MODEL=gemini-3.5-flash-lite
 
@@ -127,7 +127,7 @@ return [
 
 ---
 
-## 5.1.0 notes
+## 5.1.x notes
 
 - **Translation Manager:** open `/translations-manager`. If the app has a login route, sign in first. If a published Blade looks stale (missing Pack, theme, or **Highlight script faults**), overwrite it or remove it so the package views load:
 

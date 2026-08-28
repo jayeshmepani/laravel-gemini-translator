@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Jayesh\LaravelGeminiTranslator\Tests\Feature;
 
-use Illuminate\Contracts\Translation\Translator;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Translation\Translator;
 use Jayesh\LaravelGeminiTranslator\Services\ManagerCatalogService;
 use Jayesh\LaravelGeminiTranslator\Tests\Fakes\ManagerUser;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class ManagerRouteTest extends TestCase
+final class ManagerRouteTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -27,9 +27,7 @@ class ManagerRouteTest extends TestCase
 
     public function test_guest_can_open_the_manager_when_the_app_has_no_auth_routes(): void
     {
-        $this->get('/translations-manager')
-            ->assertOk()
-            ->assertSee('Translation Manager', false);
+        $this->get('/translations-manager')->assertOk()->assertSeeHtml('Translation Manager');
     }
 
     public function test_guest_must_sign_in_when_the_app_has_a_login_route(): void
@@ -63,15 +61,12 @@ class ManagerRouteTest extends TestCase
     {
         $this->signIn();
 
-        $this->get('/translations-manager')
-            ->assertOk()
-            ->assertSee('Translation Manager', false)
-            ->assertSee('/translations-manager/data', false);
+        $this->get('/translations-manager')->assertOk()->assertSeeHtml('Translation Manager')->assertSeeHtml('/translations-manager/data');
     }
 
     public function test_named_routes_exist(): void
     {
-        $this->assertTrue(route('gemini-translator.manager.show') !== '');
+        $this->assertNotSame('', route('gemini-translator.manager.show'));
         $this->assertStringEndsWith('/translations-manager', route('gemini-translator.manager.show'));
         $this->assertStringEndsWith('/translations-manager/data', route('gemini-translator.manager.data'));
     }
@@ -99,7 +94,7 @@ class ManagerRouteTest extends TestCase
             ]],
         ])->assertOk()->assertJsonPath('message', 'Translations saved.');
 
-        $data = json_decode((string) File::get(lang_path('en.json')), true);
+        $data = json_decode(File::get(lang_path('en.json')), true);
         $this->assertSame('Hi there', $data['Hello'] ?? null);
     }
 
@@ -254,7 +249,7 @@ class ManagerRouteTest extends TestCase
             ]],
         ])->assertOk();
 
-        $data = json_decode((string) File::get($web . '/en.json'), true);
+        $data = json_decode(File::get($web . '/en.json'), true);
         $this->assertSame('Saved web', $data['Hello'] ?? null);
     }
 

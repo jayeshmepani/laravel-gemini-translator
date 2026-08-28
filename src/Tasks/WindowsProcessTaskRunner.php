@@ -192,9 +192,7 @@ final readonly class WindowsProcessTaskRunner implements TaskRunnerInterface
     private function tempFile(string $prefix): string
     {
         $path = tempnam(sys_get_temp_dir(), $prefix);
-        if ($path === false) {
-            throw new RuntimeException('Unable to allocate a temporary payload file.');
-        }
+        throw_if($path === false, RuntimeException::class, 'Unable to allocate a temporary payload file.');
 
         return $path;
     }
@@ -208,12 +206,8 @@ final readonly class WindowsProcessTaskRunner implements TaskRunnerInterface
 
     private function assertHandler(string $handlerClass): void
     {
-        if (! str_starts_with($handlerClass, $this->allowedHandlerPrefix)) {
-            throw new InvalidArgumentException('Refusing to execute a handler outside the package namespace.');
-        }
+        throw_unless(str_starts_with($handlerClass, $this->allowedHandlerPrefix), InvalidArgumentException::class, 'Refusing to execute a handler outside the package namespace.');
 
-        if (! method_exists($handlerClass, 'handle')) {
-            throw new InvalidArgumentException("Handler {$handlerClass} must define public static handle().");
-        }
+        throw_unless(method_exists($handlerClass, 'handle'), InvalidArgumentException::class, "Handler {$handlerClass} must define public static handle().");
     }
 }

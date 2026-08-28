@@ -15,9 +15,7 @@ final readonly class ManagerController
 {
     public function __construct(private ManagerCatalogService $catalog)
     {
-        if (! (bool) config('gemini-translator.manager.enabled', true)) {
-            throw new NotFoundHttpException;
-        }
+        throw_unless((bool) config('gemini-translator.manager.enabled', true), NotFoundHttpException::class);
     }
 
     public function show(): View
@@ -28,23 +26,23 @@ final readonly class ManagerController
     public function data(Request $request): JsonResponse
     {
         try {
-            return response()->json($this->catalog->page($request->all()));
+            return new JsonResponse($this->catalog->page($request->all()));
         } catch (Throwable $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return new JsonResponse(['error' => $exception->getMessage()], 500);
         }
     }
 
     public function languages(): JsonResponse
     {
-        return response()->json($this->catalog->languageNames());
+        return new JsonResponse($this->catalog->languageNames());
     }
 
     public function existing(): JsonResponse
     {
         try {
-            return response()->json($this->catalog->existingMap());
+            return new JsonResponse($this->catalog->existingMap());
         } catch (Throwable $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return new JsonResponse(['error' => $exception->getMessage()], 500);
         }
     }
 
@@ -53,12 +51,12 @@ final readonly class ManagerController
         try {
             $count = $this->catalog->scan();
 
-            return response()->json([
+            return new JsonResponse([
                 'message' => 'Scan complete. Found ' . $count . ' unique translation keys.',
                 'count' => $count,
             ]);
         } catch (Throwable $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return new JsonResponse(['error' => $exception->getMessage()], 500);
         }
     }
 
@@ -77,12 +75,12 @@ final readonly class ManagerController
         try {
             $written = $this->catalog->save($payload['changes']);
 
-            return response()->json([
+            return new JsonResponse([
                 'message' => 'Translations saved.',
                 'written' => $written,
             ]);
         } catch (Throwable $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return new JsonResponse(['error' => $exception->getMessage()], 500);
         }
     }
 
@@ -96,12 +94,12 @@ final readonly class ManagerController
         try {
             $created = $this->catalog->addLanguages($payload['languages']);
 
-            return response()->json([
+            return new JsonResponse([
                 'message' => 'Languages added.',
                 'created' => $created,
             ]);
         } catch (Throwable $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return new JsonResponse(['error' => $exception->getMessage()], 500);
         }
     }
 

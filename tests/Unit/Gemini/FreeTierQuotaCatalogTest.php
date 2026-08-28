@@ -8,7 +8,7 @@ use Jayesh\LaravelGeminiTranslator\Gemini\FreeTierQuota;
 use Jayesh\LaravelGeminiTranslator\Gemini\FreeTierQuotaCatalog;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class FreeTierQuotaCatalogTest extends TestCase
+final class FreeTierQuotaCatalogTest extends TestCase
 {
     public function test_shipped_snapshot_is_loaded_from_config(): void
     {
@@ -25,7 +25,7 @@ class FreeTierQuotaCatalogTest extends TestCase
 
         foreach ($expected as $model => [$rpm, $rpd]) {
             $quota = $catalog->find($model);
-            $this->assertNotNull($quota, $model);
+            $this->assertInstanceOf(FreeTierQuota::class, $quota, $model);
             $this->assertSame($rpm, $quota->requestsPerMinute);
             $this->assertSame($rpd, $quota->requestsPerDay);
         }
@@ -44,7 +44,7 @@ class FreeTierQuotaCatalogTest extends TestCase
         ]);
 
         $quota = $catalog->find('models/Gemini-4-Flash-Lite');
-        $this->assertNotNull($quota);
+        $this->assertInstanceOf(FreeTierQuota::class, $quota);
         $this->assertSame(80, $quota->requestsPerMinute);
         $this->assertSame(4000, $quota->requestsPerDay);
         $this->assertSame('2026-12-01', $quota->asOf);
@@ -60,11 +60,11 @@ class FreeTierQuotaCatalogTest extends TestCase
         ]);
 
         $reduced = $catalog->find('gemini-2.5-flash-lite');
-        $this->assertNotNull($reduced);
+        $this->assertInstanceOf(FreeTierQuota::class, $reduced);
         $this->assertSame(2, $reduced->effectiveConcurrency(15, false));
 
         $retired = $catalog->find('gemini-3-flash');
-        $this->assertNotNull($retired);
+        $this->assertInstanceOf(FreeTierQuota::class, $retired);
         $this->assertTrue($retired->hasNoRequestBudget());
         $this->assertSame(1, $retired->effectiveConcurrency(15, false));
         $this->assertSame(8, $retired->effectiveConcurrency(8, true));
@@ -80,8 +80,8 @@ class FreeTierQuotaCatalogTest extends TestCase
             ],
         ]);
 
-        $this->assertNotNull($catalog->find('gemini-2.5-flash-lite'));
-        $this->assertNull($catalog->find('gemini-3-flash'));
+        $this->assertInstanceOf(FreeTierQuota::class, $catalog->find('gemini-2.5-flash-lite'));
+        $this->assertNotInstanceOf(FreeTierQuota::class, $catalog->find('gemini-3-flash'));
     }
 
     public function test_omitted_dimension_is_unknown_not_zero(): void
@@ -93,7 +93,7 @@ class FreeTierQuotaCatalogTest extends TestCase
         ]);
 
         $quota = $catalog->find('gemini-new');
-        $this->assertNotNull($quota);
+        $this->assertInstanceOf(FreeTierQuota::class, $quota);
         $this->assertSame(40, $quota->requestsPerMinute);
         $this->assertNull($quota->requestsPerDay);
         $this->assertFalse($quota->exceedsDailyBudget(10_000));
@@ -108,7 +108,7 @@ class FreeTierQuotaCatalogTest extends TestCase
             ],
         ]);
 
-        $this->assertNull($catalog->find('custom-proxy-model'));
+        $this->assertNotInstanceOf(FreeTierQuota::class, $catalog->find('custom-proxy-model'));
     }
 
     public function test_caps_can_be_disabled(): void

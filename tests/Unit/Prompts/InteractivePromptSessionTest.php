@@ -8,7 +8,7 @@ use Jayesh\LaravelGeminiTranslator\Prompts\InteractivePromptSession;
 use Jayesh\LaravelGeminiTranslator\Tests\Fakes\FakeInteractiveConsole;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class InteractivePromptSessionTest extends TestCase
+final class InteractivePromptSessionTest extends TestCase
 {
     public function test_multiselect_matches_laravel_prompts_space_and_enter(): void
     {

@@ -13,7 +13,7 @@ use Jayesh\LaravelGeminiTranslator\Tasks\UnixForkTaskRunner;
 use Jayesh\LaravelGeminiTranslator\Tasks\WindowsProcessTaskRunner;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class PlatformFactoryTest extends TestCase
+final class PlatformFactoryTest extends TestCase
 {
     public function test_unix_prompt_is_selected_on_linux(): void
     {

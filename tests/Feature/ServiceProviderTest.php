@@ -17,7 +17,7 @@ use Jayesh\LaravelGeminiTranslator\Services\TranslationService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Jayesh\LaravelGeminiTranslator\TranslationServiceProvider;
 
-class ServiceProviderTest extends TestCase
+final class ServiceProviderTest extends TestCase
 {
     public function test_services_are_bound_in_container(): void
     {

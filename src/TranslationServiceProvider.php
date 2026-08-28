@@ -14,9 +14,11 @@ use Jayesh\LaravelGeminiTranslator\Gemini\FreeTierQuotaCatalog;
 use Jayesh\LaravelGeminiTranslator\Platform\OperatingSystem;
 use Jayesh\LaravelGeminiTranslator\Platform\PlatformFactory;
 use Jayesh\LaravelGeminiTranslator\View\Composers\ManagerViewComposer;
+use Override;
 
 class TranslationServiceProvider extends ServiceProvider
 {
+    #[Override]
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/gemini-translator.php', 'gemini-translator');

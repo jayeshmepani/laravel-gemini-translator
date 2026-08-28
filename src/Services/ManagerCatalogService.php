@@ -629,7 +629,7 @@ final class ManagerCatalogService
         } catch (Throwable) {
             return null;
         }
-        if (! is_object($translator) || ! method_exists($translator, 'getLoader')) {
+        if (! method_exists($translator, 'getLoader')) {
             return null;
         }
         $loader = $translator->getLoader();
@@ -790,11 +790,7 @@ final class ManagerCatalogService
         if (! $this->looksLikeLocale($name) || ! File::isDirectory($path)) {
             return false;
         }
-        if ($this->hasLangContent($path)) {
-            return false;
-        }
-
-        return true;
+        return !$this->hasLangContent($path);
     }
 
     private function hasLangContent(string $path): bool
@@ -849,13 +845,29 @@ final class ManagerCatalogService
         $app = $this->normalizePath(base_path());
         $logicalVendor = rtrim(str_replace('\\', '/', base_path('vendor')), '/');
         if ($app !== '' && ($normalized === $app || str_starts_with($normalized, $app . '/'))) {
-            return str_starts_with($normalized, $logicalVendor . '/')
-                || str_starts_with($normalized, $app . '/vendor/');
+            if (str_starts_with($normalized, $logicalVendor . '/')
+                || str_starts_with($normalized, $app . '/vendor/')) {
+                return true;
+            }
         }
 
         $appVendor = $this->normalizePath(base_path('vendor'));
+        if ($appVendor !== '' && str_starts_with($normalized, $appVendor . '/')) {
+            return true;
+        }
 
-        return $appVendor !== '' && str_starts_with($normalized, $appVendor . '/');
+        $packageVendor = realpath(__DIR__ . '/../../vendor');
+        if ($packageVendor !== false) {
+            $packageVendor = str_replace('\\', '/', $packageVendor);
+            if (str_starts_with($normalized, $packageVendor . '/')) {
+                if ($app !== '' && str_starts_with($normalized, $app . '/')) {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function looksLikeLocale(string $name): bool
@@ -1083,13 +1095,13 @@ final class ManagerCatalogService
     {
         if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
             $info = posix_getpwuid(posix_geteuid());
-            if (is_array($info) && isset($info['name']) && is_string($info['name']) && $info['name'] !== '') {
+            if (is_array($info) && $info['name'] !== '') {
                 return $info['name'];
             }
         }
 
         $user = get_current_user();
 
-        return $user !== '' ? $user : '';
+        return $user;
     }
 }

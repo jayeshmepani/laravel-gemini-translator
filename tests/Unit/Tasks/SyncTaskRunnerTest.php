@@ -9,7 +9,7 @@ use Jayesh\LaravelGeminiTranslator\Tasks\SyncTaskRunner;
 use Jayesh\LaravelGeminiTranslator\Tests\Fakes\RecordingHandler;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class SyncTaskRunnerTest extends TestCase
+final class SyncTaskRunnerTest extends TestCase
 {
     protected function setUp(): void
     {

@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Feature;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Jayesh\LaravelGeminiTranslator\TranslationServiceProvider;
 
-class ManagerViewTest extends TestCase
+final class ManagerViewTest extends TestCase
 {
     public function test_manager_view_renders_semantic_workspace(): void
     {

@@ -7,13 +7,13 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Support;
 use Jayesh\LaravelGeminiTranslator\Support\LanguageCatalog;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class LanguageCatalogTest extends TestCase
+final class LanguageCatalogTest extends TestCase
 {
     public function test_catalog_includes_the_published_language_set(): void
     {
         $codes = LanguageCatalog::namesToCodes();
 
-        $this->assertSame(249, count($codes));
+        $this->assertCount(249, $codes);
         $this->assertSame('en', $codes['English']);
         $this->assertSame('gu', $codes['Gujarati']);
         $this->assertSame('zh_CN', $codes['Chinese (Simplified)']);

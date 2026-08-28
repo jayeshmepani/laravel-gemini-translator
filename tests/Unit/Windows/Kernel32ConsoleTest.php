@@ -8,7 +8,7 @@ use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use Jayesh\LaravelGeminiTranslator\Windows\Kernel32Console;
 use RuntimeException;
 
-class Kernel32ConsoleTest extends TestCase
+final class Kernel32ConsoleTest extends TestCase
 {
     public function test_is_not_supported_outside_windows(): void
     {

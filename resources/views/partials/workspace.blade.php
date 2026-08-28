@@ -20,18 +20,18 @@
                         return;
                     }
                     var stored = localStorage.getItem('gemini-translator-theme');
-                    var theme = stored === 'dark' || stored === 'light'
-                        ? stored
-                        : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                    var theme = stored === 'dark' || stored === 'light' ? stored : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                     document.documentElement.setAttribute('data-theme', theme);
                     document.documentElement.style.colorScheme = theme;
-                } catch (error) {}
-            }());
+                } catch {}
+            })();
         </script>
         @if (filled($assetCss ?? null))
-            <link rel="stylesheet" href="{{ $assetCss }}">
+            <link rel="stylesheet" href="{{ $assetCss }}" />
         @elseif (filled($managerStyles ?? null))
-            <style>{!! $managerStyles !!}</style>
+            <style>
+                {!! $managerStyles !!}
+            </style>
         @endif
     @endonce
 
@@ -45,15 +45,7 @@
                 <div class="manager-actions">
                     <div class="manager-theme" title="Toggle theme">
                         <label class="manager-theme-toggle" for="manager-theme-toggle">
-                            <input
-                                type="checkbox"
-                                id="manager-theme-toggle"
-                                class="manager-theme-input"
-                                data-action="theme"
-                                role="switch"
-                                aria-checked="false"
-                                aria-label="Use dark theme"
-                            >
+                            <input type="checkbox" id="manager-theme-toggle" class="manager-theme-input" data-action="theme" role="switch" aria-checked="false" aria-label="Use dark theme" />
                             <span class="manager-theme-slider" aria-hidden="true">
                                 <svg class="manager-theme-sun" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
@@ -147,9 +139,9 @@
                             <span data-files-summary>All PHP files</span>
                         </button>
                         <div class="manager-columns-menu manager-files-menu" id="manager-files-menu" data-files-menu popover="auto">
-                            @forelse (($files ?? []) as $file)
+                            @forelse ($files ?? [] as $file)
                                 <label class="manager-check">
-                                    <input type="checkbox" data-file-toggle value="{{ $file }}">
+                                    <input type="checkbox" data-file-toggle value="{{ $file }}" />
                                     <span>{{ $file }}</span>
                                 </label>
                             @empty
@@ -170,14 +162,14 @@
 
                     <div class="manager-filter manager-filter-missing">
                         <label class="manager-check" for="manager-missing">
-                            <input id="manager-missing" type="checkbox" data-filter="missing">
+                            <input id="manager-missing" type="checkbox" data-filter="missing" />
                             <span>Show only missing</span>
                         </label>
                     </div>
 
                     <div class="manager-filter manager-filter-malform">
                         <label class="manager-check" for="manager-malform">
-                            <input id="manager-malform" type="checkbox" data-malform-detector>
+                            <input id="manager-malform" type="checkbox" data-malform-detector />
                             <span>Highlight script faults</span>
                         </label>
                     </div>
@@ -207,7 +199,7 @@
                             <path d="M21 21l-4.3-4.3" />
                         </svg>
                         <label class="manager-visually-hidden" for="manager-search">Search</label>
-                        <input id="manager-search" type="search" data-search placeholder="Search" autocomplete="off" spellcheck="false">
+                        <input id="manager-search" type="search" data-search placeholder="Search" autocomplete="off" spellcheck="false" />
                     </div>
                 </search>
                 <div class="manager-tool-group">
@@ -217,7 +209,16 @@
                             <path d="M20 4v7h-7" />
                         </svg>
                     </button>
-                    <button type="button" class="manager-icon-button" data-action="columns" popovertarget="manager-columns-menu" aria-controls="manager-columns-menu" aria-expanded="false" aria-haspopup="true" aria-label="Columns">
+                    <button
+                        type="button"
+                        class="manager-icon-button"
+                        data-action="columns"
+                        popovertarget="manager-columns-menu"
+                        aria-controls="manager-columns-menu"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                        aria-label="Columns"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                             <path d="M4 6h16" />
                             <path d="M4 12h16" />
@@ -230,7 +231,9 @@
 
             <div class="manager-table-wrap" data-table-wrap>
                 <table class="manager-table" data-table>
-                    <caption class="manager-visually-hidden">Translation keys and values by language</caption>
+                    <caption class="manager-visually-hidden">
+                        Translation keys and values by language
+                    </caption>
                     <thead data-table-head></thead>
                     <tbody data-table-body></tbody>
                 </table>
@@ -298,7 +301,9 @@
         @if (filled($assetJs ?? null))
             <script src="{{ $assetJs }}" defer></script>
         @elseif (filled($managerScript ?? null))
-            <script>{!! $managerScript !!}</script>
+            <script>
+                {!! $managerScript !!};
+            </script>
         @endif
     @endonce
 </div>

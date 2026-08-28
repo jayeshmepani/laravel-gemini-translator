@@ -23,9 +23,7 @@ final class UnixForkTaskRunner implements TaskRunnerInterface
             return [];
         }
 
-        if (! function_exists('pcntl_fork')) {
-            throw new RuntimeException('UnixForkTaskRunner requires the pcntl extension.');
-        }
+        throw_unless(function_exists('pcntl_fork'), RuntimeException::class, 'UnixForkTaskRunner requires the pcntl extension.');
 
         $tasks = [];
         foreach ($payloads as $payload) {
@@ -54,8 +52,6 @@ final class UnixForkTaskRunner implements TaskRunnerInterface
 
     private function assertHandler(string $handlerClass): void
     {
-        if (! method_exists($handlerClass, 'handle')) {
-            throw new InvalidArgumentException("Handler {$handlerClass} must define public static handle().");
-        }
+        throw_unless(method_exists($handlerClass, 'handle'), InvalidArgumentException::class, "Handler {$handlerClass} must define public static handle().");
     }
 }

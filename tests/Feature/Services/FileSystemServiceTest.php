@@ -10,7 +10,7 @@ use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 use ReflectionMethod;
 use RuntimeException;
 
-class FileSystemServiceTest extends TestCase
+final class FileSystemServiceTest extends TestCase
 {
     private FileSystemService $fileSystem;
 
@@ -122,9 +122,9 @@ class FileSystemServiceTest extends TestCase
         $this->assertFileExists($expectedFile);
 
         $content = file_get_contents($expectedFile);
-        $this->assertStringContainsString('return', $content);
-        $this->assertStringContainsString('hello', $content);
-        $this->assertStringContainsString('Hello', $content);
+        $this->assertStringContainsString('return', (string) $content);
+        $this->assertStringContainsString('hello', (string) $content);
+        $this->assertStringContainsString('Hello', (string) $content);
 
         // Cleanup
         unlink($expectedFile);
@@ -190,7 +190,7 @@ class FileSystemServiceTest extends TestCase
 
             $written = $lang . '/app3/gu/messages.php';
             $this->assertFileExists($written);
-            $this->assertStringContainsString('એપ3', (string) File::get($written));
+            $this->assertStringContainsString('એપ3', File::get($written));
         } finally {
             File::deleteDirectory($lang);
         }

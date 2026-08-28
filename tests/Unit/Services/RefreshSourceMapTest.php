@@ -7,7 +7,7 @@ namespace Jayesh\LaravelGeminiTranslator\Tests\Unit\Services;
 use Jayesh\LaravelGeminiTranslator\Services\TranslationService;
 use Jayesh\LaravelGeminiTranslator\Tests\TestCase;
 
-class RefreshSourceMapTest extends TestCase
+final class RefreshSourceMapTest extends TestCase
 {
     public function test_refresh_ignores_stale_file_wording_and_uses_key_shape(): void
     {

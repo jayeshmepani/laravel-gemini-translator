@@ -545,8 +545,8 @@ class LocaleHelper
 
     private static function stripPlaceholdersForScriptCheck(string $text): string
     {
-        $text = preg_replace('/:[A-Za-z_][A-Za-z0-9_]*/', '', $text) ?? $text;
-        $text = preg_replace('/\{[A-Za-z0-9_]+\}/', '', $text) ?? $text;
+        $text = preg_replace('/:[A-Za-z_]\w*/', '', $text) ?? $text;
+        $text = preg_replace('/\{\w+\}/', '', $text) ?? $text;
         $text = preg_replace('/\[[^\]]+\]/', '', $text) ?? $text;
         $text = preg_replace('/&[a-zA-Z]+;/', '', $text) ?? $text;
         $text = preg_replace('/%(?:\d+\$)?[sdxXoeEfFgGaAcpn%]/', '', $text) ?? $text;

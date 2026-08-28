@@ -17,7 +17,7 @@
     <link rel="dns-prefetch" href="//laravelmodules.com">
 
     <meta name="description"
-        content="Documentation for Laravel Gemini Translator 5.1.0: Artisan CLI, Translation Manager UI, lang packs, Windows parallel Process workers, and Gemini AI sync for Laravel and nwidart/laravel-modules.">
+        content="Documentation for Laravel Gemini Translator 5.1.1: Artisan CLI, Translation Manager UI, lang packs, Windows parallel Process workers, and Gemini AI sync for Laravel and nwidart/laravel-modules.">
     <meta name="keywords"
         content="laravel translation, laravel localization, gemini ai, artisan command, translation manager, lang packs, nwidart laravel modules, windows process workers, i18n, l10n">
     <meta name="author" content="Jayesh Mepani">
@@ -178,7 +178,7 @@
                     Laravel AI Translation Synchronization Tool
                 </div>
                 <div class="badges" role="group" aria-label="Project Information Badges">
-                    <span class="badge" aria-label="Version 5.1.0">v5.1.0</span>
+                    <span class="badge" aria-label="Version 5.1.1">v5.1.1</span>
                     <span class="badge" aria-label="Requires PHP 8.3 or higher">PHP 8.3+</span>
                     <span class="badge" aria-label="Requires Laravel 11, 12, or 13">Laravel 11-13</span>
                     <span class="badge" aria-label="Supports Laravel Modules">Module Support</span>
@@ -228,13 +228,13 @@
                                 <polyline points="14 2 14 8 20 8" />
                             </svg>
                             Overview</a></li>
-                    <li><a href="#whats-new" aria-label="Go to What's new in 5.1.0 section">
+                    <li><a href="#whats-new" aria-label="Go to What's new in 5.1.x section">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
                                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                                 stroke-linejoin="round" aria-hidden="true">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                             </svg>
-                            5.1.0</a></li>
+                            5.1.x</a></li>
                     <li><a href="#installation" aria-label="Go to Installation section">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"
                                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
@@ -490,10 +490,18 @@
                                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                                 stroke-linejoin="round">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                            </svg></span>What's new in 5.1.0</h2>
-                    <p>Released 14 August 2026. Everything listed here is new since v5.0.1. The same list lives in
+                            </svg></span>What's new in 5.1.x</h2>
+                    <p>Documentation updated for <strong>v5.1.1</strong> (28 August 2026). The complete release history lives in the
                         <a href="https://github.com/jayeshmepani/laravel-gemini-translator/blob/main/CHANGELOG.md">CHANGELOG.md</a>.
                     </p>
+                    <div style="margin-bottom: 2rem; padding: 1rem; border-left: 4px solid var(--accent); background-color: var(--card-bg);">
+                        <h4 style="margin: 0 0 0.5rem 0;">v5.1.1 Modernization Update (2026-08-28)</h4>
+                        <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.9em;">
+                            <li><strong>PHP 8.3 &amp; Laravel Refactoring:</strong> Integrated native <code>#[Override]</code> annotations and optimized exceptions using <code>throw_if</code> / <code>throw_unless</code> helpers.</li>
+                            <li><strong>Cross-Platform npm Tooling:</strong> Introduced the package's first JS quality tooling (<code>package.json</code>, <code>eslint.config.js</code>, Prettier) to format and lint Blade-embedded JS, utilizing a file crawler written in pure Node.js for native cross-platform Windows, macOS, and Linux support.</li>
+                            <li><strong>Robust Testing Environment:</strong> Bypassed Testbench dummy application paths in vendor scanning, added standard app key configurations to phpunit, and added fallback catalog resolution logic.</li>
+                        </ul>
+                    </div>
                     <h3>Added</h3>
                     <ul>
                         <li><strong>Translation Manager</strong> at <code class="inline-code">/translations-manager</code>
@@ -725,13 +733,13 @@ GEMINI_MODEL="gemini-3.5-flash-lite"
                     <pre><code># Linux/macOS/WSL (Prompts + fork)
 php artisan translations:extract-and-generate --driver=fork
 
-# Windows (same flag; 5.1.0 runs Symfony Process workers)
+# Windows (same flag; 5.1.x runs Symfony Process workers)
 php artisan translations:extract-and-generate --driver=fork --concurrency=10
 
 # Sequential on any OS
 php artisan translations:extract-and-generate --driver=sync</code></pre>
                     <h3>Four Operational Modes</h3>
-                    <p>5.1.0 offers four operational modes. <code class="inline-code">--refresh</code>,
+                    <p>5.1.x offers four operational modes. <code class="inline-code">--refresh</code>,
                         <code class="inline-code">--refresh-clean</code>, and
                         <code class="inline-code">--skip-existing</code> cannot be combined.</p>
                     <h4>1. Normal Mode (Default)</h4>
@@ -1148,7 +1156,7 @@ php artisan translations:extract-and-generate \
                                 <tr>
                                     <td><code>--driver</code></td>
                                     <td>Concurrency driver: <code class="inline-code">fork</code> (Unix Prompts +
-                                        <code class="inline-code">pcntl</code>; on Windows 5.1.0 maps to Process),
+                                        <code class="inline-code">pcntl</code>; on Windows 5.1.x maps to Process),
                                         <code class="inline-code">process</code> (Symfony Process workers), or
                                         <code class="inline-code">sync</code> (sequential, any OS).
                                     </td>
@@ -1345,7 +1353,7 @@ php artisan translations:extract-and-generate --model=gemini-2.5-pro --langs=en,
                                 </tr>
                                 <tr>
                                     <td>"Call to undefined function pcntl_fork()"</td>
-                                    <td>The <code class="inline-code">pcntl</code> extension is missing. In 5.1.0,
+                                    <td>The <code class="inline-code">pcntl</code> extension is missing. In 5.1.x,
                                         <code class="inline-code">--driver=fork</code> on Windows uses Process workers
                                         instead of <code class="inline-code">pcntl</code>.</td>
                                     <td>On Windows, use <code class="inline-code">--driver=fork</code> or

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v5.1.1] - 2026-08-28
+
+Everything below is new since **v5.1.0**.
+
+### 🔧 Refactoring & Modernization
+
+- **JavaScript Code Quality Tooling:** Introduced new JS development configurations including `package.json`, `package-lock.json`, `eslint.config.js`, `.prettierrc`, and `.prettierignore` to format and lint Blade-embedded JS and stylesheets (these files were not present in v5.1.0). The accompanying `npm run modernize` script is written in pure Node.js to run natively on Windows, macOS, and Linux out-of-the-box, without requiring any external tools (such as `xargs` or `ripgrep`).
+- **PHP 8.3 standard features:** Integrated `#[Override]` attribute annotations on service providers.
+- **Optimized Laravel error wrappers:** Replaced conventional `if/throw` blocks with native, optimized Laravel helper wrappers (`throw_if` and `throw_unless`) across commands and runners to lower overhead.
+- **Refined types & validation:** Eliminated redundant variables/type validation checks, such as `is_object` checks on container-resolved objects and redundant `isset`/`is_string` POSIX array validations.
+- **Removed useless casts:** Cleaned up redundant `(string)` casts on file retrieve statements (`File::get`) across the test suite.
+
+### 🐛 Fixed & Cross-Platform Reliability
+
+- **Framework & Testing Robustness:**
+  - Fixed test runner failures on newer Laravel/Testbench versions by adding a package-root vendor folder fallback for missing framework language catalogs.
+  - Refined vendor path checks (`isComposerVendorPath`) to correctly bypass Testbench dummy application paths, preventing false positives during testing.
+  - Embedded a default `APP_KEY` environment setup in `phpunit.xml` to allow executing test suites out-of-the-box.
+
 ## [v5.1.0] - 2026-08-14
 
 Everything below is new since **v5.0.1**.
@@ -254,3 +273,4 @@ Everything below is new since **v5.0.1**.
 [v5.0.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/4.0.3...5.0.0
 [v5.0.1]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/5.0.0...5.0.1
 [v5.1.0]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/5.0.1...5.1.0
+[v5.1.1]: https://github.com/jayeshmepani/laravel-gemini-translator/compare/5.1.0...5.1.1

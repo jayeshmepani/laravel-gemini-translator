@@ -1,0 +1,19 @@
+resources/js/components/ui/*
+resources/views/mail/*
+
+# Laravel Directories
+/vendor
+/node_modules
+/public
+/storage
+/bootstrap/cache
+
+# Modules Directories
+Modules/*/vendor
+Modules/*/node_modules
+Modules/*/public
+
+# Cache & Compiled
+.phpunit.result.cache
+*.min.css
+*.min.js
